@@ -1,0 +1,5 @@
+# ignore ALL Rootsmagic .rmtree database files
+*.rmtree
+
+# Allow sample Presidents database
+!pres2020.rmtree
