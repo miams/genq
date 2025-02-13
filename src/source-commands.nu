@@ -56,16 +56,14 @@ export def rmgc [
         print $"(ansi yellow_bold)NOT FUNCTIONAL YET - EVALUATION PHASE(ansi reset)\n"
     },
     'help' => {
-       print $'(ansi white_bold)DESCRIPTION (ansi reset)'
-       let printstr = "RMGC is an open-source, third-party RootsMagic reporting engine for use in the terminal. RMGC is designed to let you quickly and easily pull data from your RootsMagic database. RMGC is built on top of Nushell, a new kind of shell for Windows, MacOS, and Linux. Unlike traditional shells such as bash, zsh or Powershell, Nushell uses structured data allowing for powerful but simple pipelines. It enables users to easily analyze and process data using easier more readable commands.\n"
+       print "DESCRIPTION" 
+       let printstr = "RMGC is an open-source, third-party RootsMagic reporting engine for use in the terminal. RMGC is designed to let you quickly and easily pull data from your RootsMagic database. RMGC is built on top of Nushell, a new kind of shell for OS X, Linux, and Windows. Unlike traditional shells such as bash, zsh or Powershell, Nushell uses structured data allowing for powerful but simple pipelines. It enables users to easily analyze and process data using easier more readable commands.\n"
        wrap-text $printstr (term size).columns
-       let printstr = "At its core, RMGC uses SQL (Structured Queried Language) to query RootsMagics SQLite database. In most cases, RMGC removes the need to deal with SQL complexity.  RMGC leverages its library of internal and third-party SQL queries to extract data. From there, you are able to access a rich set of Nushell commands to personalize your data analysis and reports to your individual needs." 
-       wrap-text $printstr (term size).columns
-       print
-    },
+       print "At its core, RMGC uses SQL (Structured Queried Language) to query RootsMagics SQLite database. In most cases, RMGC removes the need to deal with SQL complexity.  RMGC leverages its library of internal and third-party SQL queries to extract data. From there, you are able to access a rich set of Nushell commands to personalize your data analysis and reports to your individual needs." 
+       },
     _ => {print 'I think you need RMGC help.'}
     }
-    }  
+}  
 
 # List a variety of RootsMagic records.
 def "rmgc list" [] {
@@ -97,9 +95,9 @@ def "rmgc list find-a-grave" [] {
     # 14 = Place Details
     # More info:  https://docs.google.com/spreadsheets/d/1VenU0idUAmkbA9kffazvj5RX_dZn6Ncn/edit?usp=sharing&ouid=104459570713722063434&rtpof=true&sd=true 
     
-    open $env.rmdb 
-    | query db "select OwnerID as RIN, Name, URL, Note AS Retrieved, 
-    STRFTIME(DATETIME(UTCModDate + 2415018.5)) AS LastUpdate from URLTable where OwnerType=0" | startat1
+    let sqlquery = "select OwnerID as RIN, Name, URL, Note AS Retrieved, STRFTIME(DATETIME(UTCModDate + 2415018.5)) AS LastUpdate from URLTable where OwnerType=0"
+    print $sqlquery
+    open $env.rmdb | query db $sqlquery | startat1
 }
 
 
