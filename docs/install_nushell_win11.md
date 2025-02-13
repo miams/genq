@@ -18,6 +18,15 @@ By default, this version of Windows comes with 3 shells,
 
 We will use Powershell, which opens by default.
 
+:information_source:
+
+{% windows %}
+info 1 2 3
+{% endwindows %}
+
+> [!NOTE]
+> When Powershell opens, you will frequently see a message about: "Install the latest PowerShell for new features and improvements.." It is fine to ignore this. Powershell updates frequently and with features not related to typical use.
+
 But we need to open PowerShell with Administrative Rights
 
 Next to the "+" sign on the Windows Terminal tab, click the down arrow. A menu slides down showing available shells. Hover over the Windows PowerShell item, and help box appears showing "Ctrl+Click" to open as administrator.
@@ -44,8 +53,8 @@ Now we install chocolatey
 Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 ```
 
-Now install Newshell
-From the same Adminstrative Rights
+Now install Nushell
+From the same Administrative Rights
 
 ```
 choco install nushell
