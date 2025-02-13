@@ -1,8 +1,24 @@
-This is tested on Windows 11, version 10.0.26100.0 using Nushell version 0.102 on 13-Feb-2025.
+> [!NOTE]
+> This is tested on Windows 11, version 10.0.26100.0 using Nushell version 0.102. Last test was on 13-Feb-2025.
 
-Currently, winget is not an option, even though it is mentioned in the docs.
+# Overview of Windows Installation Approach
 
-see https://github.com/nushell/nushell/issues/14786 for more info.
+There are a variety of ways to install Nushell. Many of the methods are targeted toward the needs software developers, using tools they regularly use. The method recommended and described here is target toward end users with the objectives of simplicity, and reliability.
+
+> [!NOTE]
+> Currently, winget is not an option, even though it is mentioned as one of the options in [Nushell installation documentation](https://www.nushell.sh/book/installation.html). For more information describing why, [see here](https://github.com/nushell/nushell/issues/14786).
+
+1. Using Powershell (running as Administrator), install Chocolatey, an open-source Windows package manager.
+2. Continuing with Powershell (running as Administrator), install Nushell using Chocolatey
+3. A few moments after completion of scripts, a new shell option for Nushell will appear.
+4. Using Nushell, install RMGC
+5. Configure RMGC to use the installed sample RootsMagic 10 database
+6. Test RMGC and _experience delight_!
+7. Reconfigure RMGC to sync with your RootsMagic 10 database and only execute queries only of the copied database.
+
+# Step-by-Step Install Guide
+
+## Install Chocolatey
 
 https://chocolatey.org/install
 
@@ -18,12 +34,6 @@ By default, this version of Windows comes with 3 shells,
 
 We will use Powershell, which opens by default.
 
-:information_source:
-
-{% windows %}
-info 1 2 3
-{% endwindows %}
-
 > [!NOTE]
 > When Powershell opens, you will frequently see a message about: "Install the latest PowerShell for new features and improvements.." It is fine to ignore this. Powershell updates frequently and with features not related to typical use.
 
@@ -34,6 +44,9 @@ Next to the "+" sign on the Windows Terminal tab, click the down arrow. A menu s
 Doing that opens an option to "Run as Administrator". Click that.
 
 Terminal may request to make changes to your Device. Click yet.
+
+> [!TIP]
+> You can easily copy text from the code boxes that follow by clicking icon of the top right corner of the box. That adds it to your clipboard. Then you can CTL-v in your Powershell Window to paste it.
 
 Click on the newly opened Terminal Window, that shows a tab displaying "Administrator: Windows Pow.."
 
