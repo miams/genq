@@ -46,7 +46,7 @@ Next to the "+" sign on the Windows Terminal tab, click the down arrow. A menu s
 
 Doing that opens an option to "Run as Administrator". Click that.
 
-Terminal may request to make changes to your Device. Click yet.
+Windows' User Account Control (UAC) service will ask your permission to allow Terminal to make changes to your Device. Click yes.
 
 > [!TIP]
 > You can easily copy text from the code boxes that follow by clicking icon of the top right corner of the box. That adds it to your clipboard. Then you can CTL-v in your Powershell Window to paste it.
