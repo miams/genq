@@ -21,7 +21,8 @@ There are a variety of ways to install Nushell. Many of the methods are targeted
 ```
 Set-ExecutionPolicy Unrestricted
 powershell -Command Invoke-WebRequest -Uri "https://raw.githubusercontent.com/miams/rmgc/refs/heads/main/installers/nushell.ps1" -OutFile "rmgc-full-install-Win11.ps1"
-rmgc-full-install-Win11.ps1
+.\rmgc-full-install-Win11.ps1
+
 ```
 
 # Step-by-Step Install Guide
