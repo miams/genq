@@ -2,7 +2,7 @@
 # Run these three commands first to enable script execution, download this file, and run this file.
 
 # Set-ExecutionPolicy Unrestricted
-# powershell -Command Invoke-WebRequest -Uri "https://raw.githubusercontent.com/miams/rmgc/refs/heads/main/installers/nushell.ps1" -OutFile "rmgc-full-install-Win11.ps1"
+# powershell -Command Invoke-WebRequest -Uri "https://raw.githubusercontent.com/miams/rmgc/refs/heads/main/installers/rmgc-full-install-Win11.ps1" -OutFile "rmgc-full-install-Win11.ps1"
 # rmgc-full-install-Win11.ps1
 
 
@@ -21,7 +21,7 @@ Write-Host "Nushell install complete." -ForegroundColor Green
 
 # Install RMGC
 Write-Host "Downloading RMGC installer."
-powershell -Command Invoke-WebRequest -Uri "https://raw.githubusercontent.com/miams/rmgc/refs/heads/main/installers/windows.nu" -OutFile "rmgc-install-Win11.nu"
+powershell -Command Invoke-WebRequest -Uri "https://raw.githubusercontent.com/miams/rmgc/refs/heads/main/installers/rmgc-install-Win11.nu" -OutFile "rmgc-install-Win11.nu"
 Write-Host `n
 
 nu rmgc-install-Win11.nu
