@@ -1,7 +1,10 @@
 # This script must be run in Powershell as Administrative user.
-# Run this first, to enable script execution.
+# Run these three commands first to enable script execution, download this file, and run this file.
+
 # Set-ExecutionPolicy Unrestricted
-powershell -Command Invoke-WebRequest -Uri "" -OutFile "rmgc-install-Win11.nu"
+# powershell -Command Invoke-WebRequest -Uri "https://raw.githubusercontent.com/miams/rmgc/refs/heads/main/installers/nushell.ps1" -OutFile "rmgc-full-install-Win11.ps1"
+# rmgc-full-install-Win11.ps1
+
 
 # Permit Powershell to software.
 Set-ExecutionPolicy AllSigned
