@@ -22,10 +22,24 @@ Write-Host "Nushell install complete." -ForegroundColor Green
 # Install RMGC
 Write-Host "Downloading RMGC installer."
 powershell -Command Invoke-WebRequest -Uri "https://raw.githubusercontent.com/miams/rmgc/refs/heads/main/installers/windows.nu" -OutFile "rmgc-install-Win11.nu"
-Write-Host "Installing RMGC"
+Write-Host `n
+
 nu rmgc-install-Win11.nu
 
-Write-Host "Okay to clean up by deleting install scripts?."
+Write-Host `n
+$answer = Read-Host "Okay to clean up by deleting install scripts (y/n) "
+if ($answer -eq "y" -or $answer -eq "Y") {
+    # Code to execute if yes
+    rm .\rmgc-full-install-Win11.ps1
+    rm .\rmgc-install-Win11.nu
+    Write-Host "Deletion of installers completed."
+} elseif ($answer -eq "n" -or $answer -eq "N") {
+    # Code to execute if no
+    Write-Host "All tasks completed, Exiting..."
+} else {
+    Write-Host "Invalid input. Please enter 'y' or 'n'."
+}
+
 
 # This is erroring
 # Set-ExecutionPolicy Restricted
