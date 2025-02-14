@@ -33,6 +33,7 @@ if ($answer -eq "y" -or $answer -eq "Y") {
     rm .\rmgc-full-install-Win11.ps1
     rm .\rmgc-install-Win11.nu
     Write-Host "Deletion of installers completed."
+    Write-Host "All tasks completed, Exiting..."
 } elseif ($answer -eq "n" -or $answer -eq "N") {
     # Code to execute if no
     Write-Host "All tasks completed, Exiting..."
@@ -40,6 +41,11 @@ if ($answer -eq "y" -or $answer -eq "Y") {
     Write-Host "Invalid input. Please enter 'y' or 'n'."
 }
 
+Write-Host `n
+Write-Host "RMGC is successfully installed." -ForegroundColor Green
+Write-Host "Additionally, the next time you open the Terminal program, click on the 'down carat' for the drop-down menu.  You will see Nushell is a new option available. If you choose, you can go into Settings from the drop-down menu, and make Nushell your default shell in Terminal." 
+Write-Host `n
+Write-Host "Type 'nu' at the prommpt. Then begin having fun with RMGC by typing: rmgc [tab key]" 
 
 # This is erroring
 # Set-ExecutionPolicy Restricted
