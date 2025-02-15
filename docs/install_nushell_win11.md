@@ -20,42 +20,34 @@ There are a variety of ways to install Nushell. Many of the methods are targeted
 
 ```
 Set-ExecutionPolicy Unrestricted
-powershell -Command Invoke-WebRequest -Uri "https://raw.githubusercontent.com/miams/rmgc/refs/heads/main/installers/installers/rmgc-full-install-Win11.ps1" -OutFile "rmgc-full-install-Win11.ps1"
+powershell -Command Invoke-WebRequest -Uri "https://raw.githubusercontent.com/miams/rmgc/refs/heads/main/installers/rmgc-full-install-Win11.ps1" -OutFile "rmgc-full-install-Win11.ps1"
 .\rmgc-full-install-Win11.ps1
 
 ```
 
-Terminal will display a warning about pasting multiple lines of code simultaneously. Seletc "Paste Anyway"
+> [!NOTE]
+> Terminal will display a warning about pasting multiple lines of code simultaneously. Seletc "Paste Anyway"
 
 # Step-by-Step Install Guide
 
 ## 1. Install Chocolatey
 
-https://chocolatey.org/install
-
+For reference, these are the instructions we are following.
 https://chocolatey.org/install#individual
 
-From Windows Command Bar, Open "Terminal"
-
 > [!NOTE]
-> If you are unfamiliar with Terminal,
+> If you are unfamiliar with Terminal, the Terminal Title Bar in Windows 11 refers to the top section of a terminal window that displays information about the session. The plus sign ("+") opens a new default shell window, and the down carat ("⌄") opens a drop-down menu, letting you choose which specific shell to run or change other options. Multiple shell run simultaneously in separate tabs. The black tap on the dark gray title bar background is a little hard to notice initially.
 
-By default, this version of Windows comes with 3 shells,
+By default, Windows 11 provides the three shells listed. Powershell opens by default. Completing the process outline in this document will create a fourth shell option, Nushell.
 
 - Powershell
 - Command Prompt
 - Azure Shell
 
-We will use Powershell, which opens by default.
-
 > [!NOTE]
 > When Powershell opens, you will frequently see a message about: "Install the latest PowerShell for new features and improvements.." It is fine to ignore this. Powershell updates frequently and with features not related to typical use.
 
-But we need to open PowerShell with Administrative Rights
-
-Next to the "+" sign on the Windows Terminal tab, click the down arrow. A menu slides down showing available shells. Hover over the Windows PowerShell item, and help box appears showing "Ctrl+Click" to open as administrator.
-
-Doing that opens an option to "Run as Administrator". Click that.
+Next open a new PowerShell tab with Administrative Rights. Click on the down carat to open Terminal drop-down menu Hover over the Windows PowerShell item, and help box appears showing "Ctrl+Click" to open as administrator. Doing that opens an option to "Run as Administrator". _Click that._
 
 Windows' User Account Control (UAC) service will ask your permission to allow Terminal to make changes to your Device. Click yes.
 
