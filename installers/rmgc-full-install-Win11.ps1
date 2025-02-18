@@ -5,18 +5,55 @@
 #    powershell -Command Invoke-WebRequest -Uri "https://raw.githubusercontent.com/miams/rmgc/refs/heads/main/installers/rmgc-full-install-Win11.ps1" -OutFile "rmgc-full-install-Win11.ps1"
 #    rmgc-full-install-Win11.ps1
 
+# # Process Parameters
+# param (
+#     [string[]]$d,   # Allows multiple -d parameters
+#     [switch]$c      # A switch parameter for the -c flag
+# )
+
+# # Handle -d parameters
+# if ($d -contains "all") {
+#     Write-Host "Downloading all versions of RootsMagic (Windows 32-bit): RM8, RM9, RM10"
+#     # $downloads = @("rm8", "rm9", "rm10")  # Override selection if -d all is used
+# } else {
+#     # $downloads = $d  # Store selected downloads
+# }
+
+# # Process selected downloads
+# if ($downloads.Count -gt 0) {
+#     Write-Host "Downloads selected: $($downloads -join ', ')"
+# } else {
+#     Write-Host "No downloads selected."
+# }
+
+# # Handle -c flag
+# if ($c) {
+#     Write-Host "Option -c is enabled."
+#     Write-Host "Installation scripts will be cleaned up after installs completed."
+#     $cleanup = $true 
+# } else {
+#     Write-Host "Option -c is not enabled."
+#     Write-Host "Installation scripts will be remain after installs completed."
+#     $cleanup = $false
+# }
+
+# exit
+
 # Process Parameters
 param (
     [string[]]$d,   # Allows multiple -d parameters
     [switch]$c      # A switch parameter for the -c flag
 )
 
+# Ensure $downloads is initialized
+$downloads = @()
+
 # Handle -d parameters
 if ($d -contains "all") {
     Write-Host "Downloading all versions of RootsMagic (Windows 32-bit): RM8, RM9, RM10"
-    # $downloads = @("rm8", "rm9", "rm10")  # Override selection if -d all is used
+    $downloads = @("rm8", "rm9", "rm10")  # Override selection if -d all is used
 } else {
-    # $downloads = $d  # Store selected downloads
+    $downloads = $d  # Store selected downloads
 }
 
 # Process selected downloads
@@ -29,15 +66,16 @@ if ($downloads.Count -gt 0) {
 # Handle -c flag
 if ($c) {
     Write-Host "Option -c is enabled."
-    Write-Host "Installation scripts will be cleaned up after installs completed."
+    Write-Host "Installation scripts will be cleaned up after installs are completed."
     $cleanup = $true 
 } else {
     Write-Host "Option -c is not enabled."
-    Write-Host "Installation scripts will be remain after installs completed."
+    Write-Host "Installation scripts will remain after installs are completed."
     $cleanup = $false
 }
 
 exit
+
 
 # Permit Powershell to software.
 Set-ExecutionPolicy AllSigned
