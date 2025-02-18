@@ -87,7 +87,7 @@ a. Agree to the Source Agreement Terms: Y
 
 ## 3. Open a new Terminal window with Nushell.
 
-Wait a few seconds after the Chocolatey finishes install Nushell. Next, we want to open a new Terminal tab, a tab that uses Nushell. On the top Terminal bar, next to the plus sign, clieck the down arrow, and there should be a 4th option now there for Nushell. Click it.
+Wait a few seconds after the Chocolatey finishes installing Nushell. Close both instances of Terminal, and then open a new Terminal session from the Windows command bar. It will open PowerShell by default. Next, we want to open a new Terminal tab, a tab that uses Nushell. On the top Terminal bar, next to the plus sign, click the down arrow, and there should be a 4th option now there for Nushell. Click it.
 
 ## 4. Open a new Terminal window with Nushell.
 
