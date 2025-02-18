@@ -26,7 +26,7 @@ powershell -Command Invoke-WebRequest -Uri "https://raw.githubusercontent.com/mi
 ```
 
 > [!NOTE]
-> Terminal will display a warning about pasting multiple lines of code simultaneously. Seletc "Paste Anyway"
+> Terminal will display a warning about pasting multiple lines of code simultaneously. Select "Paste Anyway"
 
 # Step-by-Step Install Guide
 

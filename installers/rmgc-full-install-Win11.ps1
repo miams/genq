@@ -72,7 +72,7 @@ Write-Host "RMGC is successfully installed." -ForegroundColor Green
 
 Write-Host "Additionally, the next time you open the Terminal program, click on the 'down carat' for the drop-down menu.  You will see Nushell is a new option available. If you choose, you can go into Settings from the drop-down menu, and make Nushell your default shell in Terminal." 
 Write-Host `n
-Write-Host "Type 'nu' at the prommpt. Then begin having fun with RMGC by typing: rmgc [tab key]" 
+Write-Host "Type 'nu' at the prompt. Then begin having fun with RMGC by typing: rmgc [tab key]" 
 
 
 # $answer = Read-Host "Would you like (y/n) "
