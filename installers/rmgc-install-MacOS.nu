@@ -25,13 +25,14 @@ print "Configuring to use demo mode with fresh install."
 
 # Configuration for RMGC' | save $"($nu.home-path)/Library/Application Support/nushell/vendor/autoload/rmgc-config.nu"
 
-echo $"\n $env.rmgc-mode = 'demo' \n $env.rmdb = '($nu.home-path)/Apps/rmgc/data/pres2020.rmtree'" | tee { save --append $"($nu.home-path)/Library/Application Support/nushell/vendor/autoload/rmgc-config.nu" }
+echo $"\n $env.rmgc-mode = 'demo' \n $env.rmdb = '($nu.home-path)/Apps/rmgc/data/pres2020.rmtree'" | tee { save $"($nu.home-path)/Library/Application Support/nushell/vendor/autoload/rmgc-config.nu" }
 echo $"\n $env.rmgc_sql = '($nu.home-path)/Apps/rmgc/sql/'" | tee { save --append $"($nu.home-path)/Library/Application Support/nushell/vendor/autoload/rmgc-config.nu" }
 echo $"\n alias syncdb = cp ($nu.home-path)/Apps/rmgc/data/originaldb/pres2020.rmtree ($nu.home-path)/Apps/rmgc/data/pres2020.rmtree" | tee { save --append $"($nu.home-path)/Library/Application Support/nushell/vendor/autoload/rmgc-config.nu" }
 echo $"\n source ($nu.home-path)/Apps/rmgc/src/source-commands.nu" | tee { save --append $"($nu.home-path)/Library/Application Support/nushell/vendor/autoload/rmgc-config.nu" }
 
 print "Configuration complete.  These are the configuration settings:"
-open $"($nu.home-path)/Library/Application Support/nushell/vendor/autoload/rmgc-config.nu"
+# open $"($nu.home-path)/Library/Application Support/nushell/vendor/autoload/rmgc-config.nu"
+cat $"($nu.home-path)/Library/Application Support/nushell/vendor/autoload/rmgc-config.nu"
 
 # Create a copy of demo RM database so syncdb works end-to-end
 mkdir $"($nu.home-path)/Apps/rmgc/data/originaldb"
@@ -39,4 +40,4 @@ cp $"($nu.home-path)/Apps/rmgc/data/pres2020.rmtree" $"($nu.home-path)/Apps/rmgc
 
 print
 print $"(ansi green_bold)Installation Complete!(ansi reset)"  
-print "Next, reload settings by closing this terminal session and starting a new Nushell terminal. In the new window, begin having fun with RMGC by typing: (ansi white_bold)rmgc [tab key](ansi reset)" 
+print $"Next, reload settings by closing this terminal session and starting a new Nushell terminal. In the new window, begin having fun with RMGC by typing: (ansi white_bold)rmgc [tab key](ansi reset)" 
