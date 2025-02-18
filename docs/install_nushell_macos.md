@@ -22,27 +22,11 @@ Next: Copy and paste the text below into the terminal window.
 > You can easily copy text from the code boxes that follow by clicking icon of the top right corner of the box. That adds it to your clipboard. Then you can CTL-v in your Powershell Window to paste it.
 
 ```
-curl -s -o rmgc-full-install-MacOS.sh "https://raw.githubusercontent.com/miams/rmgc/refs/heads/main/installers/rmgc-full-install-MacOS.sh"
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/miams/rmgc/refs/heads/main/installers/rmgc-full-install-MacOS.sh)"
 
 ```
 
 Allow script to run
-
-```
-chmod 755 rmgc-full-install-MacOS.sh
-```
-
-Run the installation script
-
-```
-./rmgc-full-install-MacOS.sh
-```
-
-Add it to the path
-
-```
-eval "$(/opt/homebrew/bin/brew shellenv)"
-```
 
 script will pause with
 Checking for `sudo` access (which may request your password)...
@@ -53,3 +37,13 @@ script will pause with
 Press RETURN/ENTER to continue or any other key to abort:
 
 Get a cup of coffee..
+
+```
+./rmgc-full-install-MacOS.sh
+```
+
+Add it to the path
+
+```
+eval "$(/opt/homebrew/bin/brew shellenv)"
+```
