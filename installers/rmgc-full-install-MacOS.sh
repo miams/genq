@@ -30,5 +30,6 @@ sleep 3s
 
 # Install RMGC
 echo "Downloading RMGC installer."
-curl -s -o  rmgc-install-MacOS.nu "https://raw.githubusercontent.com/miams/rmgc/refs/heads/main/installers/rmgc-install-MacOS.nu"
+nu rmgc-install-MacOS.nu
+
 echo "\n"
