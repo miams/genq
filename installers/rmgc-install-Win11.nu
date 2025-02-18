@@ -6,7 +6,7 @@ mkdir $"($nu.home-path)/Apps/rmgc/sql"
 mkdir $"($nu.home-path)/Apps/rmgc/src"
 
 # Load rmgc source code
-powershell -Command $"Invoke-WebRequest -Uri \"https://raw.githubusercontent.com/miams/rmgc/8d3fab75dab83b157e510b352065f152126cf6fa/src/source-commands.nu\" -OutFile $"($nu.home-path)\\Apps\\rmgc\\src\\source-commands.nu\""
+powershell -Command $"Invoke-WebRequest -Uri \"https://raw.githubusercontent.com/miams/rmgc/8d3fab75dab83b157e510b352065f152126cf6fa/src/source-commands.nu\" -OutFile $$"($nu.home-path)/Apps/rmgc/src/source-commands.nu""
 
 # Create auto-loading config file
 mkdir $"($env.AppData)/nushell/vendor/autoload"
