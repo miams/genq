@@ -5,45 +5,18 @@
 #    powershell -Command Invoke-WebRequest -Uri "https://raw.githubusercontent.com/miams/rmgc/refs/heads/main/installers/rmgc-full-install-Win11.ps1" -OutFile "rmgc-full-install-Win11.ps1"
 #    rmgc-full-install-Win11.ps1
 
-# # Process Parameters
-# param (
-#     [string[]]$d,   # Allows multiple -d parameters
-#     [switch]$c      # A switch parameter for the -c flag
-# )
-
-# # Handle -d parameters
-# if ($d -contains "all") {
-#     Write-Host "Downloading all versions of RootsMagic (Windows 32-bit): RM8, RM9, RM10"
-#     # $downloads = @("rm8", "rm9", "rm10")  # Override selection if -d all is used
-# } else {
-#     # $downloads = $d  # Store selected downloads
-# }
-
-# # Process selected downloads
-# if ($downloads.Count -gt 0) {
-#     Write-Host "Downloads selected: $($downloads -join ', ')"
-# } else {
-#     Write-Host "No downloads selected."
-# }
-
-# # Handle -c flag
-# if ($c) {
-#     Write-Host "Option -c is enabled."
-#     Write-Host "Installation scripts will be cleaned up after installs completed."
-#     $cleanup = $true 
-# } else {
-#     Write-Host "Option -c is not enabled."
-#     Write-Host "Installation scripts will be remain after installs completed."
-#     $cleanup = $false
-# }
-
-# exit
-
 # Process Parameters
 param (
     [string[]]$d,   # Allows multiple -d parameters
     [switch]$c      # A switch parameter for the -c flag
 )
+
+# Define download URLs
+$downloadUrls = @{
+    "rm8"  = "https://files.rootsmagic.com/RM8/RootsMagic8Setup.exe"
+    "rm9"  = "https://files.rootsmagic.com/RM9/RootsMagic9Setup.exe"
+    "rm10" = "https://files.rootsmagic.com/RM10/RootsMagic10Setup.exe"
+}
 
 # Ensure $downloads is initialized
 $downloads = @()
@@ -59,6 +32,25 @@ if ($d -contains "all") {
 # Process selected downloads
 if ($downloads.Count -gt 0) {
     Write-Host "Downloads selected: $($downloads -join ', ')"
+    
+    foreach ($version in $downloads) {
+        if ($downloadUrls.ContainsKey($version)) {
+            $url = $downloadUrls[$version]
+            $fileName = [System.IO.Path]::GetFileName($url)
+            $outputPath = "$PSScriptRoot\$fileName"
+
+            Write-Host "Downloading $version from $url..."
+            
+            try {
+                Invoke-WebRequest -Uri $url -OutFile $outputPath
+                Write-Host "Download completed: $outputPath"
+            } catch {
+                Write-Host "Error downloading $version from $url"
+            }
+        } else {
+            Write-Host "Invalid version specified: $version"
+        }
+    }
 } else {
     Write-Host "No downloads selected."
 }
@@ -67,11 +59,20 @@ if ($downloads.Count -gt 0) {
 if ($c) {
     Write-Host "Option -c is enabled."
     Write-Host "Installation scripts will be cleaned up after installs are completed."
-    $cleanup = $true 
+
+    # Delete the downloaded files
+    foreach ($version in $downloads) {
+        $fileName = [System.IO.Path]::GetFileName($downloadUrls[$version])
+        $outputPath = "$PSScriptRoot\$fileName"
+
+        if (Test-Path $outputPath) {
+            Remove-Item $outputPath -Force
+            Write-Host "Deleted: $outputPath"
+        }
+    }
 } else {
     Write-Host "Option -c is not enabled."
     Write-Host "Installation scripts will remain after installs are completed."
-    $cleanup = $false
 }
 
 exit
@@ -140,13 +141,17 @@ $Shortcut.Arguments = $ArgumentsToSourceExe
 $Shortcut.Save()
 
 
+# https://files.rootsmagic.com/RM8/RootsMagic8Setup.exe
+# https://files.rootsmagic.com/RM9/RootsMagic9Setup.exe
 # https://files.rootsmagic.com/RM10/RootsMagic10Setup.exe
+
+# https://files.rootsmagic.com/RM9/RootsMagic9SetupX64.exe
 # https://files.rootsmagic.com/RM10/RootsMagic10SetupX64.exe
 
-# https://files.rootsmagic.com/RM9/RootsMagic9Setup.exe
-# https://files.rootsmagic.com/RM9/RootsMagic9SetupX64.exe
 
-# https://files.rootsmagic.com/RM8/RootsMagic8Setup.exe
+
+
+
 
 # https://files.rootsmagic.com/RM10/RootsMagic10.dmg
 # https://files.rootsmagic.com/RM9/RootsMagic9.dmg
