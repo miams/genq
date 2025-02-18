@@ -19,7 +19,9 @@ mkdir $"($nu.home-path)/Library/Application Support/nushell/vendor/autoload"
 
 # Load a sample RootsMagic database.
 print "Installing sample RootsMagic database." 
-powershell -Command $"Invoke-WebRequest -Uri \"https://raw.githubusercontent.com/miams/rmgc/8d3fab75dab83b157e510b352065f152126cf6fa/demo/pres2020.rmtree\" -OutFile "$nu.home-path\\Apps\\rmgc\\data\\pres2020.rmtree\""
+# powershell -Command $"Invoke-WebRequest -Uri \"https://raw.githubusercontent.com/miams/rmgc/8d3fab75dab83b157e510b352065f152126cf6fa/demo/pres2020.rmtree\" -OutFile "$nu.home-path\\Apps\\rmgc\\data\\pres2020.rmtree\""
+curl -s -o  $"($nu.home-path)/Apps/rmgc/data/pres2020.rmtree" "https://raw.githubusercontent.com/miams/rmgc/8d3fab75dab83b157e510b352065f152126cf6fa/demo/pres2020.rmtree"
+
 
 # With fresh install we are defaulting to a demo mode. 
 # Create startup config file with values for demo 
