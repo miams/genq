@@ -7,6 +7,7 @@
 
 # Define color codes
 green=$(tput setaf 2)
+reset=$(tput sgr0)
 
 # Install Homebrew if necessary
 which -s brew

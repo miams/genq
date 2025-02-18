@@ -38,9 +38,8 @@ cat $"($nu.home-path)/Library/Application Support/nushell/vendor/autoload/rmgc-c
 mkdir $"($nu.home-path)/Apps/rmgc/data/originaldb"
 cp $"($nu.home-path)/Apps/rmgc/data/pres2020.rmtree" $"($nu.home-path)/Apps/rmgc/data/originaldb/pres2020.rmtree"
 
-print 
+print ""
 print $"(ansi green_bold)Installation Complete!(ansi reset)"  
-print $"(ansi rb)Hello(ansi reset) (ansi gd)Nu(ansi reset) (ansi pi)World 2(ansi reset)"
-print 
+print ""
 print $"Next, reload settings by closing this terminal session and starting a new Nushell terminal." 
 print $"In the new window, begin having fun with RMGC by typing: (ansi white_bold)rmgc [tab key](ansi reset)."
