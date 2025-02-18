@@ -19,13 +19,13 @@ if ($null -eq $OptionalString) {
     Write-Host "Value of OptionalString: $OptionalString"
 }
 
-if ($null -eq OptionalNumber) {
+if ($null -eq $OptionalNumber) {
     Write-Host "No value provided for OptionalNumber."
 } else {
     Write-Host "Value of OptionalNumber: $OptionalNumber"
 }
 
-if ($null -eq OptionalFlag) {
+if ($null -eq $OptionalFlag) {
     Write-Host "No value provided for OptionalFlag."
 } else {
     Write-Host "Value of OptionalFlag: $OptionalFlag"
