@@ -28,8 +28,7 @@ Next: Copy and paste the text below into the terminal window.
 
 Allow script to run
 
-script will pause with
-Checking for `sudo` access (which may request your password)...
+The script will pause with "Checking for `sudo` access (which may request your password).." Enter your password of the username you use to log into MacOS.
 
 script will list Homebrew programs and directories it will install.
 
