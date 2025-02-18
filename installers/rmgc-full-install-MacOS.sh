@@ -37,6 +37,7 @@ else
   # The package is not installed
   echo "Installing Nushell."
   brew install nushell
+  echo -e "\n"
   echo "${green}Nushell install complete.${reset}"
   source ~/.zprofile
   sleep 2s
@@ -46,7 +47,6 @@ fi
 # Install RMGC
 echo "Downloading RMGC installer."
 curl -s -o "rmgc-install-MacOS.nu" "https://raw.githubusercontent.com/miams/rmgc/refs/heads/main/installers/rmgc-install-MacOS.nu"
-echo "Installing RMGC."
 nu rmgc-install-MacOS.nu
 
 echo
