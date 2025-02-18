@@ -13,18 +13,25 @@ param (
 )
 
 # Script logic using the parameters
-if ($OptionalString) {
-    Write-Host "Optional String: $OptionalString"
+if ($null -eq $OptionalString) {
+    Write-Host "No value provided for OptionalString."
+} else {
+    Write-Host "Value of OptionalString: $OptionalString"
 }
 
-if ($OptionalNumber) {
-    Write-Host "Optional Number: $OptionalNumber"
+if ($null -eq OptionalNumber) {
+    Write-Host "No value provided for OptionalNumber."
+} else {
+    Write-Host "Value of OptionalNumber: $OptionalNumber"
 }
 
-if ($OptionalFlag) {
-    Write-Host "Optional Flag is present."
+if ($null -eq OptionalFlag) {
+    Write-Host "No value provided for OptionalFlag."
+} else {
+    Write-Host "Value of OptionalFlag: $OptionalFlag"
 }
 
+exit 
 
 # Permit Powershell to software.
 Set-ExecutionPolicy AllSigned
@@ -78,10 +85,10 @@ Write-Host "Type 'nu' at the prompt. Then begin having fun with RMGC by typing: 
 # $answer = Read-Host "Would you like (y/n) "
 
 # Create shortcut and save to programs section of menu bar
+Write-Host "Creating a shortcut for RMGC in Start Menu."
 $SourceExe = "$env:USERPROFILE\AppData\Local\Programs\nu\bin\nu.exe"
 $ArgumentsToSourceExe = ""
 $DestinationPath = "$env:AppData\Microsoft\Windows\Start Menu\Programs\rmgc.lnk"
-# param ( [string]$SourceExe, [string]$ArgumentsToSourceExe, [string]$DestinationPath )
 $WshShell = New-Object -COMObject WScript.Shell
 $Shortcut = $WshShell.CreateShortcut($DestinationPath)
 $Shortcut.TargetPath = $SourceExe
