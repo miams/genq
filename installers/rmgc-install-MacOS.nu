@@ -30,23 +30,17 @@ echo $"\n $env.rmgc_sql = '($nu.home-path)/Apps/rmgc/sql/'" | tee { save --appen
 echo $"\n alias syncdb = cp ($nu.home-path)/Apps/rmgc/data/originaldb/pres2020.rmtree ($nu.home-path)/Apps/rmgc/data/pres2020.rmtree" | tee { save --append $"($nu.home-path)/Library/Application Support/nushell/vendor/autoload/rmgc-config.nu" }
 echo $"\n source ($nu.home-path)/Apps/rmgc/src/source-commands.nu" | tee { save --append $"($nu.home-path)/Library/Application Support/nushell/vendor/autoload/rmgc-config.nu" }
 
-print "Configuration complete.  These are the configuration settings:"
-# open $"($nu.home-path)/Library/Application Support/nushell/vendor/autoload/rmgc-config.nu"
+print $"(ansi green_bold)Configuration complete.(ansi reset) These are the configuration settings:" 
+
 cat $"($nu.home-path)/Library/Application Support/nushell/vendor/autoload/rmgc-config.nu"
 
 # Create a copy of demo RM database so syncdb works end-to-end
 mkdir $"($nu.home-path)/Apps/rmgc/data/originaldb"
 cp $"($nu.home-path)/Apps/rmgc/data/pres2020.rmtree" $"($nu.home-path)/Apps/rmgc/data/originaldb/pres2020.rmtree"
 
-echo "\n"
+print 
 print $"(ansi green_bold)Installation Complete!(ansi reset)"  
-echo "Should be white text.\n"
-print $'(ansi rb)Hello(ansi reset) (ansi gd)Nu(ansi reset) (ansi pi)World 1(ansi reset)'
-echo "Should be white text.\n"
 print $"(ansi rb)Hello(ansi reset) (ansi gd)Nu(ansi reset) (ansi pi)World 2(ansi reset)"
-echo "Should be white text.\n"
-print "Configuring to use demo mode with fresh install."
-$'(ansi rb)Hello(ansi reset) (ansi gd)Nu(ansi reset) (ansi pi)World 3(ansi reset)'
-
+print 
 print $"Next, reload settings by closing this terminal session and starting a new Nushell terminal." 
-print $"In the new window, begin having fun with RMGC by typing: (ansi white_bold)rmgc [tab key](ansi reset)"
+print $"In the new window, begin having fun with RMGC by typing: (ansi white_bold)rmgc [tab key](ansi reset)."

@@ -6,8 +6,7 @@
 #   curl -s -o "rmgc-full-install-MacOS.sh" "https://raw.githubusercontent.com/miams/rmgc/refs/heads/main/installers/rmgc-full-install-MacOS.sh"
 
 # Define color codes
-
-
+green=$(tput setaf 2)
 
 # Install Homebrew if necessary
 which -s brew
