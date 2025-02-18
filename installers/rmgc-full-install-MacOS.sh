@@ -25,9 +25,7 @@ sleep 3
 
 # Install RMGC
 print "Downloading RMGC installer."
-curl -s -o  rmgc-install-MacOS.nu "https://github.com/miams/rmgc/blob/main/installers/rmgc-install-MacOS.nu"
+curl -s -o  rmgc-install-MacOS.nu "https://raw.githubusercontent.com/miams/rmgc/refs/heads/main/installers/rmgc-full-install-MacOS.sh"
 print
 nu rmgc-install-MacOS.nu
-
-
 
