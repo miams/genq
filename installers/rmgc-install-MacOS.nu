@@ -15,7 +15,7 @@ mkdir $"($nu.home-path)/Apps/rmgc/src"
 curl -s -o  $"($nu.home-path)/Apps/rmgc/src/source-commands.nu" "https://raw.githubusercontent.com/miams/rmgc/refs/heads/main/src/source-commands.nu"
 
 # Create auto-loading config file
-mkdir $"($env.AppData)/nushell/vendor/autoload"
+mkdir $"($nu.home-path)/Library/Application Support/nushell/vendor/autoload"
 
 # Load a sample RootsMagic database.
 print "Installing sample RootsMagic database." 
@@ -25,18 +25,18 @@ powershell -Command $"Invoke-WebRequest -Uri \"https://raw.githubusercontent.com
 # Create startup config file with values for demo 
 print "Configuring to use demo mode with fresh install."
 
-'# Configuration for RMGC' | save $"($env.AppData)/nushell/vendor/autoload/rmgc-config.nu"
+# Configuration for RMGC' | save $"($nu.home-path)/Library/Application Support/nushell/vendor/autoload/rmgc-config.nu"
 
-echo $"\n $env.rmgc-mode = 'demo' \n $env.rmdb = '($nu.home-path)/Apps/rmgc/data/pres2020.rmtree'" | tee { save --append $"($env.AppData)/nushell/vendor/autoload/rmgc-config.nu" }
+echo $"\n $env.rmgc-mode = 'demo' \n $env.rmdb = '($nu.home-path)/Apps/rmgc/data/pres2020.rmtree'" | tee { save --append $"($nu.home-path)/Library/Application Support/nushell/vendor/autoload/rmgc-config.nu" }
 
-echo $"\n $env.rmgc_sql = '($nu.home-path)/Apps/rmgc/sql/'" | tee { save --append $"($env.AppData)/nushell/vendor/autoload/rmgc-config.nu" }
+echo $"\n $env.rmgc_sql = '($nu.home-path)/Apps/rmgc/sql/'" | tee { save --append $"($nu.home-path)/Library/Application Support/nushell/vendor/autoload/rmgc-config.nu" }
 
-echo $"\n alias syncdb = cp ($nu.home-path)/Apps/rmgc/data/originaldb/pres2020.rmtree ($nu.home-path)/Apps/rmgc/data/pres2020.rmtree" | tee { save --append $"($env.AppData)/nushell/vendor/autoload/rmgc-config.nu" }
+echo $"\n alias syncdb = cp ($nu.home-path)/Apps/rmgc/data/originaldb/pres2020.rmtree ($nu.home-path)/Apps/rmgc/data/pres2020.rmtree" | tee { save --append $"($nu.home-path)/Library/Application Support/nushell/vendor/autoload/rmgc-config.nu" }
 
-echo $"\n source ($nu.home-path)/Apps/rmgc/src/source-commands.nu" | tee { save --append $"($env.AppData)/nushell/vendor/autoload/rmgc-config.nu" }
+echo $"\n source ($nu.home-path)/Apps/rmgc/src/source-commands.nu" | tee { save --append $"($nu.home-path)/Library/Application Support/nushell/vendor/autoload/rmgc-config.nu" }
 
 print "Configuration complete.  These are the configuration settings:"
-open $"($env.AppData)/nushell/vendor/autoload/rmgc-config.nu"
+open $"($nu.home-path)/Library/Application Support/nushell/vendor/autoload/rmgc-config.nu"
 
 # Create a copy of demo RM database so syncdb works end-to-end
 mkdir $"($nu.home-path)/Apps/rmgc/data/originaldb"
