@@ -7,31 +7,37 @@
 
 # Process Parameters
 param (
-    [string]$OptionalString,
-    [int]$OptionalNumber,
-    [switch]$OptionalFlag
+    [string[]]$d,   # Allows multiple -d parameters
+    [switch]$c      # A switch parameter for the -c flag
 )
 
-# Script logic using the parameters
-if ($null -eq $OptionalString) {
-    Write-Host "No value provided for OptionalString."
+# Handle -d parameters
+if ($d -contains "all") {
+    Write-Host "Downloading all versions of RootsMagic (Windows 32-bit): RM8, RM9, RM10"
+    # $downloads = @("rm8", "rm9", "rm10")  # Override selection if -d all is used
 } else {
-    Write-Host "Value of OptionalString: $OptionalString"
+    # $downloads = $d  # Store selected downloads
 }
 
-if ($null -eq $OptionalNumber) {
-    Write-Host "No value provided for OptionalNumber."
+# Process selected downloads
+if ($downloads.Count -gt 0) {
+    Write-Host "Downloads selected: $($downloads -join ', ')"
 } else {
-    Write-Host "Value of OptionalNumber: $OptionalNumber"
+    Write-Host "No downloads selected."
 }
 
-if ($null -eq $OptionalFlag) {
-    Write-Host "No value provided for OptionalFlag."
+# Handle -c flag
+if ($c) {
+    Write-Host "Option -c is enabled."
+    Write-Host "Installation scripts will be cleaned up after installs completed."
+    $cleanup = $true 
 } else {
-    Write-Host "Value of OptionalFlag: $OptionalFlag"
+    Write-Host "Option -c is not enabled."
+    Write-Host "Installation scripts will be remain after installs completed."
+    $cleanup = $false
 }
 
-exit 
+exit
 
 # Permit Powershell to software.
 Set-ExecutionPolicy AllSigned
