@@ -1,7 +1,7 @@
 # Customize Nushell Configuration
 '# Tailored Nushell Configuration '               | save $"($env.AppData)/config.nu"
-echo '$env.config.buffer_editor = "vi"'           | save --append $"($env.AppData)/nushell/config.nu" 
-echo -e "\n"                                      | save --append $"($env.AppData)/nushell/config.nu" 
+echo '$env.config.buffer_editor = "notepad"'      | save --append $"($env.AppData)/nushell/config.nu" 
+print ""                                          | save --append $"($env.AppData)/nushell/config.nu" 
 echo '$env.config.history.file_format = "sqlite"' | save --append $"($env.AppData)/nushell/config.nu"
 echo '$env.config.history.max_size = 5_000_000'   | save --append $"($env.AppData)/nushell/config.nu"
 echo '$env.config.history.sync_on_enter = true"'  | save --append $"($env.AppData)/nushell/config.nu"
@@ -31,8 +31,13 @@ echo $"\n source ($nu.home-path)/Apps/rmgc/src/source-commands.nu"
 print "Configuration complete.  These are the configuration settings:"
 open $"($env.AppData)/nushell/vendor/autoload/rmgc-config.nu"
 
-print $"(ansi green_bold)Nushell configuration complete.(ansi reset)  These are the configuration settings:"
-open $"($env.AppData)/nushell/vendor/autoload/rmgc-config.nu"
+print $"(ansi green_bold)Nushell configuration complete.  These are the configuration settings:"
+# open $"($env.AppData)/nushell/vendor/autoload/rmgc-config.nu"
+print "config.nu: "
+cat $"($nu.default-config-dir)/config.nu"
+print "rmgc-config.nu: "
+cat $"($nu.default-config-dir)/vendor/autoload/rmgc-config.nu"
+print ""
 
 print "Installing RMGC."
 # create file structure
@@ -52,6 +57,9 @@ powershell -Command $"Invoke-WebRequest -Uri \"https://raw.githubusercontent.com
 mkdir $"($nu.home-path)/Apps/rmgc/data/originaldb"
 cp $"($nu.home-path)/Apps/rmgc/data/pres2020.rmtree" $"($nu.home-path)/Apps/rmgc/data/originaldb/pres2020.rmtree"
 
-print
+print ""
+print ""
 print $"(ansi green_bold)Installation Complete!(ansi reset)"  
-print "Next, reload settings by closing this terminal session and starting a new Nushell terminal. In the new window, begin having fun with RMGC by typing: (ansi white_bold)rmgc [tab key](ansi reset)" 
+print ""
+print $"Next, reload settings by closing this terminal session and starting a new Nushell terminal." 
+print $"In the new window, begin having fun with RMGC by typing: (ansi default_bold)rmgc [tab key](ansi reset)."
