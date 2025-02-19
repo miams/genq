@@ -1,3 +1,11 @@
+#Configure Nushell to use SQLite for history
+$env.config.history = {
+  file_format: sqlite
+  max_size: 1_000_000
+  sync_on_enter: true
+  isolation: true
+}
+
 print "Installing RMGC."
 # create file structure
 # safe to run repeatedly, it does not error if already exists
@@ -22,11 +30,8 @@ print "Configuring to use demo mode with fresh install."
 '# Configuration for RMGC' | save $"($env.AppData)/nushell/vendor/autoload/rmgc-config.nu"
 
 echo $"\n $env.rmgc-mode = 'demo' \n $env.rmdb = '($nu.home-path)/Apps/rmgc/data/pres2020.rmtree'" | tee { save --append $"($env.AppData)/nushell/vendor/autoload/rmgc-config.nu" }
-
 echo $"\n $env.rmgc_sql = '($nu.home-path)/Apps/rmgc/sql/'" | tee { save --append $"($env.AppData)/nushell/vendor/autoload/rmgc-config.nu" }
-
 echo $"\n alias syncdb = cp ($nu.home-path)/Apps/rmgc/data/originaldb/pres2020.rmtree ($nu.home-path)/Apps/rmgc/data/pres2020.rmtree" | tee { save --append $"($env.AppData)/nushell/vendor/autoload/rmgc-config.nu" }
-
 echo $"\n source ($nu.home-path)/Apps/rmgc/src/source-commands.nu" | tee { save --append $"($env.AppData)/nushell/vendor/autoload/rmgc-config.nu" }
 
 print "Configuration complete.  These are the configuration settings:"
