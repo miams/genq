@@ -1,14 +1,14 @@
+# Create auto-loading config file
+mkdir $"($nu.default-config-dir)/vendor/autoload"
+
 # Customize Nushell Configuration
 '# Tailored Nushell Configuration '               | save $"($nu.default-config-dir)/config.nu"
 echo '$env.config.buffer_editor = "vi"'           | save --append $"($nu.default-config-dir)/config.nu" 
-print ""                                          | save --append $"($nu.default-config-dir)/config.nu" 
+echo -e  "\n"                                     | save --append $"($nu.default-config-dir)/config.nu" 
 echo '$env.config.history.file_format = "sqlite"' | save --append $"($nu.default-config-dir)/config.nu"
 echo '$env.config.history.max_size = 5_000_000'   | save --append $"($nu.default-config-dir)/config.nu"
 echo '$env.config.history.sync_on_enter = true"'  | save --append $"($nu.default-config-dir)/config.nu"
 echo '$env.config.history.isolation = true'       | save --append $"($nu.default-config-dir)/config.nu"
-
-# Create auto-loading config file
-mkdir $"($nu.default-config-dir)/vendor/autoload"
 
 # With fresh install we are defaulting to a demo mode. 
 # Create startup config file with values for demo 
