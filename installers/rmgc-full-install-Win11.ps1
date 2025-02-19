@@ -61,25 +61,21 @@ if ($c) {
     Write-Host "Installation scripts will be cleaned up after installs are completed."
 
     # Delete the downloaded files
-    foreach ($version in $downloads) {
-        $fileName = [System.IO.Path]::GetFileName($downloadUrls[$version])
-        $outputPath = "$PSScriptRoot\$fileName"
+    # POSSIBLE FUTURE FEATURE
+    # foreach ($version in $downloads) {
+    #     $fileName = [System.IO.Path]::GetFileName($downloadUrls[$version])
+    #     $outputPath = "$PSScriptRoot\$fileName"
 
-        if (Test-Path $outputPath) {
-            Remove-Item $outputPath -Force
-            Write-Host "Deleted: $outputPath"
-        }
-    }
+    #     if (Test-Path $outputPath) {
+    #         Remove-Item $outputPath -Force
+    #         Write-Host "Deleted: $outputPath"
+    #     }
+    # }
+
 } else {
     Write-Host "Option -c is not enabled."
     Write-Host "Installation scripts will remain after installs are completed."
 }
-
-exit
-
-
-# Permit Powershell to software.
-Set-ExecutionPolicy AllSigned
 
 # Install Choco
 Write-Host "Installing Chocolatey Package Manager."
@@ -94,26 +90,33 @@ Write-Host "Nushell install complete." -ForegroundColor Green
 # Install RMGC
 Write-Host "Downloading RMGC installer."
 powershell -Command Invoke-WebRequest -Uri "https://raw.githubusercontent.com/miams/rmgc/refs/heads/main/installers/rmgc-install-Win11.nu" -OutFile "rmgc-install-Win11.nu"
-Write-Host `n
+Write-Host ""
 
 nu rmgc-install-Win11.nu
 
-Write-Host `n
-$answer = Read-Host "Okay to clean up by deleting install scripts (y/n) "
-if ($answer -eq "y" -or $answer -eq "Y") {
-    # Code to execute if yes
+Write-Host ""
+
+# Create shortcut and save to programs section of menu bar
+Write-Host "Creating a shortcut for RMGC in Start Menu."
+$SourceExe = "$env:USERPROFILE\AppData\Local\Programs\nu\bin\nu.exe"
+$ArgumentsToSourceExe = ""
+$DestinationPath = "$env:AppData\Microsoft\Windows\Start Menu\Programs\rmgc.lnk"
+$WshShell = New-Object -COMObject WScript.Shell
+$Shortcut = $WshShell.CreateShortcut($DestinationPath)
+$Shortcut.TargetPath = $SourceExe
+$Shortcut.Arguments = $ArgumentsToSourceExe
+$Shortcut.Save()
+
+# Cleanup scripts if requested.
+if ($cleanup) {
     rm .\rmgc-full-install-Win11.ps1
     rm .\rmgc-install-Win11.nu
     Write-Host "Deletion of installers completed."
-    Write-Host "All tasks completed, Exiting..."
-} elseif ($answer -eq "n" -or $answer -eq "N") {
-    # Code to execute if no
-    Write-Host "All tasks completed, Exiting..."
 } else {
-    Write-Host "Invalid input. Please enter 'y' or 'n'."
+    Write-Host "No cleanup requested."
 }
-
-Write-Host `n
+Write-Host "All tasks completed, Exiting..."
+Write-Host ""
 Write-Host "RMGC is successfully installed." -ForegroundColor Green
 
 
@@ -127,19 +130,10 @@ Write-Host `n
 Write-Host "Type 'nu' at the prompt. Then begin having fun with RMGC by typing: rmgc [tab key]" 
 
 
-# $answer = Read-Host "Would you like (y/n) "
 
-# Create shortcut and save to programs section of menu bar
-Write-Host "Creating a shortcut for RMGC in Start Menu."
-$SourceExe = "$env:USERPROFILE\AppData\Local\Programs\nu\bin\nu.exe"
-$ArgumentsToSourceExe = ""
-$DestinationPath = "$env:AppData\Microsoft\Windows\Start Menu\Programs\rmgc.lnk"
-$WshShell = New-Object -COMObject WScript.Shell
-$Shortcut = $WshShell.CreateShortcut($DestinationPath)
-$Shortcut.TargetPath = $SourceExe
-$Shortcut.Arguments = $ArgumentsToSourceExe
-$Shortcut.Save()
 
+
+#Reference:
 
 # https://files.rootsmagic.com/RM8/RootsMagic8Setup.exe
 # https://files.rootsmagic.com/RM9/RootsMagic9Setup.exe
@@ -148,16 +142,8 @@ $Shortcut.Save()
 # https://files.rootsmagic.com/RM9/RootsMagic9SetupX64.exe
 # https://files.rootsmagic.com/RM10/RootsMagic10SetupX64.exe
 
-
-
-
-
-
 # https://files.rootsmagic.com/RM10/RootsMagic10.dmg
 # https://files.rootsmagic.com/RM9/RootsMagic9.dmg
 # https://files.rootsmagic.com/RM8/RootsMagic8.dmg
 
-
-# This is erroring.  TODO: find way to reset permissions to normal
-# Set-ExecutionPolicy Restricted
 
