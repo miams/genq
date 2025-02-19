@@ -26,14 +26,11 @@ echo $"\n alias syncdb = cp ($nu.home-path)/Apps/rmgc/data/originaldb/pres2020.r
 echo $"\n source ($nu.home-path)/Apps/rmgc/src/source-commands.nu" 
    | save --append $"($env.AppData)/nushell/vendor/autoload/rmgc-config.nu" 
 
-print $"(ansi green_bold)Configuration complete.(ansi reset) These are the configuration settings:"
-open $"($env.AppData)/nushell/vendor/autoload/rmgc-config.nu"
-
-print $"(ansi green_bold)Nushell configuration complete.  These are the configuration settings:"
+print $"(ansi green_bold)Nushell configuration complete.(ansi reset) These are the configuration settings:"
 print "config.nu: "
-cat $"($nu.default-config-dir)/config.nu"
+open $"($nu.default-config-dir)/config.nu"
 print "rmgc-config.nu: "
-cat $"($nu.default-config-dir)/vendor/autoload/rmgc-config.nu"
+open $"($nu.default-config-dir)/vendor/autoload/rmgc-config.nu"
 print ""
 
 print "Installing RMGC."
