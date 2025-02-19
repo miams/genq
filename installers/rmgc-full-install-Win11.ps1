@@ -92,10 +92,6 @@ Write-Host "Downloading RMGC installer."
 powershell -Command Invoke-WebRequest -Uri "https://raw.githubusercontent.com/miams/rmgc/refs/heads/main/installers/rmgc-install-Win11.nu" -OutFile "rmgc-install-Win11.nu"
 Write-Host ""
 
-nu rmgc-install-Win11.nu
-
-Write-Host ""
-
 # Create shortcut and save to programs section of menu bar
 Write-Host "Creating a shortcut for RMGC in Start Menu."
 $SourceExe = "$env:USERPROFILE\AppData\Local\Programs\nu\bin\nu.exe"
@@ -106,6 +102,10 @@ $Shortcut = $WshShell.CreateShortcut($DestinationPath)
 $Shortcut.TargetPath = $SourceExe
 $Shortcut.Arguments = $ArgumentsToSourceExe
 $Shortcut.Save()
+
+nu rmgc-install-Win11.nu
+
+Write-Host ""
 
 # Cleanup scripts if requested.
 if ($cleanup) {
@@ -125,12 +125,10 @@ Write-Host "RMGC is successfully installed." -ForegroundColor Green
 #   1.  From within Powershell, type: nu <enter>
 #   2.  From Terminal, Open the dropdown menu by clicking on the 'down carat' You will see Nushell as an option
 
-Write-Host "Additionally, the next time you open the Terminal program, click on the 'down carat' for the drop-down menu.  You will see Nushell is a new option available. If you choose, you can go into Settings from the drop-down menu, and make Nushell your default shell in Terminal." 
-Write-Host `n
-Write-Host "Type 'nu' at the prompt. Then begin having fun with RMGC by typing: rmgc [tab key]" 
-
-
-
+Write-Host "Additionally, the next time you open the Terminal program, click on the 'down carat' for the drop-down menu. You will see Nushell is a new option available. If you choose, you can go into Settings from the drop-down menu, and make Nushell your default shell in Terminal." 
+Write-Host ""
+Write-Host "Type 'nu' at the prompt. Then begin having fun with RMGC by typing: " -NoNewline
+Write-Host "rmgc [tab key]" -ForegroundColor White
 
 
 #Reference:
