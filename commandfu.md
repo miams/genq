@@ -30,3 +30,6 @@ List frequency of variations of Iams name.
 
 List record number 100 and display vertically to see all data
 `rmgc list citations | range 100..100 | transpose`
+
+Show the Rootsmagic database schema
+`open .\Apps\rmgc\data\pres2020.rmtree | schema | get tables | table -e `
