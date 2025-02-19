@@ -1,23 +1,21 @@
-# Customize Nushell Configuration
-'# Tailored Nushell Configuration '               | save $"($env.AppData)/config.nu"
-echo '$env.config.buffer_editor = "notepad"'      | save --append $"($env.AppData)/nushell/config.nu" 
-print ""                                          | save --append $"($env.AppData)/nushell/config.nu" 
-echo '$env.config.history.file_format = "sqlite"' | save --append $"($env.AppData)/nushell/config.nu"
-echo '$env.config.history.max_size = 5_000_000'   | save --append $"($env.AppData)/nushell/config.nu"
-echo '$env.config.history.sync_on_enter = true"'  | save --append $"($env.AppData)/nushell/config.nu"
-echo '$env.config.history.isolation = true'       | save --append $"($env.AppData)/nushell/config.nu"
-
 # Create auto-loading config file
 mkdir $"($env.AppData)/nushell/vendor/autoload"
+
+# Customize Nushell Configuration
+"# Tailored Nushell Configuration \n"                 | save -f $"($env.AppData)/nushell/config.nu"
+echo "$env.config.buffer_editor = \"notepad\"\n"      | save --append $"($env.AppData)/nushell/config.nu" 
+echo "\n"                                             | save --append $"($env.AppData)/nushell/config.nu" 
+echo "$env.config.history.file_format = \"sqlite\"\n" | save --append $"($env.AppData)/nushell/config.nu"
+echo "$env.config.history.max_size = 5_000_000\n"     | save --append $"($env.AppData)/nushell/config.nu"
+echo "$env.config.history.sync_on_enter = true\n"     | save --append $"($env.AppData)/nushell/config.nu"
+echo "$env.config.history.isolation = true\n"         | save --append $"($env.AppData)/nushell/config.nu"
 
 # With fresh install we are defaulting to a demo mode. 
 # Create startup config file with values for demo 
 print "Configuring to use demo mode with fresh install."
 
-'# Configuration for RMGC'                        | save $"($env.AppData)/nushell/vendor/autoload/rmgc-config.nu"
-
 echo $"\n $env.rmgc-mode = 'demo' \n $env.rmdb = '($nu.home-path)/Apps/rmgc/data/pres2020.rmtree'" 
-   | save --append $"($env.AppData)/nushell/vendor/autoload/rmgc-config.nu"
+   | save -f $"($env.AppData)/nushell/vendor/autoload/rmgc-config.nu"
 
 echo $"\n $env.rmgc_sql = '($nu.home-path)/Apps/rmgc/sql/'" 
    | save --append $"($env.AppData)/nushell/vendor/autoload/rmgc-config.nu" 
@@ -28,11 +26,10 @@ echo $"\n alias syncdb = cp ($nu.home-path)/Apps/rmgc/data/originaldb/pres2020.r
 echo $"\n source ($nu.home-path)/Apps/rmgc/src/source-commands.nu" 
    | save --append $"($env.AppData)/nushell/vendor/autoload/rmgc-config.nu" 
 
-print "Configuration complete.  These are the configuration settings:"
+print $"(ansi green_bold)Configuration complete.(ansi reset) These are the configuration settings:"
 open $"($env.AppData)/nushell/vendor/autoload/rmgc-config.nu"
 
 print $"(ansi green_bold)Nushell configuration complete.  These are the configuration settings:"
-# open $"($env.AppData)/nushell/vendor/autoload/rmgc-config.nu"
 print "config.nu: "
 cat $"($nu.default-config-dir)/config.nu"
 print "rmgc-config.nu: "
