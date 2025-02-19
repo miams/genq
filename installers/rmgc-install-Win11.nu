@@ -28,9 +28,12 @@ echo $"\n source ($nu.home-path)/Apps/rmgc/src/source-commands.nu"
 
 print $"(ansi green_bold)Nushell configuration complete.(ansi reset) These are the configuration settings:"
 print "config.nu: "
+# open command doesn't echo to screen on Windows
 open $"($nu.default-config-dir)/config.nu"
+powershell Get-Content -Path $"($nu.default-config-dir)/config.nu"
 print "rmgc-config.nu: "
 open $"($nu.default-config-dir)/vendor/autoload/rmgc-config.nu"
+powershell Get-Content -Path $"($nu.default-config-dir)/vendor/autoload/rmgc-config.nu"
 print ""
 
 print "Installing RMGC."
