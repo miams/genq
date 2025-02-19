@@ -57,5 +57,4 @@ print ""
 print $"(ansi green_bold)Installation Complete!(ansi reset)"  
 print ""
 print $"Next, reload settings by closing this terminal session and starting a new Nushell terminal." 
-print $"In the new window, begin having fun with RMGC by typing: (ansi default_bold
-)rmgc [tab key](ansi reset)."
+print $"In the new window, begin having fun with RMGC by typing: (ansi default_bold)rmgc [tab key](ansi reset)."
