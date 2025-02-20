@@ -1,0 +1,1 @@
+This directory is a library of RootsMagic Nushell data parsers that work well for all users of RM10. Parsers in this directory should make no assumptions regarding how the data is formatted inside of RootsMagic data fields.
