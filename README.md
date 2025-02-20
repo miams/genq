@@ -5,6 +5,10 @@ Execute blocks of Nushell code to query and parse RootsMagic's SQLite database (
 
 In the examples below, all queries are filtered to the first 20 records for demonstration purposes only.
 
+<h3 align="left">Screencast Example Queries:</h3>
+
+Queries in screencast are filtered to the first 20 records for demonstration purposes only.
+
 - rmgc list people | first 20 _List all people in your database_
 - rmgc list sources | first 20 _List sources_
 - rmgc list obits | first 20
@@ -32,7 +36,8 @@ Installation is performed via installation scripts via command-line. Guides are 
 > Currently, there is minimal testing on the various platforms. If you are operating within the requirements above and encounter a problem, please open an [issue](https://github.com/miams/rmgc/issues).
 
 <h3 align="left">Getting Started:</h3>
-A sample RootsMagic database of the U.S. Presidents is included with installation.  After installation, RMGC starts in a "demo" mode configuration where RMGC queries this database.  When you are comfortable using it, you can edit the "rmgc-config.nu" file to use your RootsMagic database.  A "rmgc configure" command is under development to simplify updating configurations.
+
+A sample RootsMagic database of the U.S. Presidents is included with installation. After installation, RMGC starts in a "demo" mode configuration where RMGC queries this database. When you are comfortable using it, you can edit the "rmgc-config.nu" file to use your RootsMagic database. A "rmgc configure" command is under development to simplify updating configurations.
 
 > [!NOTE]
 > RMGC comes with a syncdb command. This command pulls a current copy of your production RootsMagic database to an RMGC query location. RMGC is designed to never touch your production database.
