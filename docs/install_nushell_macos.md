@@ -3,7 +3,13 @@
 
 # Overview of MacOS Installation Approach
 
-This installer script (rmgc-full-install-MacOS.sh) uses the Homebrew package manager to install Nushell. If Homebrew is not present, it will install it.
+Installation is automated, requiring only running a single script from the MacOS terminal. Detailed instructions follow describing exactly how to do that, even if you've never used the terminal. For transparency, this is summary of the software installed via the script (rmgc-full-install-MacOS.sh).
+
+- Homebrew. This package management software widely used by Mac user community. If you already have it, the script will use it, instead of downloading a new copy.
+- Nushell. Installed via Homebrew.
+- RMGC. This software runs in your home directory under ~/Apps/rmgc. This location was chosen because the scripts are designed to be edited and tailored by you, to meet your own genealogy research goals.
+
+# Step-by-Step Install Guide
 
 From the Launchpad, open Terminal
 
@@ -26,23 +32,50 @@ Next: Copy and paste the text below into the terminal window.
 
 ```
 
-Allow script to run
+## Allow the script to run
 
 The script will pause with "Checking for `sudo` access (which may request your password).." Enter your password of the username you use to log into MacOS.
 
-script will list Homebrew programs and directories it will install.
+As the script prepares to install Homebrew, there will be a pause as it asks you to press RETURN/ENTER to continue or any other key to abort.
 
-script will pause with
-Press RETURN/ENTER to continue or any other key to abort:
+## Get a cup of coffee..
 
-Get a cup of coffee..
+From there, the script will run through till completion without interruptions. If you don't already have Homebrew, the entire script will take about 2 minutes to run.
+
+- Homebrew (package manager)
+- Nushell (installed via Homebrew)
+- RMGC
+  - RMGC main program
+  - a custom user extension
+  - RootsMagic US Presidents database
+  - Initial configuration using demo mode
+
+## After Install
+
+1. Close out your terminal session.
+2. Open a new terminal session.
+3. Run: nu
+4. Run your favorite rmgc commands.
+   - help rmgc <font color="green"># a great place to start</font>
+   - rmgc list people <font color="green"># a fun first command</font>
+   - rmgc list events <font color="green"># show your RootsMagic friends what you can do</font>
 
 ```
-./rmgc-full-install-MacOS.sh
+help rmgc <font color="green"># a great place to start</font>
+rmgc list people <font color="green"># a fun first command</font>
+rmgc list events <font color="green"># show your RootsMagic friends what you can do</font>
 ```
 
-Add it to the path
+# FAQ
 
-```
-eval "$(/opt/homebrew/bin/brew shellenv)"
-```
+1. Why are "sudo" admin privileges required to run the install script if RMGC is installed only in my home directory?
+   Answer: "sudo" is required to install Homebrew.
+
+2. How do I configure RMGC to use my RootsMagic database?
+   Answer:
+
+3. This is great. What are all the out-of-the-box commands I can run?
+   Answer:
+
+4. This is awesome. What else you use recommend to improve the RMGC user experience.
+   Answer: [Ghostty](https://ghostty.org/) is a wonderful replacement for Apple's default Terminal program.
