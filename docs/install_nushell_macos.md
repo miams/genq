@@ -68,14 +68,14 @@ rmgc list events <font color="green"># show your RootsMagic friends what you can
 
 # FAQ
 
-1. Why are "sudo" admin privileges required to run the install script if RMGC is installed only in my home directory?
+1. Why are "sudo" admin privileges required to run the install script if RMGC is installed only in my home directory?  
    Answer: "sudo" is required to install Homebrew.
 
-2. How do I configure RMGC to use my RootsMagic database?
+2. How do I configure RMGC to use my RootsMagic database?  
    Answer:
 
-3. This is great. What are all the out-of-the-box commands I can run?
+3. This is great. What are all the out-of-the-box commands I can run?  
    Answer:
 
-4. This is awesome. What else you use recommend to improve the RMGC user experience.
+4. This is awesome. What else you use recommend to improve the RMGC user experience?  
    Answer: [Ghostty](https://ghostty.org/) is a wonderful replacement for Apple's default Terminal program.
