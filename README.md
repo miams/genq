@@ -26,7 +26,7 @@ In the examples below, all queries are filtered to the first 20 records for demo
 
 <h3 align="left">Installation:</h3>
 
-Installation is performed via installation scripts via command-line. Guides are available for [Windows](https://github.com/miams/rmgc/blob/main/docs/install_nushell_win11.md) and [MacOS](https://github.com/miams/rmgc/blob/main/docs/install_nushell_macos.md). For Windows, installation of
+Installation is performed via installation scripts via command-line. Guides are available for [Windows](https://github.com/miams/rmgc/blob/main/docs/install_nushell_win11.md) and [MacOS](https://github.com/miams/rmgc/blob/main/docs/install_nushell_macos.md). For Windows, the installation script installs the Chocolatey package management software if not already present, and uses it to install Nushell. Similarly for MacOS, the installation script installs the Homebrew package management software if not already present, and uses it to install Nushell.
 
 > [!CAUTION]
 > Currently, there is minimal testing on the various platforms. If you are operating within the requirements above and encounter a problem, please open an [issue](https://github.com/miams/rmgc/issues).
