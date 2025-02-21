@@ -100,14 +100,28 @@ def "rmgc list find-a-grave" [] {
     open $env.rmdb | query db $sqlquery | startat1
 }
 
-
-# List events/facts.  Note: Marriage show here, but are actually reporting MRIN, not RIN.
+# List events/facts.
+@category "rmgc-common"
+@search-terms "MRIN"
+@example "list the 10 most recent facts/events added to the database" {
+    rmgc list events | sort-by LastUpdate | last 10
+} 
+@example "another list the 10 most recent facts/events added to the database" {
+    rmgc list events | sort-by LastUpdate | last 10
+} 
 def "rmgc list events" [] {
+    # Note: Marriage events show here, but they are reporting MRIx, not RIN.
     print "List of events/facts."
     print "Marriages list MRIN in RIN column"
 
     $env.config.datetime_format = {normal: "%Y-%m-%d %H:%M:%S", table: "%Y-%m-%d"}
-    let sqlquery = "SELECT EventID, OwnerID AS RIN, Name as Event, Details as Description, Substr(Date,4,4) COLLATE NOCASE AS EventDate, STRFTIME(DATETIME(EventTable.UTCModDate + 2415018.5)) || ' +0000' AS LastUpdateUTC FROM EventTable INNER JOIN FactTypeTable ON FactTypeTable.FactTypeID = EventTable.EventType;"
+    let sqlquery = "SELECT EventID, OwnerID AS RIN, Name as Event, Details as Description, 
+      Substr(Date,4,4) COLLATE NOCASE AS EventDate, 
+      STRFTIME(DATETIME(EventTable.UTCModDate + 2415018.5)) || ' +0000' AS LastUpdateUTC 
+    FROM EventTable 
+    INNER JOIN FactTypeTable ON FactTypeTable.FactTypeID = EventTable.EventType
+    JOIN NameTable ON NameTable.OwnerID = EventTable.OwnerID
+    WHERE EventTable.EventType=18 ORDER BY PersonID ASC, CensusDate ASC;"
 
     let my_dataframe = open $env.rmdb | query db $sqlquery | 
     insert LastUpdate {|row| $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S"}
@@ -116,7 +130,8 @@ def "rmgc list events" [] {
     $my_dataframe 
 }
 
-# List Families
+# List families.
+@category "rmgc-common"
 def "rmgc list families" [] {
     print "List of spouses in families"
 
@@ -165,6 +180,9 @@ def "rmgc list families" [] {
 # CitREFN:    Reference Number (CitationTable)
 # CitTxt:     ActualText (CitationTable)
 # CitComment: Comments (CitationTable)
+
+# List citations. [wide]
+@category "rmgc-common"
 def "rmgc list citations" [
     --flag1 # Info 1
     --flag2 # Info 2
@@ -177,9 +195,10 @@ def "rmgc list citations" [
 }
 
 
-# List of full obituaries from Newspapers.com 
+# List of full obituaries from Newspapers.com
+@category "rmgc-ext-miams"
 def "rmgc list obits" [] {
-    print "List of full obituaries from Newspapers.com"
+    print "List of obituaries from Newspapers.com with transcriptions."
 
     $env.config.datetime_format = {normal: "%Y-%m-%d %H:%M:%S", table: "%Y-%m-%d %H:%M:%S"}
     let sqlquery = "SELECT EventID, OwnerID as RIN, Details AS Newspaper, Note AS Obituary, STRFTIME(DATETIME(EventTable.UTCModDate + 2415018.5)) || ' +0000' AS LastUpdate 
@@ -206,6 +225,7 @@ def "rmgc list obits" [] {
 
 
 # List summary of obituaries from Newspapers.com.
+@category "rmgc-ext-miams"
 def "rmgc list obits sum" [] {
   print "List summaries of obituaries."
 
@@ -227,6 +247,7 @@ def "rmgc list obits sum" [] {
 
 
 # List summary of all obituaries.
+@category "rmgc-ext-miams"
 def "rmgc list obits sum all" [] {
    print "List summaries of all obituaries."
 
@@ -245,11 +266,11 @@ def "rmgc list obits sum all" [] {
 
 
 # List all individuals, as well as their aliases.
+@category "rmgc-common"
+@example "list al people" {
+    rmgc list people
+} 
 def "rmgc list people" [
-#
-# Examples:
-#  List all people
-#  > rmgc list people
 ] {
     print "List of individuals, as well as their aliases."
     # Create temp Table of people consisting of only Primary Names.
@@ -264,6 +285,7 @@ def "rmgc list people" [
 }
 
 # List sources.
+@category "rmgc-common"
 def "rmgc list sources" [
     --template (-t) # Filter to show only template-based sources.
     --free-form (-f) # Filter to show only free form-based sources.
@@ -281,6 +303,7 @@ def "rmgc list sources" [
 
 
 # List sources for Federal census records. [wide]
+@category "rmgc-tbd"
 def "rmgc list sources census" [] {
     print "List of sources for Federal census records (1790-1950)."
     # | insert Footnote {|row| $row.Fields | from xml | get content.0.content.0.content.1.content.content} | flatten 
@@ -291,12 +314,14 @@ def "rmgc list sources census" [] {
 
 
 # List sources for newspapers.
+@category "rmgc-ext-miams"
 def "rmgc list sources newspapers" [] {
     rmgc list sources | where Name =~ 'Newspapers:' | select Name | sort-by Name | startat1
 }
 
 
 # Tabulate sources for newspapers by state.
+@category "rmgc-ext-miams"
 def "rmgc tabulate sources newspaper state" [] {
     print "Tabulation of source newspapers by state of publication." 
     rmgc list sources | where Name =~ 'Newspapers:' | select Name | sort-by Name 
@@ -308,6 +333,7 @@ def "rmgc tabulate sources newspaper state" [] {
 }
 
 # Tabulate sources by label/tag
+@category "rmgc-ext-miams"
 def "rmgc tabulate sources labels" [] {
     print "Tabulation of sources by their label/tag (part before :)."
     let sqlquery = "SELECT SourceID, Name, TemplateID, STRFTIME(DATETIME(UTCModDate + 2415018.5)) || ' +0000' AS SourceDate  
@@ -323,7 +349,8 @@ def "rmgc tabulate sources labels" [] {
     | histogram SourceTag
 }
 
-
+# Census
+@category "rmgc-ext-miams"
 def census [action: string@census_action_completer, ...objects: string] {
     match $action {
         "RIN" => {
@@ -418,6 +445,8 @@ def census [action: string@census_action_completer, ...objects: string] {
         }
     }
 
+# Colorize RTF strings found in RM note files.
+@category "rmgc-platform"    
 def colorize [tag_string: string;] {
     echo $tag_string 
     | str replace --all --regex '<b>(.*?)</b>' $"(ansi light_green_bold)$1(ansi reset)"          # Bold
@@ -426,10 +455,14 @@ def colorize [tag_string: string;] {
     | print $in 
 }
 
+# Start index at 1 instead of default 0.
+@category "rmgc-platform"  
 def startat1 [] {
    enumerate | flatten | each { |row| $row | upsert index ($row.index + 1) }
 }
 
+# Word wrap, improving readability of docs.
+@category "rmgc-platform"  
 def wrap-text [text: string, width: int] {
     let words = $text | split row ' '
     mut line = ''

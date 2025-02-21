@@ -25,7 +25,7 @@ Queries in screencast are filtered to the first 20 records for demonstration pur
 
 - Modern Windows (Win10 or Win11)
 - Modern MacOS (Intel and M processors)
-- NuShell
+- NuShell (rmgc install this if not present)
 - RootsMagic 10 (RM10, RM8 and RM9 should also work well)
 
 <h3 align="left">Installation:</h3>
