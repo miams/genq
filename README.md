@@ -17,7 +17,7 @@ Queries in screencast are filtered to the first 20 records for demonstration pur
 - census year 1910 | where Surname == 'Iiams'
 - census year 1910 | where Surname == 'Iiams' | sort-by Given
 
-![Example of RMGC](https://github.com/miams/rmgc/blob/main/screencast/example1.gif)
+![Example of RMGC](https://github.com/miams/rmgc/blob/main/screencast/example1.mp4)
 
 <h2 align="left">Quick Start Guide:</h2>
 
