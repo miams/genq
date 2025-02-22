@@ -1,5 +1,26 @@
 # Source this script to add the commands
 
+use common 
+
+# use miams pres2020
+
+
+# Load Common RMGC commands
+# source ./src/lib/common/list_event_dates.nu
+# source ./src/lib/common/list_people_from.nu
+
+# Load Extension - miams
+# source ./src/lib/ext/miams/obits.nu
+# source ./src/lib/ext/miams/obits_sum.nu
+# source ./src/lib/ext/miams/obits_sum_all.nu
+# source ./src/lib/ext/miams/sources_newspapers.nu
+# source ./src/lib/ext/miams/sources_labels.nu
+# source ./src/lib/ext/miams/sources_newspaper_state.nu
+
+# Load Extension - pres2020
+
+
+
 let FedCensus = [1790 1800 1810 1820 1830 1840 1850 1860 1870 1880 1900 1910 1920 1930 1940 1950]
 $env.SurnameGroup = [Iams, Iames, Iiams, Iiames, Ijams, Ijames, Imes, Eimes]
 
@@ -73,31 +94,6 @@ def "rmgc list" [] {
 # Generate tabulated reports summarizing data. 
 def "rmgc tabulate" [] {
     print "Generate tabulated reports summarizing data. "
-}
-
-# List person Webtags named of "Find a Grave."
-def "rmgc list find-a-grave" [] {
-    print "List of Find a Grave entries."
-
-    # List of Find-a-Grave entries.
-
-    # print "List of Find-a-Grave entries."
-    # Objective: List Webtags with Find a Grave entries.
-    # Notes:  
-    # It's possible to use Webtags in a variety of contexts, which is stored as OwnerType in the database. For the Person context, I personally only used it for Find a Grave.
-
-    # Values available for OwnerType
-    # 0 = Person,
-    # 3 = Source,
-    # 4 = Citation,
-    # 5 = Place,
-    # 6 = Task,
-    # 14 = Place Details
-    # More info:  https://docs.google.com/spreadsheets/d/1VenU0idUAmkbA9kffazvj5RX_dZn6Ncn/edit?usp=sharing&ouid=104459570713722063434&rtpof=true&sd=true 
-    
-    let sqlquery = "select OwnerID as RIN, Name, URL, Note AS Retrieved, STRFTIME(DATETIME(UTCModDate + 2415018.5)) AS LastUpdate from URLTable where OwnerType=0"
-    print $sqlquery
-    open $env.rmdb | query db $sqlquery | startat1
 }
 
 # List events/facts.
