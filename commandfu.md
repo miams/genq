@@ -78,3 +78,33 @@ US Presidents
 ```
 rmgc list events | where Event == Occupation | where Description =~ "US President" | sort-by Description -n
 ```
+
+- An ordered list of Presidents
+
+```
+rmgc list events | where Event == Occupation | where Description =~ "US President" | sort-by Description -n
+```
+
+- 281 people have Occupations/Titles listed.
+
+```
+rmgc list events | where Event == Occupation | startat1
+```
+
+- A total of 19 Event/Fact types are use.
+
+```
+rmgc list events | uniq-by Event | sort-by Event | startat1
+```
+
+- Event dates range from 1016 to 2018
+
+```
+rmgc list events | reject LastUpdate EventID | sort-by EventDate | startat1 | explore
+```
+
+- George Washington and his family comprise 111 people in the database.
+
+```
+rmgc list events | reject LastUpdate EventID | where Event == "Reference No" | where Description =~ "Washington-" | sort-by Description -n | startat1
+```
