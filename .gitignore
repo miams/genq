@@ -1,3 +1,4 @@
+.DS_Store
 # ignore ALL Rootsmagic .rmtree database files
 *.rmtree
 *.json
