@@ -26,6 +26,7 @@ Example
   <img src="https://rmgc.s3.us-east-1.amazonaws.com/example1.png"">
 </video>
 
+[![Example Video](https://rmgc.s3.us-east-1.amazonaws.com/example1.png)](https://rmgc.s3.us-east-1.amazonaws.com/example1.mp4)
 
 <h2 align="left">Quick Start Guide:</h2>
 
