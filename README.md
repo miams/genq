@@ -19,7 +19,13 @@ Queries in screencast are filtered to the first 20 records for demonstration pur
 
 <h2 align="left">Example of RMGC:</h2>
 
-<video src="<video controls src="https://rmgc.s3.us-east-1.amazonaws.com/example1.mp4" title="Example"></video>"
+Example
+
+<video autoplay loop style="width:250%; height: auto; position:absolute; z-index: -1;">
+  <source src="https://rmgc.s3.us-east-1.amazonaws.com/example1.mp4" type="video/mp4" />
+  <img src="https://rmgc.s3.us-east-1.amazonaws.com/example1.png"">
+</video>
+
 
 <h2 align="left">Quick Start Guide:</h2>
 
