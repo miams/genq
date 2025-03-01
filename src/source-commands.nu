@@ -1,24 +1,6 @@
 # Source this script to add the commands
 
-use common 
-
-# use miams pres2020
-
-
-# Load Common RMGC commands
-# source ./src/lib/common/list_event_dates.nu
-# source ./src/lib/common/list_people_from.nu
-
-# Load Extension - miams
-# source ./src/lib/ext/miams/obits.nu
-# source ./src/lib/ext/miams/obits_sum.nu
-# source ./src/lib/ext/miams/obits_sum_all.nu
-# source ./src/lib/ext/miams/sources_newspapers.nu
-# source ./src/lib/ext/miams/sources_labels.nu
-# source ./src/lib/ext/miams/sources_newspaper_state.nu
-
-# Load Extension - pres2020
-
+use common/rmdate *
 
 
 let FedCensus = [1790 1800 1810 1820 1830 1840 1850 1860 1870 1880 1900 1910 1920 1930 1940 1950]
@@ -111,19 +93,16 @@ def "rmgc list events" [] {
     print "Marriages list MRIN in RIN column"
 
     $env.config.datetime_format = {normal: "%Y-%m-%d %H:%M:%S", table: "%Y-%m-%d"}
-    let sqlquery = "SELECT EventID, OwnerID AS RIN, Name as Event, Details as Description, 
-      Substr(Date,4,4) COLLATE NOCASE AS EventDate, 
-      STRFTIME(DATETIME(EventTable.UTCModDate + 2415018.5)) || ' +0000' AS LastUpdateUTC 
-    FROM EventTable 
-    INNER JOIN FactTypeTable ON FactTypeTable.FactTypeID = EventTable.EventType
-    JOIN NameTable ON NameTable.OwnerID = EventTable.OwnerID
-    WHERE EventTable.EventType=18 ORDER BY PersonID ASC, CensusDate ASC;"
+    let sqlquery = "SELECT EventID, EventTable.OwnerID AS RIN, Name as Event, Details as Description,Substr(EventTable.Date,4,4) COLLATE NOCASE AS EventDate, EventTable.Date COLLATE NOCASE as FullDate, STRFTIME(DATETIME(EventTable.UTCModDate + 2415018.5)) || ' +0000' AS LastUpdateUTC 
+FROM EventTable 
+INNER JOIN FactTypeTable ON FactTypeTable.FactTypeID = EventTable.EventType
+JOIN NameTable ON NameTable.OwnerID = EventTable.OwnerID;"
 
     let my_dataframe = open $env.rmdb | query db $sqlquery | 
-    insert LastUpdate {|row| $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S"}
+    insert LastUpdate {|row| $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S"} 
+    | insert MoreColumns {|row| rmdate $row.FullDate } | flatten MoreColumns -a
     | reject LastUpdateUTC | startat1
-
-    $my_dataframe 
+    $my_dataframe
 }
 
 # List families.

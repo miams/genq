@@ -1,12 +1,37 @@
-# List events/facts.  Note: Marriage show here, but are actually reporting MRIN, not RIN.
-# Purpose is completely parse the date field and also present sort-date field.
+# Parses RootsMagic's genealogy date fields.
 
-# It will also test using new documentation attributes
-# It will also test loading of external modules from main code.
+# Used with Fact/Event records (possibly others).
+
+# RootsMagic date field is a 24-byte string.  
+# Example:  D.+17910213..+00000000..
+
+# RMDF is RMGC environment variable defining default value based on below:  
+
+# Date Formats
+# 1. 10 Jan 2020
+# 2. Jan 10, 2020
+# 3. 10 January 2020
+# 4. January 10, 2020
+# 5. 10 JAN 2020
+# 6. JAN 10, 2020
+# 7. 10 JANUARY 2020
+# 8. JANUARY 10, 2020
 
 
-# Document Here
-def "rmgc list event_dates" [] {
+# Parses RootsMagic's genealogy date field.
+@category "rmgc-platform"
+@search-terms "convert date Julian Gregorian"
+@example "convert date that has xxx" {
+    rmdate (eventdate, -f 3 ) 
+} 
+@example "convert date that has xxx output format " {
+    rmdate (eventdate, --format 2 )
+} 
+export def main [
+    eventdate: string       # event date read from RootsMagic
+    --format(-f): int     # desired date output format, default to env.RDMF
+    --verbose(-v):        # print all columns, default to false    
+] {
 
     # pos is for position in the 13 character date string
     # Date Type
@@ -106,55 +131,41 @@ def "rmgc list event_dates" [] {
         { Descriptor: "Calc",  Code: "L" }
         { Descriptor: "Say",   Code: "S" }
     ]
-    
-    # Date Formats
-    # 1. 10 Jan 2020
-    # 2. Jan 10, 2020
-    # 3. 10 January 2020
-    # 4. January 10, 2020
-    # 5. 10 JAN 2020
-    # 6. JAN 10, 2020
-    # 7. 10 JANUARY 2020
-    # 8. JANUARY 10, 2020
 
-    print "List of events/facts."
-    print "Marriages list MRIN in RIN column"
+   
 
-  
     $env.config.datetime_format = {normal: "%Y-%m-%d %H:%M:%S", table: "%Y-%m-%d"}
-    let sqlquery = "SELECT EventID, OwnerID AS RIN, Name as Event, Details as Description, Substr(Date,4,4) COLLATE NOCASE AS EventDate, Date AS FullDate, STRFTIME(DATETIME(EventTable.UTCModDate + 2415018.5)) || ' +0000' AS LastUpdateUTC FROM EventTable INNER JOIN FactTypeTable ON FactTypeTable.FactTypeID = EventTable.EventType;"
+#    let sqlquery = "SELECT EventID, OwnerID AS RIN, Name as Event, Details as Description, Substr(Date,4,4) COLLATE NOCASE AS EventDate, Date AS FullDate, STRFTIME(DATETIME(EventTable.UTCModDate + 2415018.5)) || ' +0000' AS LastUpdateUTC FROM EventTable INNER JOIN FactTypeTable ON FactTypeTable.FactTypeID = EventTable.EventType;"
 
-    let my_dataframe = open $env.rmdb | query db $sqlquery 
-    | insert LastUpdate {|row| $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S"}   #LastUpdate
-    | insert DateType {|row| let key = $row.FullDate | str substring 0..0                                  #DateType
-        $pos1 | where Code == $key | get DateType | first}
-    | insert DateQualifier {|row| let key = $row.FullDate | str substring 1..1                             #DateQualifier
-        $pos2 | where Code == $key | get Qualifier.0 }
-    | insert DateERA {|row| let key = $row.FullDate | str substring 2..2 
-        $pos3 | where Code == $key | get Era | first }
-    | insert MonthShortName {|row| let key = $row.FullDate | str substring 0..0
-    if $key == "D" {let akey = $row.FullDate | str substring 7..8 
-        $pos89 | where Number == $akey | get ShortName | first } else { "" }}
-    | insert MonthLongName {|row| let key = $row.FullDate | str substring 0..0
-    if $key == "D" {let akey = $row.FullDate | str substring 7..8 
-        $pos89 | where Number == $akey | get LongName | first } else { "" }}
-    | insert DayofMonth {|row| $row.FullDate | str substring 9..10 }
-    | insert CalendarDate {|row| let key = $row.FullDate | str substring 11..11
-        $pos12 | where Code == $key | get DateType | first}
-    | insert DateDescriptor {|row| let key = $row.FullDate | str substring 12..12
-        $pos13 | where Code == $key | get Descriptor | first}  
-    | reject Event LastUpdate LastUpdateUTC Description | startat1
+#    let eventdate = "D.+17910213..+00000000.."
+#    print $eventdate
+    mut my_dataframe = [{'EventType': $"($eventdate)"}]
+    let key = $eventdate | str substring 0..0 
+    let $DateType = $pos1 | where Code == $key | get DateType | first
+    
+    let key = $eventdate | str substring 1..1 
+    let $DateQualifier = $pos2 | where Code == $key | get Qualifier.0
 
-    $my_dataframe
+    let key = $eventdate| str substring 2..2 
+    let $DateERA = $pos3 | where Code == $key | get Era | first 
+
+    let DateYear = $eventdate| str substring 3..6 
+
+    let key = $eventdate | str substring 0..0
+    let MonthShortName = if $key == "D" {let akey = $eventdate | str substring 7..8 
+       $pos89 | where Number == $akey | get ShortName | first } else { "" }
+
+    let key = $eventdate | str substring 0..0
+    let MonthLongName = if $key == "D" {let akey = $eventdate | str substring 7..8 
+       $pos89 | where Number == $akey | get LongName | first } else { "" }
+
+    let DayofMonth = $eventdate | str substring 9..10 
+
+    let key = $eventdate | str substring 11..11
+    let CalendarDate = $pos12 | where Code == $key | get DateType | first 
+
+    let key = $eventdate | str substring 12..12
+    let DateDescriptor = $pos13 | where Code == $key | get Descriptor | first
+
+    $my_dataframe  | insert "DateType" $DateType | insert "DateQualifier" $DateQualifier | insert "DateERA" $DateERA | insert "DateYear" $DateYear | insert "MonthShortName" $MonthShortName | insert "MonthLongName" $MonthLongName | insert "DayofMonth" $DayofMonth  | insert "CalendarDate" $CalendarDate | insert "DateDescriptor" $DateDescriptor
 }
-
-
-
-
-#  Timing the function
-#  let TotalRecords = open $env.rmdb | query db $sqlquery | length
-#  let RunTime = timeit {
-#  let numRunTime = $RunTime | into int
-#  let floatRunTime = $numRunTime / 1000000000 
-#  print $"Total Records ($TotalRecords) in ($RunTime) seconds and ($floatRunTime), ($TotalRecords / $floatRunTime) records/sec."
-# }
