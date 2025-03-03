@@ -1,5 +1,5 @@
 # List person Webtags named of "Find a Grave."
-export def "rmgc list find-a-grave" [] {
+export def "main" [] {
     print "List of Find a Grave entries."
 
     # List of Find-a-Grave entries.
