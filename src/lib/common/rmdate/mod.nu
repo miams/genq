@@ -2,22 +2,6 @@
 
 # Used with Fact/Event records (possibly others).
 
-# RootsMagic date field is a 24-byte string.  
-# Example:  D.+17910213..+00000000..
-
-# RMDF is RMGC environment variable defining default value based on below:  
-
-# Date Formats
-# 1. 10 Jan 2020
-# 2. Jan 10, 2020
-# 3. 10 January 2020
-# 4. January 10, 2020
-# 5. 10 JAN 2020
-# 6. JAN 10, 2020
-# 7. 10 JANUARY 2020
-# 8. JANUARY 10, 2020
-
-
 # Parses RootsMagic's genealogy date field.
 @category "rmgc-platform"
 @search-terms "convert date Julian Gregorian"
@@ -32,7 +16,6 @@ export def main [
     --format(-f): int     # desired date output format, default to env.RDMF
     --verbose(-v):        # print all columns, default to false    
 ] {
-
     # pos is for position in the 13 character date string
     # Date Type
     const pos1 = [
@@ -132,14 +115,12 @@ export def main [
         { Descriptor: "Say",   Code: "S" }
     ]
 
-   
-
     $env.config.datetime_format = {normal: "%Y-%m-%d %H:%M:%S", table: "%Y-%m-%d"}
 #    let sqlquery = "SELECT EventID, OwnerID AS RIN, Name as Event, Details as Description, Substr(Date,4,4) COLLATE NOCASE AS EventDate, Date AS FullDate, STRFTIME(DATETIME(EventTable.UTCModDate + 2415018.5)) || ' +0000' AS LastUpdateUTC FROM EventTable INNER JOIN FactTypeTable ON FactTypeTable.FactTypeID = EventTable.EventType;"
 
 #    let eventdate = "D.+17910213..+00000000.."
 #    print $eventdate
-    mut my_dataframe = [{'EventType': $"($eventdate)"}]
+    
     let key = $eventdate | str substring 0..0 
     let $DateType = $pos1 | where Code == $key | get DateType | first
     
@@ -167,5 +148,36 @@ export def main [
     let key = $eventdate | str substring 12..12
     let DateDescriptor = $pos13 | where Code == $key | get Descriptor | first
 
-    $my_dataframe  | insert "DateType" $DateType | insert "DateQualifier" $DateQualifier | insert "DateERA" $DateERA | insert "DateYear" $DateYear | insert "MonthShortName" $MonthShortName | insert "MonthLongName" $MonthLongName | insert "DayofMonth" $DayofMonth  | insert "CalendarDate" $CalendarDate | insert "DateDescriptor" $DateDescriptor
+    # if date format not specified in parameter, default to $env.RDMF
+    # $env.RDMF = random int 1..8
+    mut format = $format | default $env.RDMF
+    
+    # Compute fully formatted date.   
+    let printDateQualifier = if $DateQualifier != "On" {$"($DateQualifier) "} else {""}  # On is assumed by default, only print if not On
+    let printDayofMonth = if $DayofMonth != "00" {$"($DayofMonth)"} else {""}  #only print if not 00
+    mut printMonth = match $format {
+        1 => {$"($MonthShortName)" }
+        2 => {$"($MonthShortName)" }
+        3 => {$"($MonthLongName)" }
+        4 => {$"($MonthLongName)" }
+        5 => {$"($MonthShortName)" | str upcase}
+        6 => {$"($MonthShortName)" | str upcase}
+        7 => {$"($MonthLongName)" | str upcase}
+        8 => {$"($MonthLongName)" | str upcase}}
+    
+    mut printDayMonthOrder = if $format mod 2 == 0 { $"($printMonth) ($printDayofMonth), "} else  { $"($printDayofMonth) ($printMonth) "}
+    mut printDayMonthOrder = if $MonthShortName == "NoMonth" {""} else {$printDayMonthOrder} # if no month, don't print it.
+    mut printDayMonthOrder = if $MonthShortName != "NoMonth" and $DayofMonth == "00" {$"($printMonth) "} else {$printDayMonthOrder} # if no day, print just month.
+
+    let printDateERA = if $DateERA != "AD" {" BC"} else {""}  # AD is assumed by default, only print if BC
+    let printDateDescriptor = if $DateDescriptor != "" {$"($DateDescriptor) "} else {""}  # only print (and pad with space) if not empty
+    let FormattedDate = if $DateType != "Empty Date" { [$printDateDescriptor, $printDateQualifier, $printDayMonthOrder, $DateYear, $printDateERA] | str join  } else {''}
+  
+    let SortableDate = if $DateType != "Empty Date" { 
+        if $MonthShortName == "NoMonth" and $DayofMonth == "00" {$"01 Jan ($DateYear)" | into datetime | format date '%F'} else {
+        if $MonthShortName != "NoMonth" and $DayofMonth == "00" {$"01 ($MonthShortName) ($DateYear)" | into datetime | format date '%F'} else {
+        $"($printDayMonthOrder) ($DateYear)" | into datetime | format date '%F'}}} else {''}
+    
+    mut my_dataframe = [{'FormattedDate': $"($FormattedDate)" }]
+    $my_dataframe | insert "SortableDate" $SortableDate | insert "DateType" $DateType | insert "DateQualifier" $DateQualifier | insert "DateERA" $DateERA | insert "DateYear" $DateYear | insert "MonthShortName" $MonthShortName | insert "MonthLongName" $MonthLongName | insert "DayofMonth" $DayofMonth  | insert "CalendarDate" $CalendarDate | insert "DateDescriptor" $DateDescriptor
 }

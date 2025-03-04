@@ -3,6 +3,8 @@
 export def "main" [
 ] {
     print "List of individuals, as well as their aliases."
+    help modules --find rmdate | get commands | flatten | flatten
+    
     # Create temp Table of people consisting of only Primary Names.
     open $env.rmdb | query db "DROP TABLE IF EXISTS tmpNames"
     open $env.rmdb | query db "CREATE TABLE tmpNames AS SELECT OwnerID, Given COLLATE NOCASE, Surname COLLATE NOCASE, BirthYear, DeathYear FROM NameTable WHERE IsPrimary=1"

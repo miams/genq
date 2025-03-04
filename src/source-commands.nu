@@ -1,7 +1,13 @@
 # Source this script to add the commands
 
 # load common and custom modules
-use common *
+# use common *
+use 'common/rmdate' *
+use 'common/rmgc list events' *
+use 'common/rmgc list people' *
+use 'common/rmgc list citations' *
+use 'common/rmgc list families' *
+use 'common/rmgc list sources' *
 use miams *
 
 

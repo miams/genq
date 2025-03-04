@@ -6,6 +6,8 @@ export def "main" [] {
     print "List of events/facts."
     print "Marriages list MRIN in RIN column"
 
+    help modules --find rmdate | get commands | flatten | flatten
+    
     $env.config.datetime_format = {normal: "%Y-%m-%d %H:%M:%S", table: "%Y-%m-%d"}
     let sqlquery = "SELECT EventID, EventTable.OwnerID AS RIN, Name as Event, 
        Details as Description,Substr(EventTable.Date,4,4) COLLATE NOCASE AS EventDate, 
@@ -17,7 +19,7 @@ export def "main" [] {
 
     let my_dataframe = open $env.rmdb | query db $sqlquery | 
     insert LastUpdate {|row| $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S"} 
-    | insert MoreColumns {|row| rmdate $row.FullDate } | flatten MoreColumns -a
+    | insert MoreColumns {|row| rmdate $row.FullDate -f 3} | flatten MoreColumns -a
     | reject LastUpdateUTC | startat1
     $my_dataframe
 }
