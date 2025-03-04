@@ -1,5 +1,7 @@
 # Source this script to add the commands
 
+
+use std *
 # load common and custom modules
 # use common *
 use 'common/rmdate' *
@@ -18,24 +20,10 @@ def rmgc_action_completer [] { ["review-updates", "list", "tabulate", "assess", 
 def list_action_completer [] { ["findagrave", "people", "citations", "events", "families", "newspaper", "obits"]}
 def census_action_completer [] { ["year", "RIN", "quality", "help" ] }
 # RMGC generates tabular reports from the RootsMagic database.
+@category "rmgc-common"
 export def rmgc [
     action: string@rmgc_action_completer,  # action command [updates, list, quality, help]
     ...objects: string  # additional directives, options vary based on action command
-  #
-  #Examples:
-  #
-  #  List all 1880 census events
-  #  > rmgc list census year 1880
-  #
-  #  List all citations
-  #  > rmgc list citations
-  #
-  #  List obituaries
-  #  > rmgc list obits
-  #
-  #  Generate a histogram or obituary events created, by month
-  #  > rmgc list obits sum | insert yyyy_mm {|row| $row.LastUpdate | str substring 0..6} | histogram yyyy_mm | sort-by yyyy_mm
-
     ] {
  match $action {
     "review-updates" => {
@@ -77,18 +65,20 @@ export def rmgc [
 }  
 
 # List a variety of RootsMagic records.
+@category "rmgc-common"
 def "rmgc list" [] {
     print "List a variety of RootsMagic record types."
 }
 
 # Generate tabulated reports summarizing data. 
+@category "rmgc-common"
 def "rmgc tabulate" [] {
     print "Generate tabulated reports summarizing data. "
 }
 
 # List sources for Federal census records. [wide]
-@category "rmgc-tbd"
-def " " [] {
+@category "rmgc-miams"
+def "rmgc list census" [] {
     print "List of sources for Federal census records (1790-1950)."
     # | insert Footnote {|row| $row.Fields | from xml | get content.0.content.0.content.1.content.content} | flatten 
     # | insert ShortFootnote {|row| $row.Fields | from xml | get content.0.content.1.content.1.content.content} | flatten 

@@ -1,4 +1,4 @@
-# Census
+# List Fed Census by RIN or Year
 @category "rmgc-ext-miams"
 export def "main" [action: string@census_action_completer, ...objects: string] {
     match $action {

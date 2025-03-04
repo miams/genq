@@ -3,14 +3,14 @@
 list rmgc commands
 
 ```
-help commands | reject params input_output is_const | where category =~ rmgc | sort-by category name | explore
+help commands | reject signatures | where category =~ rmgc | sort-by category name
 ```
 
 **Citation Count by Person**  
-List people by how many citations they have.
+List the 20 people with the most citations
 
 ```
-rmgc list citations | select RIN Givens Surname | uniq-by -c RIN | flatten | move count --after RIN | sort-by count --reverse | startat1
+rmgc list citations | select RIN Givens Surname | uniq-by -c RIN | flatten | move count --after RIN | sort-by count --reverse | startat1 | first 20
 ```
 
 Browse through citations
@@ -22,19 +22,19 @@ rmgc list citations | reject LinkiD CitID SrcID Uniq Sfx Pfx | explore
 List citations for an individual
 
 ```
-rmgc list citations | reject LinkiD CitID SrcID Uniq Sfx Pfx | where RIN ==2
+rmgc list citations | reject LinkiD CitID SrcID Uniq Sfx Pfx | where RIN == 2
 ```
 
 List Families where Father has multiple wives.
 
 ```
-rmgc list families | reject index | uniq-by FatherID -d | startat1
+rmgc list families | reject index | uniq-by FatherID -d | startat1  # -d is return values that occur more than once
 ```
 
 Event/Fact - Frequency of type used.
 
 ```
-rmgc list events | histogram Name
+rmgc list events | histogram Event
 ```
 
 Footnote
@@ -57,7 +57,8 @@ rmgc list sources | where Name =~ 'Book:' | last | $in.Fields | from xml | get c
 
 List frequency of variations of Iams name.
 
-```$env.SurnameGroup | enumerate | par-each { |surname| rmgc list people | where Surname == $surname.item} | flatten | histogram Surname
+```
+$env.SurnameGroup | enumerate | par-each { |surname| rmgc list people | where Surname == $surname.item} | flatten | histogram Surname
 
 ```
 

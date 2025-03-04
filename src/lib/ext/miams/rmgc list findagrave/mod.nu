@@ -1,4 +1,5 @@
 # List person Webtags named of "Find a Grave."
+@category "rmgc-ext-miams"
 export def "main" [] {
     print "List of Find a Grave entries."
 

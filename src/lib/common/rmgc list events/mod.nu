@@ -1,6 +1,8 @@
 # List events/facts.
 @category "rmgc-common"
 @search-terms "MRIN"
+@example "list the 10 most recent facts/events added to the database" {'rmgc list events | sort-by LastUpdate | last 10'} 
+@example "another list the 10 most recent facts/events added to the database" {'rmgc list events | sort-by LastUpdate | last 10'} 
 export def "main" [] {
     # Note: Marriage events show here, but they are reporting MRIx, not RIN.
     print "List of events/facts."
@@ -24,5 +26,3 @@ export def "main" [] {
     $my_dataframe
 }
 
-# @example "list the 10 most recent facts/events added to the database" {rmgc list events | sort-by LastUpdate | last 10} 
-# @example "another list the 10 most recent facts/events added to the database" {rmgc list events | sort-by LastUpdate | last 10} 
