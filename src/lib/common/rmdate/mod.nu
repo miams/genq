@@ -3,7 +3,7 @@
 # Used with Fact/Event records (possibly others).
 
 # Parses RootsMagic's genealogy date field.
-@category "rmgc-platform"
+@category "genq-platform"
 @search-terms "convert date Julian Gregorian"
 @example "convert date that has xxx" {
     rmdate (eventdate, -f 3 ) 

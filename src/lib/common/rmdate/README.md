@@ -7,7 +7,7 @@ https://github.com/RichardOtter/RootsMagic_Database_Design/blob/main/RM%20Dates.
 
 # Example: D.+17910213..+00000000..
 
-# RMDF is RMGC environment variable defining default value based on below:
+# RMDF is GenQuery environment variable defining default value based on below:
 
 # Date Formats
 

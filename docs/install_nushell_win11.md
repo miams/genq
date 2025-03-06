@@ -11,16 +11,16 @@ There are a variety of ways to install Nushell. Many of the methods are targeted
 1. Using Powershell (running as Administrator), install Chocolatey, an open-source Windows package manager.
 2. Continuing with Powershell (running as Administrator), install Nushell using Chocolatey.
 3. A few moments after completion of scripts, a new shell option for Nushell will appear.
-4. Using Nushell, install RMGC.
-5. Configure RMGC to use the installed sample RootsMagic 10 database.
-6. Test RMGC and _experience delight_!
-7. Reconfigure RMGC to use for real.
+4. Using Nushell, install GenQuery.
+5. Configure GenQuery to use the installed sample RootsMagic 10 database.
+6. Test GenQuery and _experience delight_!
+7. Reconfigure GenQuery to use for real.
 
 # Automated install
 
 ```
-powershell -Command Invoke-WebRequest -Uri "https://raw.githubusercontent.com/miams/rmgc/refs/heads/main/installers/rmgc-full-install-Win11.ps1" -OutFile "rmgc-full-install-Win11.ps1"
-powershell -ExecutionPolicy Bypass -File .\rmgc-full-install-Win11.ps1
+powershell -Command Invoke-WebRequest -Uri "https://raw.githubusercontent.com/miams/genq/refs/heads/main/installers/genq-full-install-Win11.ps1" -OutFile "genq-full-install-Win11.ps1"
+powershell -ExecutionPolicy Bypass -File .\genq-full-install-Win11.ps1
 ```
 
 > [!NOTE]
@@ -89,13 +89,13 @@ Wait a few seconds after the Chocolatey finishes installing Nushell. Close both 
 
 ## 4. Open a new Terminal window with Nushell.
 
-## 5. Configure RMGC to use the installed sample RootsMagic 10 database.
+## 5. Configure GenQuery to use the installed sample RootsMagic 10 database.
 
-## 6. Test RMGC.
+## 6. Test GenQuery.
 
-## 7. Reconfigure RMGC to use for real.
+## 7. Reconfigure GenQuery to use for real.
 
 to sync with your RootsMagic 10 database and only execute queries only of the copied database.
 
 > [!TIP]
-> If you find you like RMGC and Nushell, you can easily make it your default Terminal window. Using the Down Cart, select Settings from the drop down menu. Update the Default Profile (the first item under Startup) to use Nushell and click Save. You can still access the other types of shells at anytime, via the drop down menu.
+> If you find you like GenQuery and Nushell, you can easily make it your default Terminal window. Using the Down Cart, select Settings from the drop down menu. Update the Default Profile (the first item under Startup) to use Nushell and click Save. You can still access the other types of shells at anytime, via the drop down menu.

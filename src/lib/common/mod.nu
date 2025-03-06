@@ -1,7 +1,7 @@
 # common submodules
 export module 'rmdate'
-export module 'rmgc list citations'
-export module 'rmgc list events'
-export module 'rmgc list families'
-export module 'rmgc list people'
-export module 'rmgc list sources/mod.nu'
+export module 'genq list citations'
+export module 'genq list events'
+export module 'genq list families'
+export module 'genq list people'
+export module 'genq list sources/mod.nu'
