@@ -23,16 +23,18 @@ export def "main" [
     JOIN NameTable ON NameTable.OwnerID = EventTable.OwnerID;"
 
     if $ParseDate { 
-        let my_dataframe = open $env.rmdb | query db $sqlquery | 
-        insert LastUpdate {|row| $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S"} 
-        | insert MoreColumns {|row| rmdate $row.FullDate -f 3} | flatten MoreColumns -a
-        | reject LastUpdateUTC | startat1
-        $my_dataframe } else {
+        open $env.rmdb | query db $sqlquery | polars into-df
+        # | polars with-column ([5 6] | polars into-df) --name c
+        | polars with-column ( LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S" | polars into-df) --name LastUpdate
 
-        let my_dataframe = open $env.rmdb | query db $sqlquery | 
-        insert LastUpdate {|row| $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S"} 
-        | reject LastUpdateUTC | startat1
-        $my_dataframe
+        # insert LastUpdate {|row| $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S"} 
+        # | insert MoreColumns {|row| rmdate $row.FullDate -f 3} | flatten MoreColumns -a
+        # | reject LastUpdateUTC | startat1
+        # $my_dataframe } else {
+
+        # let my_dataframe = open $env.rmdb | query db $sqlquery | 
+        # insert LastUpdate {|row| $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S"} 
+        # | reject LastUpdateUTC | startat1
     }
 }
 

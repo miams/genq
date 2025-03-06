@@ -6,10 +6,12 @@ use std *
 # use common *
 use 'common/rmdate' *
 use 'common/rmgc list events' *
+use 'common/rmgc list polars events' *
 use 'common/rmgc list people' *
 use 'common/rmgc list citations' *
 use 'common/rmgc list families' *
 use 'common/rmgc list sources' *
+
 use miams *
 
 
@@ -58,8 +60,8 @@ export def rmgc [
        print "DESCRIPTION" 
        let printstr = "RMGC is an open-source, third-party RootsMagic reporting engine for use in the terminal. RMGC is designed to let you quickly and easily pull data from your RootsMagic database. RMGC is built on top of Nushell, a new kind of shell for OS X, Linux, and Windows. Unlike traditional shells such as bash, zsh or Powershell, Nushell uses structured data allowing for powerful but simple pipelines. It enables users to easily analyze and process data using easier more readable commands.\n"
        wrap-text $printstr (term size).columns
-       print "At its core, RMGC uses SQL (Structured Queried Language) to query RootsMagics SQLite database. In most cases, RMGC removes the need to deal with SQL complexity.  RMGC leverages its library of internal and third-party SQL queries to extract data. From there, you are able to access a rich set of Nushell commands to personalize your data analysis and reports to your individual needs." 
-       },
+       let printstr = "At its core, RMGC uses SQL (Structured Queried Language) to query RootsMagics SQLite database. In most cases, RMGC removes the need to deal with SQL complexity.  RMGC leverages its library of internal and third-party SQL queries to extract data. From there, you are able to access a rich set of Nushell commands to personalize your data analysis and reports to your individual needs." 
+       wrap-text $printstr (term size).columns},
     _ => {print 'I think you need RMGC help.'}
     }
 }  
@@ -88,12 +90,11 @@ def "rmgc list census" [] {
 
 # Colorize RTF strings found in RM note files.
 @category "rmgc-platform"    
-def colorize [tag_string: string;] {
-    echo $tag_string 
+def colorize [] {
+    $in  
     | str replace --all --regex '<b>(.*?)</b>' $"(ansi light_green_bold)$1(ansi reset)"          # Bold
     | str replace --all --regex '<i>(.*?)</i>' $"(ansi light_yellow_italic)$1(ansi reset)"       # Italic
     | str replace --regex '<u>(.*?)</u>' $"(ansi blue_underline)$1(ansi reset)"                  # Underline
-    | print $in 
 }
 
 # Start index at 1 instead of default 0.
@@ -127,5 +128,19 @@ def wrap-text [text: string, width: int] {
     }
 
     # Print wrapped text
-    $result | each { |row| print $row }
+    $result | each { |row| print $row } 
+    return
+}
+
+# Limit text in column with ellipsis 
+@category "rmgc-platform"  
+  export def limit [
+    text: string          # string to shorten
+    maxlen: int           # max length of string 
+    ] {
+    if ($text | str length) > $maxlen {
+        $text | str substring 0..$maxlen | [$in, "..."] | str join
+    } else {
+        $text
+    }
 }

@@ -1,6 +1,7 @@
 # List families.
 @category "rmgc-common"
-export def "main" [] {
+export def "main" [
+] {
     print "List of spouses in families"
     $env.config.datetime_format = {normal: "%Y-%m-%d %H:%M:%S", table: "%Y-%m-%d"}
     let sqlquery = "Select FamilyID, FatherID, 
