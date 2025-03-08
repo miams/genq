@@ -8,8 +8,8 @@ export def "main" [
     --citations(-c) # Include citations
 ] {
     # Note: Marriage events show here, but they are reporting MRIx, not RIN.
-    print "List of events/facts."
-    print "Marriages list MRIN in RIN column"
+    # print "List of events/facts."
+    # print "Marriages list MRIN in RIN column"
 
     help modules --find rmdate | get commands | flatten | flatten
     
@@ -23,9 +23,10 @@ export def "main" [
     JOIN NameTable ON NameTable.OwnerID = EventTable.OwnerID;"
 
     if $ParseDate { 
-        open $env.rmdb | query db $sqlquery | polars into-df
+        open $env.rmdb | query db $sqlquery 
+        # | polars into-df 
         # | polars with-column ([5 6] | polars into-df) --name c
-        | polars with-column ( LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S" | polars into-df) --name LastUpdate
+        # | polars with-column ((polars col LastUpdateUTC ) | date to-timezone local | format date "%Y-%m-%d %H:%M:%S" | polars as LastUpdate)
 
         # insert LastUpdate {|row| $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S"} 
         # | insert MoreColumns {|row| rmdate $row.FullDate -f 3} | flatten MoreColumns -a
