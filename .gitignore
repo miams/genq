@@ -1,8 +1,9 @@
 .DS_Store
-
 # ignore ALL Rootsmagic .rmtree database files
 *.rmtree
+*.json
+.DS_Store
 Iiams.cfg
-
+Presidents.json
 # Allow sample Presidents database
-!pres2020.rmtree
+# !pres2020.rmtree
