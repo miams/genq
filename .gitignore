@@ -2,6 +2,7 @@
 # ignore ALL Rootsmagic .rmtree database files
 *.rmtree
 *.json
+.DS_Store
 Iiams.cfg
 Presidents.json
 # Allow sample Presidents database
