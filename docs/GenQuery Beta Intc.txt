@@ -1,0 +1,20 @@
+I'd like to announce a program I've just published on GitHub. The TLDR is on Github where you will see screenshots and videos for installing and using the program.
+
+
+It is a command-line interface reporting engine for RM.  It works equally well in Windows or MacOS.  It differs from other approaches to using SQL from there terminal is that is built upon the shell NuShell.
+
+
+Since everyone here uses SQL, let me briefly explain why I wrote this.
+
+1) SQL makes my head hurt.  It doesn't replace SQL.  Every report is based on SQL at the core.  By providing a layer above SQL, it lets you easily leverage any SQL query an infinite number of ways.
+
+2) I prefer the terminal for quick and easy access.  My genealogy research is a daily fight with ADD. I still need a SQLite GUI for writing SQL queries, but for me it's not a good tool for simply running your reports. 95% of the time I just want to get in, answer my question, and get out; preferably in under 30 seconds.
+
+3) I easily forget necessary details. Intervals between me performing genealogy research frequently go weeks or months.  In my experience using python and shell scripts, despite my attempts to be consistent, I forget where I put scripts, or how I ran them them, or what options I needed. I'm a tinkerer more than a programmer, so let's just say consistency has been a challenge for me.
+
+4) I have spent far too much of my life trying to deal with RMNOCASE and unifuzz. Being a terminal-first guy, frequently using Mac or Linux in addition to Windows, it's been a huge distraction.  This tool is strictly a read-only reporting engine and I'm just going with "COLLATE NOCASE" as my solution.  Done thinking about it.
+
+5) NuShell's approach is to use pipes (aka " | ") for pretty much everything.  For someone used to working in Unix/Linux shell, this is second-nature.  But a by-product I've found is it makes NuShell programs exceptionally easy to read.
+
+6) I'm really intrigued by NuShell's raison d'etre - treat everything as structured data and provide the tooling for it. 
+

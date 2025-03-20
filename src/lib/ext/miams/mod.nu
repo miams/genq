@@ -1,6 +1,7 @@
 # miams submodules
 export module 'miams/genq census'
 export module 'miams/genq list findagrave'
+export module 'miams/genq list findagrave website'
 export module 'miams/genq list newspaper obits summary'
 export module 'miams/genq list obits'
 export module 'miams/genq list obits sum all'

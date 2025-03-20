@@ -14,7 +14,7 @@ export def "main" [
     help modules --find rmdate | get commands | flatten | flatten
     
     $env.config.datetime_format = {normal: "%Y-%m-%d %H:%M:%S", table: "%Y-%m-%d"}
-    let sqlquery = "SELECT EventID, EventTable.OwnerID AS RIN, Name as Event, 
+    let sqlquery = "SELECT EventID, EventTable.OwnerID AS RIN, NameTable.Given as Given, NameTable.Surname as Surname, Name as Event, 
        Details as Description,Substr(EventTable.Date,4,4) COLLATE NOCASE AS EventDate, 
        EventTable.Date COLLATE NOCASE as FullDate, 
        STRFTIME(DATETIME(EventTable.UTCModDate + 2415018.5)) || ' +0000' AS LastUpdateUTC 
@@ -25,14 +25,16 @@ export def "main" [
     if $ParseDate { 
         let my_dataframe = open $env.rmdb | query db $sqlquery | 
         insert LastUpdate {|row| $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S"} 
-        | insert MoreColumns {|row| rmdate $row.FullDate -f 3} | flatten MoreColumns -a
-        | reject LastUpdateUTC | startat1
+        | insert MoreColumns {|row| rmdate $row.FullDate} | flatten MoreColumns -a
+        | reject LastUpdateUTC FullDate EventDatee| startat1
         $my_dataframe } else {
 
         let my_dataframe = open $env.rmdb | query db $sqlquery | 
         insert LastUpdate {|row| $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S"} 
-        | reject LastUpdateUTC | startat1
+        | reject FullDate LastUpdateUTC | startat1
         $my_dataframe
     }
+
+
 }
 

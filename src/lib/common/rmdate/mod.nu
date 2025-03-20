@@ -173,11 +173,12 @@ export def main [
     let printDateDescriptor = if $DateDescriptor != "" {$"($DateDescriptor) "} else {""}  # only print (and pad with space) if not empty
     let FormattedDate = if $DateType != "Empty Date" { [$printDateDescriptor, $printDateQualifier, $printDayMonthOrder, $DateYear, $printDateERA] | str join  } else {''}
   
-    let SortableDate = if $DateType != "Empty Date" { 
+     let SortableDate = if $DateType != "Empty Date" { 
         if $MonthShortName == "NoMonth" and $DayofMonth == "00" {$"01 Jan ($DateYear)" | into datetime | format date '%F'} else {
         if $MonthShortName != "NoMonth" and $DayofMonth == "00" {$"01 ($MonthShortName) ($DateYear)" | into datetime | format date '%F'} else {
         $"($printDayMonthOrder) ($DateYear)" | into datetime | format date '%F'}}} else {''}
     
     mut my_dataframe = [{'FormattedDate': $"($FormattedDate)" }]
     $my_dataframe | insert "SortableDate" $SortableDate | insert "DateType" $DateType | insert "DateQualifier" $DateQualifier | insert "DateERA" $DateERA | insert "DateYear" $DateYear | insert "MonthShortName" $MonthShortName | insert "MonthLongName" $MonthLongName | insert "DayofMonth" $DayofMonth  | insert "CalendarDate" $CalendarDate | insert "DateDescriptor" $DateDescriptor
+   # $my_dataframe | insert "DateType" $DateType | insert "DateQualifier" $DateQualifier | insert "DateERA" $DateERA | insert "DateYear" $DateYear | insert "MonthShortName" $MonthShortName | insert "MonthLongName" $MonthLongName | insert "DayofMonth" $DayofMonth  | insert "CalendarDate" $CalendarDate | insert "DateDescriptor" $DateDescriptor
 }
