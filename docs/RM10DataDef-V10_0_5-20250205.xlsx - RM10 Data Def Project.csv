@@ -1,0 +1,1226 @@
+Sort,Fill,Table & Column,Type,Key/Index,Typical Values,Comments,Proposed Update,Validated?
+1,1,"AddressLinkTable -
+LinkID",Integer,Primary Key,"1,2,3...","Link Identification Number, sequentially ordered",,
+2,1,"AddressLinkTable -
+OwnerType",Integer,,"0,1,3,6","0 = Person (Address of Person Fact from Edit Person Window),
+1 = Family (Address of Spouse / Parents from Edit Person Window),
+3 = Source (Repository),
+6 = Task  (Address or Repository)",,
+3,1,"AddressLinkTable -
+AddressID",Integer,Foreign Key,"1,2,3...",Links to AddressID in AddressTable,,
+4,1,"AddressLinkTable -
+OwnerID",Integer,Foreign Key,"1,2,3...","Link based on OwnerType:
+0 = PersonTable.PersonID,
+1 = FamilyTable.FamilyID,
+3 = SourceTable.SourceID,
+6 = TaskTable.TaskID",,
+5,1,"AddressLinkTable -
+AddressNum",Integer,,0,,,
+6,1,"AddressLinkTable -
+Details",Text,,Blank,Not Implemented,,
+7,1,"AddressLinkTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,
+8,0,"AddressTable -
+AddressID",Integer,Primary Key,"1,2,3...",Address Identification Number,,
+9,0,"AddressTable -
+AddressType",Integer,,"0,1","0 = Person or Family,
+1 = Repository",,
+10,0,"AddressTable -
+Name",Text,idxAddressName,User Defined,"Name, from Edit Address pane or Edit Repository pane. ",,
+11,0,"AddressTable -
+Street1",Text,,User Defined,"Street address [first line], from Edit Address pane or Edit Repository pane. ",,
+12,0,"AddressTable -
+Street2",Text,,User Defined,"Street address [second line], from Edit Address pane or Edit Repository pane. ",,
+13,0,"AddressTable -
+City",Text,,User Defined,"City, from Edit Address pane or Edit Repository pane. ",,
+14,0,"AddressTable -
+State",Text,,User Defined,"State, from Edit Address pane or Edit Repository pane. ",,
+15,0,"AddressTable -
+Zip",Text,,User Defined,"Postal Code, from Edit Address pane or Edit Repository pane. ",,
+16,0,"AddressTable -
+Country",Text,,User Defined,"Country, from Edit Address pane or Edit Repository pane. ",,
+17,0,"AddressTable -
+Phone1",Text,,User Defined,"Phone, from Edit Address pane or Edit Repository pane. ",,
+18,0,"AddressTable -
+Phone2",Text,,User Defined,"Cell phone, from Edit Address pane or Edit Repository pane. ",,
+19,0,"AddressTable -
+Fax",Text,,User Defined,"Fax, from Edit Address pane or Edit Repository pane. ",,
+20,0,"AddressTable -
+Email",Text,,User Defined,"Email, from Edit Address pane or Edit Repository pane. ",,
+21,0,"AddressTable -
+URL",Text,,User Defined,"Website, from Edit Address pane or Edit Repository pane. ",,
+22,0,"AddressTable -
+Latitude",Integer,,User Defined,Not implemented,,
+23,0,"AddressTable -
+Longitude",Integer,,User Defined,Not implemented,,
+24,0,"AddressTable -
+Note",Text,,User Defined,"Note, from Edit Address pane or Edit Repository pane. 
+User Interface supports line breaks and formatting tags.",,
+25,0,"AddressTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,
+26,1,"AncestryTable -
+LinkID",Integer,Primary Key,"1,2,3...",LinkID Identification Number,,
+27,1,"AncestryTable -
+LinkType",Integer,,"0, 4, 11","0 = Person, 
+4 = Citation, 
+11 = Media",,
+28,1,"AncestryTable -
+rmID",Integer,"Foreign Key,
+idxLinkAncestryRmID","1,2,3...","Link based on LinkType:
+0 = PersonTable.PersonID, 
+4 = CitationTable.CitationID, 
+11 = MultiMediaTable.MediaID",,
+29,1,"AncestryTable -
+anID",Text,idxLinkAncestryanID,Formatted string,"Person = [d]{12}:[d]{4}:[d]{9} - e.g.: 121212121212:1030:123456789,
+Citation, origin RM = [d]:9000:[d] (length varies),
+Citation, origin Ancestry = [d]:[d] 
+Media = Ancestry assigned ID (matches filename for media downloaded from Ancestry)",See Change History Tab,Y
+30,1,"AncestryTable -
+Modified",Integer,,"0, 1","For LinkType=0 (Person):
+0 = No modification detected or 'Mark as not changed' button has been selected in Treeshare,
+1 = Change identified in RM db or in Ancestry via Treeshare notification. Person’s status appears as changed in Treeshare.",,
+31,1,"AncestryTable -
+anVersion",Text,,Null or Hex String,"Hex code where LinkType=0 (Person), 
+Otherwise NULL",,
+32,1,"AncestryTable -
+anDate",Float,,0.0,,,
+33,1,"AncestryTable -
+Status",Integer,,0,,,
+34,1,"AncestryTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,
+35,1,"AncestryTable -
+TreeID",Text,,Blank,Not Implemented,See Change History Tab,Y
+36,0,"ChildTable -
+RecID",Integer,Primary Key,"1,2,3...",Record number in childtable,,
+37,0,"ChildTable -
+ChildID",Integer,"Foreign Key,
+idxChildID","1,2,3...",Link to PersonID in PersonTable,,
+38,0,"ChildTable -
+FamilyID",Integer,"Foreign Key,
+idxChildFamilyID","1,2,3...",Link to FamilyID in FamilyTable,,
+39,0,"ChildTable -
+RelFather",Integer,,"0,1,2,...","Relationship to Father as defined in Parents section of Edit Person: 
+0 = Birth,
+1 = Adopted, 
+2 = Step,
+3 = Foster,
+4 = Related,
+5 = Guardian,
+6 = Sealed,
+7 = Unknown",,
+40,0,"ChildTable -
+RelMother",Integer,,"0,1,2,...","Relationship to Mother as defined in Parents section of Edit Person: 
+(Values same as RelFather)",,
+41,0,"ChildTable -
+ChildOrder",Integer,idxChildOrder,"0,1,2,3,...","When number of Children=1:
+0 = Child added to family with Add Father or Add Mother action,
+1000 = Child added to family with Add Child action;
+Else, once number of Children >1 value matches order in Family view.",,
+42,0,"ChildTable -
+IsPrivate",Integer,,0,Not Implemented,,
+43,0,"ChildTable -
+ProofFather",Integer,,"0,1,2,3","Set by Proof listbox in Parents pane of Edit Persons. 
+0 - Blank, 
+1 - Proven, 
+2 - Disproven, 
+3 - Disputed",,
+44,0,"ChildTable -
+ProofMother",Integer,,"0,1,2,3","Set by Proof listbox in Parents pane of Edit Persons. 
+0 - Blank, 
+1 - Proven, 
+2 - Disproven, 
+3 - Disputed",,
+45,0,"ChildTable -
+Note",Text,,Blank,Not Implemented,,
+46,0,"ChildTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,
+47,1,"CitationLinkTable -
+LinkID",Integer,Primary Key,"1,2,3,...",Link identification number,,
+48,1,"CitationLinkTable -
+CitationID",Integer,Foreign Key,"1,2,3,...",Link to CitationTable.CitationID,,
+49,1,"CitationLinkTable -
+OwnerType",Integer,,"0,1,2,6,7,19"," 0 = Person,
+ 1 = Family,
+ 2 = Event,
+ 6 = Task,
+ 7 = Name,
+19 = Association",,
+50,1,"CitationLinkTable -
+OwnerID",Integer,"Foreign Key,
+idxCitationLinkOwnerID",,"Link to Primary Key of table based on OwnerType:
+ 0 = PersonTable.PersonID,
+ 1 = FamilyTable.FamilyID,
+ 2 = EventTable.EventID,
+ 6 = TaskTable.TaskID,
+ 7 = NameTable.NameID,
+ 19 = FanTable.FanID",,
+51,1,"CitationLinkTable -
+SortOrder",Integer,,"Null, or
+0","Not Implemented:
+Null = Legacy data,
+0 =  New table entry",,
+52,1,"CitationLinkTable -
+Quality",Text,,[PS~]{DIN~][OX~],"3-Character Quality of this information:
+ 1st = (Info): P = Primary, S = Secondary,~ = Don't know
+ 2nd = (Evidence): D = Direct, I = Indirect, N = Negative, ~ = Don't know
+ 3rd = (Source): O = Original, X = Derivative, ~ = Don't know",,
+53,1,"CitationLinkTable -
+IsPrivate",Integer,,0,Not Implemented,,
+54,1,"CitationLinkTable -
+Flags",Integer,,0,Not Implemented,,
+55,1,"CitationLinkTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,
+56,0,"CitationTable -
+CitationID",Integer,Primary Key,"1,2,3...",Citation Identification Number,,
+57,0,"CitationTable -
+SourceID",Integer,"Foreign Key,
+idxCitationSourceID","1,2,3...",Link to SourceID of SourceTable,,
+58,0,"CitationTable -
+Comments",Text,,User Defined,Detail Comment from Edit Citation pane. User Interface supports line breaks and formatting tags.,,
+59,0,"CitationTable -
+ActualText",Text,,User Defined,Research Note from Edit Citation pane. User Interface supports line breaks and formatting tags.,,
+60,0,"CitationTable -
+RefNumber",Text,,User Defined,Detail Ref# from Edit Citation pane.,,
+61,0,"CitationTable -
+Footnote",Text,,User Defined,"Value from Customize Footnote window, overrides sentence template output. User Interface supports line breaks and formatting tags.",,
+62,0,"CitationTable -
+ShortFootnote",Text,,User Defined,"Value from Customize Footnote window, overrides sentence template output. User Interface supports line breaks and formatting tags.",,
+63,0,"CitationTable -
+Bibliography",Text,,User Defined,"Value from Customize Footnote window, overrides sentence template output. User Interface supports line breaks and formatting tags.",,
+64,0,"CitationTable -
+Fields",Blob,,XML,Citation Detail field “Names” (from Source template) and “Values” (from Edit Citation pane),,
+65,0,"CitationTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,
+66,0,"CitationTable -
+CitationName",Text,idxCitationName,User Defined,"If left blank, field value is auto generated as the concatenation of all Citation Detail fields separated by semi-colons.",,
+67,1,"ConfigTable -
+RecID",Integer,Primary Key,"1, 2, 3...",Record Identification Number,,
+68,1,"ConfigTable -
+RecType",Integer,idxRecType,"1, 2, 3...","Record Type:
+1 = Database Configuration settings
+3 = Custom Report settings, from Publish menu
+4 = 
+5 = Standard Report settings, from Publish menu
+6 = HTML Website settings, from Publish menu
+7 = Problem Options, from General Settings menu or Problem Search
+9 = Book settings, from Publish menu",,
+69,1,"ConfigTable -
+Title",Text,,"Built-in or
+User Defined",Title - See Row 5 of ConfigTable Tab,,
+70,1,"ConfigTable -
+DataRec",Blob,,XML code,Data Record - See Row 40 of ConfigTable Tab,,
+71,1,"ConfigTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,
+72,0,"DNATable -
+RecID",Integer,Primary Key,"1, 2, 3…",Record Identification Number,See Change History Tab,Y
+73,0,"DNATable -
+ID1",Integer,"idxDnaId1,
+ Foreign Key","1, 2, 3…","Person 1, from the DNA Match view of Edit Person Window. 
+Links to PersonTable.PersonID.",See Change History Tab,Y
+74,0,"DNATable -
+ID2",Integer,"idxDnaId2,
+ Foreign Key","1, 2, 3…","Person 2, from the DNA Match view of Edit Person Window. 
+Links to PersonTable.PersonID.",See Change History Tab,Y
+75,0,"DNATable -
+Label1",Text,,User Defined,"Label 1, from the DNA Match view of Edit Person Window. 
+",See Change History Tab,Y
+76,0,"DNATable -
+Label2",Text,,User Defined,"Label 2, from the DNA Match view of Edit Person Window. 
+",See Change History Tab,Y
+77,0,"DNATable -
+DNAProvider",Integer,,"1-6, 998, 999","Provider, from the DNA Match view of Edit Person Window:
+1 = 23andMe,
+2 = Ancestry,
+3 = Family Tree DNA,
+4 = Living DNA,
+5 = My Heritage,
+6 = GEDmatch,
+998 = Unknown,
+999 = Other",See Change History Tab,Y
+78,0,"DNATable -
+SharedCM",Float,,"User Defined,
+0-4000","Shared Centimorgans (cM), from the DNA Match view of Edit Person Window.",See Change History Tab,Y
+79,0,"DNATable -
+SharedPercent",Float,,"User Defined,
+0-100","Shared Percentage, from the DNA Match view of Edit Person Window.",See Change History Tab,Y
+80,0,"DNATable -
+LargeSeg",Float,,"User Defined,
+0-500","Largest Segment (cM), from the DNA Match view of Edit Person Window.",See Change History Tab,Y
+81,0,"DNATable -
+SharedSegs",Integer,,"User Defined,
+0-100","Shared Segments, from the DNA Match view of Edit Person Window.",See Change History Tab,Y
+82,0,"DNATable -
+Date",Text,,Position coded string or free text,[See Date sheet for additional details.],See Change History Tab,Y
+83,0,"DNATable -
+Relate1",Integer,,0-999,"Relate1, the number of generations between Person 1 (DNATable.ID1) and the Most Recent Common Ancestor (DNATable.CommonAnc). Relate1 and Relate2, taken together with DNATable.CommonAncType, calculate the relationship between the shared DNA Match. ",See Change History Tab,Y
+84,0,"DNATable -
+Relate2",Integer,,"0,1,2,...","Relate2, the number of generations between Person 2 (DNATable.ID2) and the Most Recent Common Ancestor (DNATable.CommonAnc). Relate1 and Relate2, taken together with DNATable.CommonAncType, calculate the relationship between the shared DNA Match. 
+[See Table for additional details.]",See Change History Tab,Y
+85,0,"DNATable -
+CommonAnc",Integer,Foreign Key,"0,1,2,...","Most Recent Common Ancestor (MRCA) of Person1 and Person2 of the DNA Match. Link to Primary Key of table based on DNATable.CommonAncType: 
+0 = PersonTable.PersonID,
+1 = FamilyTable.FamilyID
+
+Note: CommonAnc = 0 when both Relate1 and Relate2 = 0 (ie when no RM-defined Tree Relationship has been identified).",See Change History Tab,Y
+86,0,"DNATable -
+CommonAncType",Integer,,"0,1","Common Ancestor Type. When DNATable.CommonAnc > 0: 
+0 = Single MRCA (ie Half Relationship) identified in RM Tree,
+1 = Couple MRCA identified in RM Tree
+
+Note: CommonAncType also = 0 when DNATable.CommonAnc=0 (ie when no RM-defined Tree Relationship has been identified).",See Change History Tab,Y
+87,0,"DNATable -
+Verified",Integer,,0,Not Implemented,See Change History Tab,Y
+88,0,"DNATable -
+Note",Text,,User Defined,"DNA Note, from the DNA Match view of Edit Person Window. 
+ User Interface supports line breaks and formatting tags.",See Change History Tab,Y
+89,0,"DNATable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",See Change History Tab,Y
+90,1,"EventTable -
+EventID",Integer,Primary Key,"1,2,3...",Event Identification Number,,
+91,1,"EventTable -
+EventType",Integer,"Foreign Key,
+idxOwnerEvent","1,2,3...",Link to FactTypeID in FactTypeTable,,
+92,1,"EventTable -
+OwnerType",Integer,,"0,1","0 = Person,
+1 = Family",,
+93,1,"EventTable -
+OwnerID",Integer,"Foreign Key,
+idxOwnerDate,
+idxOwnerEvent","1,2,3...","Link based on OwnerType:
+0 = PersonID in PersonTable,
+1 =  FamilyID in FamilyTable",,
+94,1,"EventTable -
+FamilyID",Integer,Foreign Key,"0,1,2,...","Link based on OwnerType:
+0 = not applicable or not assigned to event,
+Else = FamilyID in FamilyTable (Set via Parents listbox in Edit Person Fact pane for events such as Adoption or LDS Seal to Parents)",,
+95,1,"EventTable -
+PlaceID",Integer,Foreign Key,"0,1,2,...","0 if no Place has been assigned to event, 
+else PlaceID in PlaceTable",,
+96,1,"EventTable -
+SiteID",Integer,Foreign Key,"0,1,2,...","0 if no Place Details assigned to event, 
+else PlaceID (of Place Details) in PlaceTable",,
+97,1,"EventTable -
+Date",Text,,Position coded string or free text,[See Date sheet for additional details.],,
+98,1,"EventTable -
+SortDate",BigInt,idxOwnerDate,18 digits,Number representing a user entered date that forces an event into a position relative to other events in lists sorted on the Date field.,,
+99,1,"EventTable -
+IsPrimary",Integer,,"0,1","Primary checkbox in Edit Person Fact pane:
+0 = Not checked (default),
+1 = Checked. (Used to suppress from reports other conflicting facts of the same type.)",,
+100,1,"EventTable -
+IsPrivate",Integer,,"0,1","Private checkbox in Edit Person Fact pane:
+0 = Not checked (default),
+1 = Checked. (Used to optionally suppress from reports events that are considered “private”.)",,
+101,1,"EventTable -
+Proof",Integer,,"0,1,2,3","Proof listbox in Edit Person Fact pane:
+0 = Blank, 
+1 = Proven, 
+2 = Proven False, 
+3 = Disputed",,
+102,1,"EventTable -
+Status",Integer,,0-12,"0 (default),
+Else = status of LDS events: e.g. 1-Submitted, 8-DNS, 12-Cleared",,
+103,1,"EventTable -
+Sentence",Text,,Sentence Template Language,"Customised sentence for this event. 
+User Interface supports line breaks and formatting tags.",See Change History Tab,Y
+104,1,"EventTable -
+Details",Text,,User Defined,Content of Description field in Edit Person Fact pane,,
+105,1,"EventTable -
+Note",Text,,User Defined,"Content of Note in Edit Person Fact Pane. 
+User Interface supports line breaks and formatting tags.",,
+106,1,"EventTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,
+107,0,"ExclusionTable -
+RecID",Integer,Primary Key,"1, 2, 3...",Record Identification Number,,
+108,0,"ExclusionTable -
+ExclusionType",Integer,idxExclusionIndex,"1,2","Exclusion Type:
+1 = Person member of ""Not a duplicate list"", from Merge Duplicates tool,
+2 = Person member of ""Not a problem list"", from Problem List tool",,
+109,0,"ExclusionTable -
+ID1",Integer,"Foreign Key,
+idxExclusionIndex","1, 2, 3...","Identification Number 1, based on ExclusionType:
+1 = PersonTable.PersonID of Person 1 from potential merge,
+2 = PersonTable.PersonID of person marked in ""Not a problem list""",,
+110,0,"ExclusionTable -
+ID2",Integer,"Foreign Key,
+idxExclusionIndex",Built in,"Identification Number 2, based on ExclusionType:
+1 = PersonTable.PersonID of Person 2 from potential merge, 
+2 = Problem filter matched (Link to additional details.)",,
+111,0,"ExclusionTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,
+112,1,"FANTable -
+FanID",Integer,Primary Key,"1,2,3,...","RecordID for Friends, Associations, Neighbours links in support of the Association fact type. ",,
+113,1,"FANTable -
+ID1",Integer,"Foreign Key,
+idxFanId1","1,2,3,...",Link to PersonTable.PersonID for node1 of association,,
+114,1,"FANTable -
+ID2",Integer,"Foreign Key,
+idxFanId2","1,2,3,...",Link to PersonTable.PersonID for node2 of association,,
+115,1,"FANTable -
+FanTypeID",Integer,Foreign Key,"1,2,3,...",Link to FANTypeTable.FanTypeID,,
+116,1,"FANTable -
+PlaceID",Integer,Foreign Key,"0,1,2,3,...","0 = Place Blank,
+Else, link to PlaceTable.PlaceID for PlaceType=0",,
+117,1,"FANTable -
+SiteID",Integer,Foreign Key,"0,1,2,3,...","0 = Place Blank,
+Else, link to PlaceTable.PlaceID for PlaceType=2",,
+118,1,"FANTable -
+Date",Text,,Position coded string or free text,"Date, from Associations. [See Date sheet for additional details.]",,
+119,1,"FANTable -
+SortDate",BigInT,,18 digits,Number representing a user entered date that forces an event into a position relative to other events in lists sorted on the Date field.,,
+120,1,"FANTable -
+Description",Text,,User Defined,"Description, from Association pane of Edit Person window. ",,
+121,1,"FANTable -
+Note",Text,,User Defined,"Note, from Association pane of Edit Person window. User Interface supports line breaks and formatting tags.",,
+122,1,"FANTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,
+123,0,"FANTypeTable -
+FANTypeID",Integer,Primary Key,"1-15, 999", Association ID,,
+124,0,"FANTypeTable -
+Name",Text,idxFANTypeName,"1-15, 999","Association Type, based on FANTypeID:
+1 = Friends
+2 = Neighbors 
+3 = Employment 
+4 = Education 
+5 = Enslavement 
+6 = Household 
+7 = Classmates 
+8 = Coworkers 
+9 = Apprenticeship 
+10 = Godparent 
+11 = Relative 
+12 = DNA Match 
+13 = Medical 
+14 = Grave neighbors 
+15 = Rental 
+999 = Associates",,
+125,0,"FANTypeTable -
+Role1",Text,,"1-15, 999","Role 1 and Role2 Names, based on FANTypeID:
+1 = Friend / Friend 
+2 = Neighbor / Neighbor 
+3 = Employer / Employee 
+4 = Teacher / Student 
+5 = Enslaver / Enslaved person 
+6 = Household member / Household member 
+7 = Classmate / Classmate 
+8 = Coworker / Coworker 
+9 = Master / Apprentice 
+10 = Godparent / Godchild 
+11 = Relative / Relative 
+12 = DNA match / DNA match 
+13 = Doctor / Patient 
+14 = Burial / Burial 
+15 = Landlord / Tenant 
+999 = Associate / Associate",,
+126,0,"FANTypeTable -
+Role2",Text,,"1-15, 999",Role2 name (see FANTableType.Role1 above),,
+127,0,"FANTypeTable -
+Sentence1",Text,,Sentence Template Language,Template for Role1,See Change History Tab,Y
+128,0,"FANTypeTable -
+Sentence2",Text,,Sentence Template Language,Template for Role2,See Change History Tab,Y
+129,0,"FANTypeTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,
+130,1,"FactTypeTable -
+FactTypeID",Integer,Primary Key,"1,2,3...","Fact Type Identification Number:
+Built-in < 1000, 
+User-defined > = 1000",,
+131,1,"FactTypeTable -
+OwnerType",Integer,,"0,1","Owner Type:
+0 = Individual,
+1 = Family",,
+132,1,"FactTypeTable -
+Name",Text,idxFactTypeName,"Built-in or
+User Defined","Name, from Edit Fact Type window",,
+133,1,"FactTypeTable -
+Abbrev",Text,idxFactTypeAbbrev,"Built-in or
+User Defined","Abbreviation, from Edit Fact Type window",,
+134,1,"FactTypeTable -
+GedcomTag",Text,idxFactType,Character string,"GEDCOM Tag = ""EVEN"" for some built-in and all user defined Fact Types ",,
+135,1,"FactTypeTable -
+UseValue",Integer,,"0,1","""Use description field"" checkbox, from Edit Fact Type window:
+0 = No (unchecked)
+1 = Yes (checked)",,
+136,1,"FactTypeTable -
+UseDate",Integer,,"0,1","""Use date field"" checkbox, from Edit Fact Type window:
+0 = No (unchecked)
+1 = Yes (checked)",,
+137,1,"FactTypeTable -
+UsePlace",Integer,,"0,1","""Use place field"" checkbox, from Edit Fact Type window:
+0 = No (unchecked)
+1 = Yes (checked)",,
+138,1,"FactTypeTable -
+Sentence",Text,,Sentence Template Language,"Sentence template for this role, from Edit Role Type window for Role name of Principal. User Interface supports line breaks and formatting tags.",See Change History Tab,Y
+139,1,"FactTypeTable -
+Flags",Integer,,-1 to -63,6-bit position-coded number for Include settings for Fact Type.,,
+140,1,"FactTypeTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,
+141,0,"FamilySearchTable -
+LinkID",Integer,Primary Key,"1,2,3...",LinkID Identification Number,,
+142,0,"FamilySearchTable -
+LinkType",Integer,,0,0 = Person,,
+143,0,"FamilySearchTable -
+rmID",Integer,"Foreign Key,
+idxLinkRmId","1,2,3...","Link based on LinkType:
+0 = PersonTable.PersonID",,
+144,0,"FamilySearchTable -
+fsID",Text,idxLinkfsID,"1,2,3...",FamilySearch ID from FamilySearch Family Tree connection,,
+145,0,"FamilySearchTable -
+Modified",Integer,,"0,1","0 = Default,
+1 = Mismatch exists between FamilySearch and RM record details (Event date, place, etc)
+Note: Modified flag resets to ""0"" after any data for this person is shared via the FS API, even if data mismatches still exist.",See Change History Tab,Y
+146,0,"FamilySearchTable -
+fsVersion",Text,,"18 digit integer, 
+40-45 char hexadecimal + '-GZIP'",FamilySearch Version,,
+147,0,"FamilySearchTable -
+fsDate",Float,,0.0,,,
+148,0,"FamilySearchTable -
+Status",Integer,,"0,4","0 = Default,
+4 = Person Record imported from FamilySearch",See Change History Tab,Y
+149,0,"FamilySearchTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,
+150,0,"FamilySearchTable -
+ TreeID",Text,,Blank,Not Implemented,See Change History Tab,Y
+151,1,"FamilyTable -
+FamilyID",Integer,Primary Key,"1, 2, 3...",Family Identification Number,,
+152,1,"FamilyTable -
+FatherID",Integer,"Foreign Key,
+idxFamilyFatherID","1, 2, 3...",Links to PersonID in the PersonTable,,
+153,1,"FamilyTable -
+MotherID",Integer,"Foreign Key,
+idxFamilyMotherID","1, 2, 3...",Links to PersonID in the PersonTable,,
+154,1,"FamilyTable -
+ChildID",Integer,Foreign Key,"0, 1, 2,...","Links to PersonTable.PersonID of Child last active as the root person in Pedigree view,
+0 = No Children in family or no child displayed as root in Pedigree view.",,
+155,1,"FamilyTable -
+HusbOrder",Integer,,"0, 1, 2,...","Husband Order, from People View, Edit Menu, Rearrange Spouses:
+0 if never rearranged",,
+156,1,"FamilyTable -
+WifeOrder",Integer,,"0, 1, 2,...","Wife Order, from People View, Edit Menu, Rearrange Spouses:
+0 if never rearranged",,
+157,1,"FamilyTable -
+IsPrivate",Integer,,0,Not Implemented,,
+158,1,"FamilyTable -
+Proof",Integer,,"0, 1, 2, 3","Proof, from Spouse Fact in Edit Person window:
+0 = [blank], 
+1 = Proven, 
+2 = Disproven, 
+3 = Disputed",,
+159,1,"FamilyTable -
+SpouseLabel",Integer,,0,Not Implemented,,
+160,1,"FamilyTable -
+FatherLabel",Integer,,"0, 1, 2, 99","Father Label, from Spouse Fact in Edit Person window:
+0 = Father
+1 = Husband
+2 = Partner
+99 = Other",,
+161,1,"FamilyTable -
+MotherLabel",Integer,,"0, 1, 2, 99","Mother Label, from Spouse Fact in Edit Person window:
+0 = Mother
+1 = Wife
+2 = Partner
+99 = Other",,
+162,1,"FamilyTable -
+SpouseLabelStr",Text,,,Not Implemented,,
+163,1,"FamilyTable -
+FatherLabelStr",Text,,User Defined,"Spouse Fact, from Edit Person window:
+User defined text when FatherLabel=99",,
+164,1,"FamilyTable -
+MotherLabelStr",Text,,User Defined,"Spouse Fact, from Edit Person window:
+User defined text when MotherLabel=99",,
+165,1,"FamilyTable -
+Note",Text,,User Defined,"Note for Spouse Fact, from Edit Person window:
+User Interface supports line breaks and formatting tags.",,
+166,1,"FamilyTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,
+167,0,"GroupTable -
+RecID",Integer,Primary Key,"1,2,3,...",Record Identification Number,,
+168,0,"GroupTable -
+GroupID",Integer,,"1,2, 1001,1002,1003,...","1 = Results of Person Search from Search menu,
+2 = Results of Person Search - Advanced from Search menu,
+>1000 = Group (Simple or Rules based)
+Note: a temporary group is created whenever the basic or advanced Person Search options are run from the Search Menu. The group is automatically deleted when the search results are cleared or a subsequent search is run.",See Change History Tab,Y
+169,0,"GroupTable -
+StartID",Integer,Foreign Key,"1,2,3,...","Links to PersonTable.PersonID,
+Starting Number of consecutively-numbered PersonIDs",,
+170,0,"GroupTable -
+EndID",Integer,Foreign Key,"1,2,3,...","Links to PersonTable.PersonID,
+Ending Number of consecutively-numbered PersonIDs",,
+171,0,"GroupTable -
+UTCModDate",Float,,Null,Not implemented,,
+172,1,"HealthTable -
+RecID",Integer,Primary Key,"1,2,3,…",Record Identification Number,See Change History Tab,Y
+173,1,"HealthTable -
+OwnerID",Integer,"idxHealthOwnerId, 
+ Foreign Key","1,2,3,…",Links to PersonID in the PersonTable,See Change History Tab,Y
+174,1,"HealthTable -
+Condition",Integer,,"1-20, 999","Condition, from the Health Condition view of the Edit Person window:
+1= Infectious and parasitic disease,
+2 = Respiratory diseases,
+3 = Reproductive health and childbirth,
+4 = Nutritional deficiency,
+5 = Cancer,
+6 = Endocrine, blood, and immune disorders,
+7 = Diabetes,
+8 = Mental health,
+9 = Neurological,
+10 = Eye condition,
+11 = Ear condition,
+12 = Cardiovascular,
+13 = Digestive diseases,
+14 = Renal and Urogenital,
+15 = Skin disease,
+16 = Musculoskeletal diseases,
+17 = Congenital anomalies,
+18 = Oral disease,
+19 = Sexual health,
+20 = Injuries and accidents,
+999 = Other",See Change History Tab,Y
+175,1,"HealthTable -
+SubCondition",Text,,User Defined,"Details, from the Health Condition view of the Edit Person window.",See Change History Tab,Y
+176,1,"HealthTable -
+Date",Float,,Position coded string or free text,[See Date sheet for additional details.],See Change History Tab,Y
+177,1,"HealthTable -
+Note",Text,,User Defined,"Health Note, from the Health Condition view of the Edit Person window.
+User Interface supports line breaks and formatting tags",See Change History Tab,Y
+178,1,"HealthTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",See Change History Tab,Y
+179,0,"MediaLinkTable -
+LinkID",Integer,Primary Key,,Link Identification Number,,
+180,0,"MediaLinkTable -
+MediaID",Integer,"Foreign Key,
+idxMediaOwnerID","1,2,3,…","Media Identification Number, links to MediaID of MultimediaTable",,
+181,0,"MediaLinkTable -
+OwnerType",Integer,,"0,1,2,3,…","Owner Type:
+0 = Person (Person Fact), 
+1 = Family (Spouse or Parents Fact)
+2 = Event, 
+3 = Source, 
+4 = Citation, 
+5 = Place,
+6 = Task,
+7 = Name (Primary or Alternate),
+14 = Place Details,
+19 = Association",,
+182,0,"MediaLinkTable -
+OwnerID",Integer,"Foreign Key,
+idxMediaOwnerID","1,2,3,…","Link based on OwnerType:
+0 = PersonTable.PersonID, 
+1 = FamilyTable.FamilyID,
+2 = EventTable.EventID,
+3 = SourceTable.SourceID,
+4 = CitationTable.CitationID,
+5 = PlaceTable.PlaceID,
+6 = TaskTable.TaskID
+7 =  NameTable.NameID,
+14 = PlaceTable.PlaceID,
+19 = FanTable.FanID",,
+183,0,"MediaLinkTable -
+IsPrimary",Integer,,"0,1","Primary Photo checkbox, from the Edit Media pane:
+0 = Not checked (default),
+1 = Checked. (Determines image displayed in reports, the Pedigree view, and the People Side View pane for the selected person.)",,
+184,0,"MediaLinkTable -
+Include1",Integer,,"0,1","Include in Scrapbook, from the Edit Media pane:
+0 = Do Not Include (unchecked)
+1 = Include (checked)",,
+185,0,"MediaLinkTable -
+Include2",Integer,,0,Not implemented,,
+186,0,"MediaLinkTable -
+Include3",Integer,,0,Not implemented,,
+187,0,"MediaLinkTable -
+Include4",Integer,,0,Not implemented,,
+188,0,"MediaLinkTable -
+SortOrder",Integer,,"0,1,2,3,…","Sort Order, from Media Album view in Edit Person window:
+0 = (Default) Order by MediaLinkTable.LinkID,
+Else, order set via the Rearrange window of Person's Media Album.
+
+Note:  The default sort order for media links is the order in which the media links are added (MediaLinkTable.LinkiD). Within a fixed MediaLinkTable.OwnerType and MediaLinkTable.OwnerID, the sort order is effectively ""ORDER BY MediaLinkTable.SortOrder, MediaLinkTable.LinkID"". Because when SortOrder defaults to zero, the actual sort order defaults to LinkID.",See Change History Tab,Y
+189,0,"MediaLinkTable -
+RectLeft",Integer,,0,Not implemented,,
+190,0,"MediaLinkTable -
+RectTop",Integer,,0,Not implemented,,
+191,0,"MediaLinkTable -
+RectRight",Integer,,0,Not implemented,,
+192,0,"MediaLinkTable -
+RectBottom",Integer,,0,Not implemented,,
+193,0,"MediaLinkTable -
+Comments",Text,,"Blank or
+User Defined","Media Tag Comment, from Add Media Tag window. (Select Tags from Edit Media pane of Media window, then add a new tag.)",,
+194,0,"MediaLinkTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,
+195,1,"MultimediaTable -
+MediaID",Integer,Primary Key,,Media Identification Number,,
+196,1,"MultimediaTable -
+MediaType",Integer,,"1,2,3,4","Media Type, from Add Media Item screen 
+1 = Image, 
+2 = File, 
+3 = Sound, 
+4 = Video",,
+197,1,"MultimediaTable -
+MediaPath",Text,,User Defined,"Relative file path of Media File, extracted from Filename field in Add Media window or Edit Media pane.
+The first character in the MediaPath may be a symbol:
+? = Media Folder defined in Folder Settings window,
+~ = User's home directory defined by the Operating System
+* = Folder containing the RM Database",,
+198,1,"MultimediaTable -
+MediaFile",Text,idxMediaFile,User Defined,"File name, extracted from Filename field in Add Media window or Edit Media pane",,
+199,1,"MultimediaTable -
+URL",Text,idxMediaURL,Blank,Not implemented,,
+200,1,"MultimediaTable -
+Thumbnail",Blob,,?PNG,Thumbnail,,
+201,1,"MultimediaTable -
+Caption",Text,,User Defined,"Caption, from Add Media window or Edit Media pane",,
+202,1,"MultimediaTable -
+RefNumber",Text,,User Defined,"Reference Number, from Add Media window or Edit Media pane",,
+203,1,"MultimediaTable -
+Date",Text,,Position coded string or free text,"Date, from Media Properties screen. [See Date sheet for additional details.]",,
+204,1,"MultimediaTable -
+SortDate",BigInt,,"12,15, or 19
+digit number",,,
+205,1,"MultimediaTable -
+Description",Text,,User Defined,"Description, from Add Media window or Edit Media pane. 
+User Interface supports line breaks and formatting tags",,
+206,1,"MultimediaTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,
+207,0,"NameTable -
+NameID",Integer,Primary Key,"1, 2, 3…",,,
+208,0,"NameTable -
+OwnerID",Integer,"Foreign Key,
+idxNameOwnerID","1, 2, 3…","Link to PersonTable.PersonID (aka Record Identification Number - RIN).  
+A single OwnerID can have multiple NameID's for Alternate Names.",,
+209,0,"NameTable -
+Surname",Text,"idxSurname,
+idxSurnameGiven",User Defined,Surname,,
+210,0,"NameTable -
+Given",Text,"idxGiven,
+idxSurnameGiven",User Defined,Given name,,
+211,0,"NameTable -
+Prefix",Text,,User Defined,"Name prefix, e.g., Dr., Rev., Lord, Lady...",,
+212,0,"NameTable -
+Suffix",Text,,User Defined,"Name suffix, e.g., Jr., Sr., III, ...",,
+213,0,"NameTable -
+Nickname",Text,,User Defined,Nickname,,
+214,0,"NameTable -
+NameType",Integer,,0-7,"0 - Null
+1 - AKA
+2 - Birth
+3 - Immigrant
+4 - Maiden
+5 - Married
+6 - Nickname
+7 - Other Spelling",,
+215,0,"NameTable -
+Date",Text,,Position coded string or free text,"Date, from Alternate Name Fact. [See Date sheet for additional details.]",,
+216,0,"NameTable -
+SortDate",BigInt,,19 digit number,"Sort Date for Name Fact, from Edit Person window:
+The Sort Date forces the Name fact into a position relative to other facts in the Edit Person window .
+(Blank Date = 9223372036854775807)",,
+217,0,"NameTable -
+IsPrimary",Integer,idxNamePrimary,"0,1","1 = Name is listed in the Primary Name fact,
+0 = Alternate Name,
+Editable by selecting the Primary Checkbox in an Alternate Name fact.",,
+218,0,"NameTable -
+IsPrivate",Integer,,"0,1","Private checkbox in Edit Person Alternate Name Fact edit pane:  
+0 = NOT selected (default), 
+1 = Selected. 
+Used to optionally suppress from reports events that are considered “private”.",,
+219,0,"NameTable -
+Proof",Integer,,"0,1,2,3","Set by Proof listbox in Edit Person Name Fact edit pane. 
+0 = Blank (default), 
+1 = Proven, 
+2 = Disproven,
+3 = Disputed",,
+220,0,"NameTable -
+Sentence",Text,,Sentence Template Language,"Customized sentence template for this Alternate Name, 
+entered in Edit Person Alternate Name Customize Sentence window.
+ User Interface supports line breaks and formatting tags.",See Change History Tab,Y
+221,0,"NameTable -
+Note",Text,,User Defined,"Note for Name Fact, from Edit Person window:
+User Interface upports line breaks and formatting tags.",,
+222,0,"NameTable -
+BirthYear",Integer,"idxSurnameGiven,
+idxSurnameGivenMP","Blank or
+4-digits",Year extracted from EventTable.Date for Birth FactType for Person,,
+223,0,"NameTable -
+DeathYear",Integer,"idxSurnameGiven,
+idxSurnameGivenMP","Blank or
+4-digits",Year extracted from EventTable.Date for Death FactType for Person,,
+224,0,"NameTable -
+Display",Integer,,0,Not implemented,,
+225,0,"NameTable -
+Language",Text,,Blank,Not implemented,,
+226,0,"NameTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,
+227,0,"NameTable -
+SurnameMP",Text,"idxSurnameMP,
+idxSurnameGivenMP",,Version of User Defined NameTable.Surname,,
+228,0,"NameTable -
+GivenMP",Text,"idxGivenMP,
+idxSurnameGivenMP",,Version of User Defined NameTable.Surname,,
+229,0,"NameTable -
+NicknameMP",Text,,,Version of User Defined NameTable.Surname,,
+230,1,"PayloadTable -
+RecID",Integer,Primary Key,"1,2,3,...",Record Identification Number,,
+231,1,"PayloadTable -
+RecType",Integer,idxPayloadType,"1,2,3","1= Saved Search,
+2 = Saved Group,
+3 = Saved Task Filter",,
+232,1,"PayloadTable -
+OwnerType",Integer,,"8,20","8 = Saved Search,
+20 = Saved Group",,
+233,1,"PayloadTable -
+OwnerID",Integer,Foreign Key,"0,1,2,3,...","Link based on RecType:
+1 = ""0"" (not used),
+2 = GroupTable.GroupID,
+3 = ""0"" (not used)",See Change History Tab,Y
+234,1,"PayloadTable -
+Title",Text,,User Defined,Saved Name of Search or Group,,
+235,1,"PayloadTable -
+DataRec",Blob,,XML,Saved Criteria for Search or Group,,
+236,1,"PayloadTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,
+237,0,"PersonTable -
+PersonID",Integer,Primary Key,"1,2,3,...",Record Identification Number (RIN),,
+238,0,"PersonTable -
+UniqueID",Text,,"36 Character
+Hexidecimal",Unique Identification Number assigned to person,,
+239,0,"PersonTable -
+Sex",Integer,,"0,1,2","0 = Male,
+1 = Female,
+2 = Unknown",,
+240,0,"PersonTable -
+ParentID",Integer,Foreign Key,"0,1,2,3,...","0 = No Parents,
+Any other value = FamilyTable.FamilyID
+If person has more than 1 set of parents, then value changes based on FamilyID of parent couple last displayed in Pedigree, Family, or Descendent View.",,
+241,0,"PersonTable -
+SpouseID",Integer,Foreign Key,"0,1,2,3,...","0 = No Spouse,
+Any other value = FamilyTable.FamilyID
+If person has more than 1 spouse, then value changes based on FamilyID of the couple last displayed in Pedigree, Family, or Descendent View.",,
+242,0,"PersonTable -
+Color",Integer,,0-27,"Set Color for Color Set 1, from Color Coding window:
+0 = None, 
+1 = Red, 
+2 = Lime, 
+3 = Blue, 
+4 = Pink,
+5 = Yellow, 
+6 = Aqua, 
+7 = Silver, 
+8 = Maroon, 
+9 = Green, 
+10 = Navy, 
+11 = Purple, 
+12 = Brown, 
+13 = Teal, 
+14 = Grey,
+15 = Apricot,
+16 = Lemon,
+17 = Chatreuse,
+18 = Mint,
+19 = Azure,
+20 = Mauve,
+21 = Orange,
+22 = Turquoise,
+23 = Khaki,
+24 = Olive,
+25 = Forest,
+26 = Aubergine,
+27 = Slate",,
+243,0,"PersonTable -
+Color1",Integer,,0-27,"Color Set 2, from Color Coding window:
+See PersonTable.Color for values",,
+244,0,"PersonTable -
+Color2",Integer,,0-27,"Color Set 3, from Color Coding window:
+See PersonTable.Color for values",,
+245,0,"PersonTable -
+Color3",Integer,,0-27,"Color Set 4, from Color Coding window:
+See PersonTable.Color for values",,
+246,0,"PersonTable -
+Color4",Integer,,0-27,"Color Set 5, from Color Coding window:
+See PersonTable.Color for values",,
+247,0,"PersonTable -
+Color5",Integer,,0-27,"Color Set 6, from Color Coding window:
+See PersonTable.Color for values",,
+248,0,"PersonTable -
+Color6",Integer,,0-27,"Color Set 7, from Color Coding window:
+See PersonTable.Color for values",,
+249,0,"PersonTable -
+Color7",Integer,,0-27,"Color Set 8, from Color Coding window:
+See PersonTable.Color for values",,
+250,0,"PersonTable -
+Color8",Integer,,0-27,"Color Set 9, from Color Coding window:
+See PersonTable.Color for values",,
+251,0,"PersonTable -
+Color9",Integer,,0-27,"Color Set 10, from Color Coding window:
+See PersonTable.Color for values",,
+252,0,"PersonTable -
+Relate1",Integer,,0-999,"Relate1, number of generations from this person to Most Recent Common Ancestor with the person chosen via Tools > Set Relationships. Relate1&2 work in combinaton with PersonTable.Flags to describe the relationship between this person and the person defined in Tools>Set Relationships.",See Change History Tab,Y
+253,0,"PersonTable -
+Relate2",Integer,,"0,1,2,3,...","Relate2, number of generations from the person chosen via Tools > Set Relationships to the Most Recent Common Ancestor with this person. See Additional Details. ",See Change History Tab,Y
+254,0,"PersonTable -
+Flags",Integer,,0-10,"Prefix description added to Set Relationship display as defined by Relate1/Relate2 calculation:
+0 = No prefix descriptor,
+1 = ""Half"",
+2 = ""Spouse of"" male blood relation (ie display uses ""Father, Uncle, Cousin""),
+3 = ""Spouse of half"" male blood relation (ie display uses ""Father, Uncle, Cousin""),
+6 = ""Spouse of"" female blood relation (ie display uses  ""Mother, Aunt, Cousin""),
+7 = ""Spouse of half"" female blood relation (ie display uses  ""Mother, Aunt, Cousin""),
+10 = ""Spouse of"" blood relation where sex is unknown (ie display uses ""Mother/Father, Aunt/Uncle, Cousin"")",See Change History Tab,Y
+255,0,"PersonTable -
+Living",Integer,,"0,1","Living, from Edit Person window:
+0 = Deceased, 
+1 = Living",,
+256,0,"PersonTable -
+IsPrivate",Integer,,0,Not Implementd,,
+257,0,"PersonTable -
+Proof",Integer,,0,Not implemented,,
+258,0,"PersonTable -
+Bookmark",Integer,,"0,1","Bookmark, from Sidebar Bookmarks view:
+0 = Not Bookmarked,
+1 = Bookmarked",,
+259,0,"PersonTable -
+Note",Text,,User Defined,"Note field from Edit Person screen, Person Fact.
+User Interface supports line breaks and formatting tags.",,
+260,0,"PersonTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,
+261,1,"PlaceTable -
+PlaceID",Integer,Primary Key,,Place Identification Number,,
+262,1,"PlaceTable -
+PlaceType",Integer,,"0,1,2","0 = Place, from Edit Person screen for a fact, 
+1 = LDS Temples, Built-In, 
+2 = Place details, from Edit Person screen for a fact",,
+263,1,"PlaceTable -
+Name",Text,idxPlaceName,User Defined,"Place Name from Edit Place (PlaceType = 0),
+Place Name, pre-defined (PlaceType = 1), 
+Place Detail Name, from Edit Place Detail screen (PlaceType = 2)",,
+264,1,"PlaceTable -
+Abbrev",Text,idxPlaceAbbrev,User Defined,"Abbreviated place name, from Edit Place screen (PlaceType = 0 and 2), 
+Abbreviation, pre-defined (PlaceType = 1)
+",,
+265,1,"PlaceTable -
+Normalized",Text,,User Defined,"Standardized place name from Edit Place screen (PlaceType = 0 and 2), 
+Standardized place name Blank for PlaceType = 1",,
+266,1,"PlaceTable -
+Latitude",Integer,,"0,
+8-9 Digit Integer","Latitude in decimal degrees stored as an integer (ie multiplied by 1e7).
+Pre-defined for LDS Temples (PlaceTable.PlaceType=1),
+Else User Defined via Edit Place or Edit Place Details screen.",See Change History Tab,Y
+267,1,"PlaceTable -
+Longitude",Integer,,"0,
+8-9 Digit Integer","Longitude in decimal degrees stored as an integer (ie multiplied by 1e7).
+Pre-defined for LDS Temples (PlaceTable.PlaceType=1),
+Else User Defined via Edit Place or Edit Place Details screen.",See Change History Tab,Y
+268,1,"PlaceTable -
+LatLongExact",Integer,,"0,1",,See Change History Tab,Y
+269,1,"PlaceTable -
+MasterID",Integer,,"0,1,2,3,...","0 for PlaceType = 0,1
+PlaceID of Place, for PlaceType = 2 (Place Detail)",,
+270,1,"PlaceTable -
+Note",Text,,User Defined,"Place note, from Edit screen for PlaceType = 0 and 2. 
+User Interface supports line breaks and formatting tags.",,
+271,1,"PlaceTable -
+Reverse",Text,idxReversePlaceName,,Name not reversed for PlaceType=2 (Place Details),,
+272,1,"PlaceTable -
+fsID",Integer,,,,,
+273,1,"PlaceTable -
+anID",Integer,,,,,
+274,1,"PlaceTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,
+275,0,"RoleTable -
+RoleID",Integer,Primary Key,"1,2,3,…",RoleIDs = 1 – 58  are pre-defined in built-in Fact Types,,
+276,0,"RoleTable -
+RoleName",Text,,"Built-in or
+User Defined","Role name, from Edit Role Type window.
+Displays with fact in Edit Person window when a fact is shared.  ",,
+277,0,"RoleTable -
+EventType",Integer,"Foreign Key
+idxRoleEventType","1,2,3,…","Event Type, links to FactTypeID in FactTypeTable",,
+278,0,"RoleTable -
+RoleType",Integer,,0,Not Implemented,,
+279,0,"RoleTable -
+Sentence",Text,,Sentence Template Language,"Sentence template for this role, from Edit Fact Type/Edit Role Type screen. User Interface supports line breaks and formatting tags.",See Change History Tab,Y
+280,0,"RoleTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,
+281,1,"SourceTable -
+SourceID",Integer,Primary Key,"1,2,3,...",Source Identification Number,,
+282,1,"SourceTable -
+Name",Text,idxSourceName,User Defined,"Source Name, from Edit Source pane or Edit Citation pane",,
+283,1,"SourceTable -
+RefNumber",Text,,User Defined,"Source Ref#, from Edit Source pane or Edit Citation pane",,
+284,1,"SourceTable -
+ActualText",Text,,User Defined,"Source Text, from Edit Source pane or Edit Citation pane",,
+285,1,"SourceTable -
+Comments",Text,,User Defined,"Source Comment,  from Edit Source pane or Edit Citation pane",,
+286,1,"SourceTable -
+IsPrivate",Integer,,0,Not Implemented,,
+287,1,"SourceTable -
+TemplateID",Integer,Foreign Key,"0,1,2,3,...","Template Identification Number:
+0 = Free-Form, 
+Else, links to TemplateID in SourceTemplateTable",,
+288,1,"SourceTable -
+Fields",Blob,,XML,"Master Source Field ""Names""  (from Source template) and ""Values"" (from Edit Source pane). 
+For Free-Form sources, XML contains  Footnote, Short Footnote, and Bibliography plus associated values.",,
+289,1,"SourceTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,
+290,0,"SourceTemplateTable -
+TemplateID",Integer,Primary Key,"1,2,3,…","Template Identification Number:
+1 - 439 = Built-In (See Source Template window), 
+10,000+ = User-Defined",,
+291,0,"SourceTemplateTable -
+Name",Text,idxSourceTemplateName,"Built-in or
+User Defined","Template Name, from Source Template window.
+Only user-defined templates are editable.",,
+292,0,"SourceTemplateTable -
+Description",Text,,"Built-in or
+User Defined","Description Details, from Source Template Description window.
+Only user-defined templates are editable.",,
+293,0,"SourceTemplateTable -
+Favorite",Integer,,"0,1","0 = Not a Favorite (Default),
+1 = Template starred as Favorite from Select Source Type screen of Add Source window",,
+294,0,"SourceTemplateTable -
+Category",Text,,"Built-in or
+User Defined","Category Details, from Source Template Description window.
+Only user-defined templates are editable.",,
+295,0,"SourceTemplateTable -
+Footnote",Text,,"Built-in or
+User Defined","Footnote Template, from Source Templates window.
+User Interface supports line breaks and formatting tags but only user-defined templates are editable.",,
+296,0,"SourceTemplateTable -
+ShortFootnote",Text,,"Built-in or
+User Defined","Short Footnote Template, from Source Template window.
+User Interface supports line breaks and formatting tags but only user-defined templates are editable.",,
+297,0,"SourceTemplateTable -
+Bibliography",Text,,"Built-in or
+User Defined","Bibliography Template, from Source Template window.
+User Interface supports line breaks and formatting tags but only user-defined templates are editable.",,
+298,0,"SourceTemplateTable -
+FieldDefs",Blob,,XML,"From Source Template Field window:
+Field Name, Display Name, Field Type, Brief hint, Long hint, and True/False flag to identify whether the field is located in the source or citation.",,
+299,0,"SourceTemplateTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,
+300,1,"TagTable -
+TagID",Integer,Primary Key,"1,2,3,...",Tag Identification Number,,
+301,1,"TagTable -
+TagType",Integer,idxTagType,"0,1","0 = Group,
+1 = Folder",,
+302,1,"TagTable -
+TagValue",Integer,Foreign Key,"1,2,3,...","If TagValue >1000, links to GroupTable.GroupID
+Else, incremental placeholder for Task Folders.",See Change History Tab,Y
+303,1,"TagTable -
+TagName",Text,,User Defined,Name of Group or Task Folder,,
+304,1,"TagTable -
+Description",Text,,User Defined,"Description of Task Folder,
+Blank for Groups.",,
+305,1,"TagTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,
+306,0,"TaskLinkTable -
+LinkID",Integer,Primary Key,"1,2,3,...",Link Identification Number,,
+307,0,"TaskLinkTable -
+TaskID",Integer,Foreign Key,"1,2,3,...",Links to TaskID in TaskTable,,
+308,0,"TaskLinkTable -
+OwnerType",Integer,,"0,1,2,5,7,14,18,19","0 = Person,
+1 = Family,
+2 = Event,
+5 = Place, 
+7 = Name, 
+14 = Place Detail, 
+18 = Folder, 
+19 = Association ",,
+309,0,"TaskLinkTable -
+OwnerID",Integer,"Foreign Key,
+idxTaskOwnerID","1,2,3,...","Link based on OwnerType:
+0 = PersonTable.PersonID,
+1 = FamilyTable.FamilyID,
+2 = EventTable.Eventid,
+5 = PlaceTable.PlaceID,
+7 = NameTable.NameID,
+14 = PlaceTable.PlaceID,
+18 = TagTable.TagID,
+19 = FanTable.FanID",,
+310,0,"TaskLinkTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,
+311,1,"TaskTable -
+TaskID",Integer,Primary Key,"1,2,3,...",Task Identification Number,,
+312,1,"TaskTable -
+TaskType",Integer,,"0,1,2,3","From Add Task window or Edit Task pane:
+0 = Blank,
+1 = Research, 
+2 = ToDo, 
+3 = Correspondence",,
+313,1,"TaskTable -
+RefNumber",Text,,User Defined,"Reference #, from Add Task window or Edit Task pane.",,
+314,1,"TaskTable -
+Name",Text,idxTaskName,User Defined,"Name, from Add Task window or Edit Task pane. ",,
+315,1,"TaskTable -
+Status",Integer,,"0,1,2,3,4,5","Status, From Add Task window or Edit Task pane:
+0 = New,
+1 = In Progress,
+2 = Completed,
+3 = On hold,
+4 = Problem,
+5 = Cancelled",,
+316,1,"TaskTable -
+Priority",Integer,,"0,1,2,3,4,5,6,7","From Add Task window or Edit Task pane:
+0 = Priority 1 (Highest),
+1 = Priority 2 (Very High),
+2 = Priority 3 (High),
+3 = Priority 4 (Med high),
+4 = Priority 5 (Medium),
+5 = Priority 6 (Med low),
+6 = Priority 7 (Low),
+7= Priority 8 (Very Low)",,
+317,1,"TaskTable -
+Date1",Text,,Position coded string or free text,"Start Date, from Edit Task screen.
+[See Date sheet for additional details.] ",,
+318,1,"TaskTable -
+Date2",Text,,Position coded string or free text,"Last Edit Date, from Edit Task screen.
+[See Date sheet for additional details.] ",,
+319,1,"TaskTable -
+Date3",Text,,Position coded string or free text,"End Date, from Edit Task screen.
+[See Date sheet for additional details.] ",,
+320,1,"TaskTable -
+SortDate1",BigInt,,"0 or
+19 digit number",,,
+321,1,"TaskTable -
+SortDate2",BigInt,,"0 or
+19 digit number",,,
+322,1,"TaskTable -
+SortDate3",BigInt,,"0 or
+19 digit number",,See Change History Tab,Y
+323,1,"TaskTable -
+Filename",Text,,User Defined,"File name and path, from Add Task window or Edit Task pane. ",,
+324,1,"TaskTable -
+Details",Text,,User Defined,"Details, from Add Task window or Edit Task pane. 
+User Interface supports line breaks and formatting tags.",,
+325,1,"TaskTable -
+Results",Text,,User Defined,"Results, from Add Task window or Edit Task pane. 
+User Interface supports line breaks and formatting tags.",,
+326,1,"TaskTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,
+327,1,"TaskTable -
+Exclude",Integer,,"0,1","From Filter Tasks window:
+0 = Display Task in list (default),
+1= Filter from Task list",,
+328,0,"URLTable -
+LinkID",Integer,Primary Key,"1,2,3,...",Link or WebTag Identification Number,,
+329,0,"URLTable -
+OwnerType",Integer,,"3,4,5,6,14","Owner Type:
+3 = Source,
+4 = Citation,
+5 = Place,
+6 = Task,
+14 = Place Details",,
+330,0,"URLTable -
+OwnerID",Integer,"Foreign Key,
+idxURLOwnerID","1,2,3,...","Owner Identification, link based on OwnerType:
+3 = SourceTable.SourceID,
+4 = CitationTable.CitationID, 
+5 = PlaceTable.PlaceID,
+6 = Tasktable.TaskID,
+14 = PlaceTable.PlaceID",,
+331,0,"URLTable -
+LinkType",Integer,,0,Not Implemented,,
+332,0,"URLTable -
+Name",Text,,User Defined,"Name, from Edit Web Tag window",,
+333,0,"URLTable -
+URL",Text,,User Defined,"URL, from Edit Web Tag window",,
+334,0,"URLTable -
+Note",Text,,User Defined,"Note, from Edit Web Tag window. 
+User Interface supports line breaks and formatting tags",,
+335,0,"URLTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,
+336,1,"WitnessTable -
+WitnessID",Integer,Primary Key,"1,2,3,...",Witness Identification Number,,
+337,1,"WitnessTable -
+EventID",Integer,"Foreign Key,
+idxWitnessEventID","1,2,3,...","Event Identification Number, linking to EventID of EventTable",,
+338,1,"WitnessTable -
+PersonID",Integer,"Foreign Key,
+idxWitnessPersonID","0,1,2,3,...","Person that the fact has been shared with:
+0 = This person is NOT in RM database,
+Else, PersonTable.PersonID",,
+339,1,"WitnessTable -
+WitnessOrder",Integer,,0,Not Implemented,,
+340,1,"WitnessTable -
+Role",Integer,Foreign Key,"1,2,3,...","Role, from Edit shared event screen,
+Links to RoleID in RoleTable",,
+341,1,"WitnessTable -
+Sentence",Text,,Sentence Template Language,"From Edit Person window of person that the fact has been shared with:
+Blank (Default) = Role Sentence not customized,
+Else, customized sentence",See Change History Tab,Y
+342,1,"WitnessTable -
+Note",Text,,User Defined,"Note, from Edit Witness pane of Edit Person window for person that the fact has been shared with. 
+User Interface supports line breaks and formatting tags.",,
+343,1,"WitnessTable -
+Given",Text,,User Defined,"From Edit Witness pane of Edit Person window for person that the fact has been shared with:
+Blank (Default) = Person is in RM database,
+Else, First name of person",,
+344,1,"WitnessTable -
+Surname",Text,,User Defined,"From Edit Witness pane of Edit Person window for person that the fact has been shared with:
+Blank (Default) = Person is in RM database,
+Else, Last name of person",,
+345,1,"WitnessTable -
+Prefix",Text,,,Not Implemented,,
+346,1,"WitnessTable -
+Suffix",Text,,,Not Implemented,,
+347,1,"WitnessTable -
+UTCModDate",Float,,"[d]{5}.[d]{10}
+e.g.: 44993.9143704283","Coordinated Universal Time from system, modified: 
+SELECT julianday('now') - 2415018.5",,

@@ -1,5 +1,6 @@
 # List summary of obituaries from Newspapers.com.
 @category "genq-ext-miams"
+@example "Concise summary of newspaper-based obituaries." {'genq list newspaper obits summary'} 
 export def "main" [] {
   print "List summaries of obituaries."
 

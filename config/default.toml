@@ -1,0 +1,64 @@
+# GenQuery Default Configuration
+# This file provides the base configuration for GenQuery
+# User configurations will override these defaults
+
+[database]
+# The currently active database connection
+# Options: "demo" (presidents database), "production" (your personal database)
+active = "production"
+
+# Available database connections
+# Add your own databases here following the pattern: name = "path/to/database.rmtree"
+[database.connections]
+demo = "./data/pres2020.rmtree"          # Demo database with U.S. Presidents data
+production = "./data/Iiams.rmtree"       # Your personal genealogy database
+
+[paths]
+# GenQuery installation directory (base for relative paths)
+genq_home = "."
+
+# Directory containing SQL query files
+sql_dir = "./sql"
+
+# Directory containing core GenQuery libraries
+lib_dir = "./src/lib"
+
+# Directory containing user extensions
+ext_dir = "./src/lib/ext"
+
+# Default output directory for generated files
+output_dir = "./vault"
+
+[display]
+# Default date format for rmdate function (1-8)
+date_format = 1
+
+# Table display mode for Nushell output
+table_mode = "rounded"
+
+[extensions]
+# List of extensions to load automatically
+# "miams" - Personal genealogy extensions (obituaries, FindAGrave, census records)
+# "pres2020" - U.S. Presidents demo extensions
+# Remove extensions you don't need to reduce memory usage and command clutter
+enabled = ["miams", "pres2020"]
+
+[sync]
+# Database synchronization settings
+# Configure paths for copying your production RootsMagic database to GenQuery
+# This enables the 'syncdb' command to update your local working copy
+
+# Source database paths (where your actual RootsMagic databases are stored)
+[sync.sources]
+production = "~/Genealogy/RootsMagic/Database/Iiams.rmtree"     # Your personal database
+demo = "~/Genealogy/RootsMagic/Database/pres2020.rmtree"       # Demo database (if you have it)
+
+# Target database paths (where GenQuery expects to find databases)
+[sync.targets]
+production = "./data/Iiams.rmtree"      # Local copy of your personal database  
+demo = "./data/pres2020.rmtree"         # Local copy of demo database
+
+# Sync behavior settings
+[sync.options]
+backup_before_sync = true               # Create backup before overwriting
+verify_after_sync = true                # Verify file integrity after copy

@@ -1,5 +1,6 @@
 # Tabulate sources by label/tag
 @category "genq-ext-miams"
+@example 'Display a frequency of the source tags used' {'genq tabulate sources labels'}
 export def "main" [] {
     print "Tabulation of sources by their label/tag (part before :)."
     let sqlquery = "SELECT SourceID, Name, TemplateID, STRFTIME(DATETIME(UTCModDate + 2415018.5)) || ' +0000' AS SourceDate  

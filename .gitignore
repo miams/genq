@@ -3,7 +3,12 @@
 *.rmtree
 *.json
 .DS_Store
+CLAUDE.md
 Iiams.cfg
 Presidents.json
+Template_Person_Note.md
+lessons-learned.md
+beta-readiness-todo.md
+vault/
 # Allow sample Presidents database
 # !pres2020.rmtree

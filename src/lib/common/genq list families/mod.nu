@@ -1,5 +1,7 @@
 # List families.
 @category "genq-common"
+@search-terms "married spouse spouses couples"
+@example "list top 20 men with the most spouses." {'genq list families | where WifeOrder != 0 | sort-by FatherID WifeOrder | uniq-by FatherID --count | sort-by count --reverse | flatten | move count --before FamilyID | first 20'}
 export def "main" [
 ] {
     print "List of spouses in families"
@@ -21,7 +23,7 @@ export def "main" [
         # FamilyTable.UTCModDate can be NULL
     let family_dataframe = open $env.rmdb | query db $sqlquery | 
     insert LastUpdate {|row| if ($row.LastUpdateUTC | is-not-empty) { $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S"} }
-    | reject LastUpdateUTC | startat1
+    | reject LastUpdateUTC FatherIsPrimary MotherIsPrimary | startat1
 
     $family_dataframe 
 }

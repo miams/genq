@@ -1,8 +1,7 @@
 # List citations. [wide]
 @category "genq-common"
+@example "List all citations in database." {'genq list citations'} 
 export def "main" [
-    --flag1 # Info 1
-    --flag2 # Info 2
    ] {
     print "List of citations."
 

@@ -1,5 +1,6 @@
 # List person Webtags named of "Find a Grave."
 @category "genq-ext-miams"
+@example "List webtags using Findagrave." {'genq list findagrave'} 
 export def "main" [] {
     print "List of Find a Grave entries."
 

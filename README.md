@@ -1,7 +1,7 @@
-<h1 align="center">genq</h1>
+<h1 align="center">GenQuery (genq)</h1>
 <h3 align="center">A Terminal-based RootsMagic Reporting Engine</h3>
 
-Execute blocks of Nushell code to query and parse RootsMagic's SQLite database (RootsMagic version 10 only) to generate tabular reports from the command line. This utility leverages Nushell's shell environment to create a quick, flexible and easy to use reporting tool.
+GenQuery executes blocks of Nushell code to query and parse RootsMagic's SQLite database (RootsMagic version 10 only) to generate tabular reports from the command line. This utility leverages Nushell's shell environment to create a quick, flexible and easy to use reporting tool.
 
 In the examples below, all queries are filtered to the first 20 records for demonstration purposes only.
 

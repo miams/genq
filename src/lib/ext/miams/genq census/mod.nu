@@ -1,6 +1,8 @@
 # List Fed Census by RIN or Year
 @category "genq-ext-miams"
-export def "main" [action: string@census_action_completer, ...objects: string] {
+@example "List Census records for individual with RIN of 2." {genq census RIN 2} 
+@example "List all Census records for 1850." {genq census year 1850} 
+export def "main" [action?: string@census_action_completer, ...objects: string] {
     match $action {
         "RIN" => {
             let RIN = $objects.0 | into int 
@@ -89,7 +91,19 @@ export def "main" [action: string@census_action_completer, ...objects: string] {
             },
 
         'help' => {
-            print 'This is Census help'},
-        _ => {print 'I think you need Census help.'}
+            print "GenQuery Census provides the following two capabilities:\n"
+            print "1. List census records for a person by RIN. Unlike RootsMagic's event search, this"
+            print "   query returns an individual's Census records both as a principle role, or any"
+            print "   other role.\n"
+            print '2. List all census records for a given year.  This works even if the census event date '
+            print "   has a precise date recorded.\n"
+            print "Examples:\n"
+            print '   genq census RIN 2'
+            print '   genq census year 1850'},
+
+        _ => {print "To use GenQuery Census, you must specify subcommand: RIN or year\n"
+              print "Examples:\n"
+              print '   genq census RIN 2'
+              print '   genq census year 1850'}
         }
     }

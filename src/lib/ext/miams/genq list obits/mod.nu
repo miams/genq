@@ -1,5 +1,6 @@
 # List of full obituaries from Newspapers.com
 @category "genq-ext-miams"
+@example "List of newspaper-based obituaries including the obituary contained in the note field." {'genq list obits'}
 export def "main" [] {
     print "List of obituaries from Newspapers.com with transcriptions."
 
