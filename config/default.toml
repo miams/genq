@@ -14,20 +14,20 @@ demo = "./data/pres2020.rmtree"          # Demo database with U.S. Presidents da
 production = "./data/Iiams.rmtree"       # Your personal genealogy database
 
 [paths]
-# GenQuery installation directory (base for relative paths)
-genq_home = "."
+# Note: All paths are now relative to GENQ_HOME environment variable
+# These can be overridden in user configuration files
 
-# Directory containing SQL query files
-sql_dir = "./sql"
+# Directory containing SQL query files (relative to GENQ_HOME)
+sql_dir = "sql"
 
-# Directory containing core GenQuery libraries
-lib_dir = "./src/lib"
+# Directory containing core GenQuery libraries (relative to GENQ_HOME)  
+lib_dir = "src/lib"
 
-# Directory containing user extensions
-ext_dir = "./src/lib/ext"
+# Directory containing user extensions (relative to GENQ_HOME)
+ext_dir = "src/lib/ext"
 
-# Default output directory for generated files
-output_dir = "./vault"
+# Default output directory for generated files (relative to GENQ_HOME)
+output_dir = "vault"
 
 [display]
 # Default date format for rmdate function (1-8)

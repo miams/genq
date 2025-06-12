@@ -7,14 +7,20 @@ use common *
 use ext/miams *
 use ext/pres2020 *
 
-# Initialize GenQuery configuration system (temporary inline approach)
+# Initialize GenQuery configuration system
+# Set GenQuery home directory from environment or use current directory as fallback
+if not ($env.GENQ_HOME? | default null | is-not-empty) {
+    $env.GENQ_HOME = $env.PWD
+}
+
 # Load configuration and set environment variables
-let config = (if ("./config/default.toml" | path exists) { 
-    open "./config/default.toml"
+let config_path = ($env.GENQ_HOME | path join "config" "default.toml")
+let config = (if ($config_path | path exists) { 
+    open $config_path
 } else { 
     {
-        database: { active: "demo", connections: { demo: "./data/pres2020.rmtree" } }
-        paths: { genq_home: ".", sql_dir: "./sql", lib_dir: "./src/lib", ext_dir: "./src/lib/ext", output_dir: "./vault" }
+        database: { active: "demo", connections: { demo: ($env.GENQ_HOME | path join "data" "pres2020.rmtree") } }
+        paths: { sql_dir: ($env.GENQ_HOME | path join "sql"), lib_dir: ($env.GENQ_HOME | path join "src" "lib"), ext_dir: ($env.GENQ_HOME | path join "src" "lib" "ext"), output_dir: ($env.GENQ_HOME | path join "vault") }
         display: { date_format: 1, table_mode: "rounded" }
         extensions: { enabled: ["miams", "pres2020"] }
     }
@@ -75,7 +81,7 @@ if ($action | is-empty) {
     },
     'config' => {
         let subcommand = if ($objects | length) > 0 { $objects.0 } else { "" }
-        genq-config $subcommand ...$objects
+        genq-config-impl $subcommand ...$objects
     },
     'help' => {
        print $"(ansi green_bold)GenQuery - Genealogy Database Reporting(ansi reset)\n"
@@ -177,13 +183,63 @@ def wrap-text [text: string, width: int] {
     }
 }
 
-# GenQuery configuration management
+# Discover available extensions by scanning src/lib/ext/ directory
 @category "genq-common"
-def genq-config [
-    subcommand?: string@config_action_completer   # Subcommand: help, list, get, set, or empty for interactive mode
+def discover-extensions [] {
+    let genq_home = ($env.GENQ_HOME? | default $env.PWD)
+    let ext_dir = ($genq_home | path join "src" "lib" "ext")
+    
+    if not ($ext_dir | path exists) {
+        return []
+    }
+    
+    # Get all directories in ext/ that have a mod.nu file
+    ls $ext_dir 
+    | where type == dir 
+    | get name 
+    | path basename
+    | where { |ext_name| 
+        ($ext_dir | path join $ext_name "mod.nu" | path exists)
+    }
+    | each { |ext_name|
+        let readme_path = ($ext_dir | path join $ext_name "readme.md")
+        let description = if ($readme_path | path exists) {
+            # Try to extract first line or title from readme
+            let content = (open $readme_path --raw | lines | first)
+            if ($content | str starts-with "**") {
+                $content | str replace --all "**" ""
+            } else if ($content | str starts-with "# ") {
+                $content | str substring 2..
+            } else {
+                $"Extension for ($ext_name)"
+            }
+        } else {
+            $"Extension for ($ext_name)"
+        }
+        
+        {
+            name: $ext_name
+            description: $description
+        }
+    }
+}
+
+# Configuration management core implementation
+@category "genq-common"
+def genq-config-impl [
+    subcommand?: string   # Subcommand: help, list, get, set, or empty for interactive mode
     ...args: string       # Arguments for subcommands
 ] {
-    let config_path = "./config/default.toml"
+    # Use GENQ_HOME environment variable to find config
+    let genq_home = ($env.GENQ_HOME? | default $env.PWD)
+    let config_path = ($genq_home | path join "config" "default.toml")
+    
+    # Check if config file exists
+    if not ($config_path | path exists) {
+        print $"(ansi red)Error: Configuration file not found at ($config_path)(ansi reset)"
+        print $"Make sure GENQ_HOME is set correctly: ($genq_home)"
+        return
+    }
     
     match $subcommand {
         "help" => {
@@ -192,20 +248,20 @@ def genq-config [
             print "and extensions. Think of it like setting up your preferences.\n"
             
             print $"(ansi cyan_bold)Available Commands:(ansi reset)"
-            print $"  (ansi green)genq config(ansi reset)              - Interactive setup wizard (recommended for beginners)"
+            print $"  (ansi green)genq config(ansi reset)              - Interactive setup wizard [recommended for beginners]"
             print $"  (ansi green)genq config list(ansi reset)         - Show your current settings"
             print $"  (ansi green)genq config get <setting>(ansi reset) - Get a specific setting value"
             print $"  (ansi green)genq config help(ansi reset)         - Show this help message\n"
             
             print $"(ansi cyan_bold)Common Settings:(ansi reset)"
-            print $"  (ansi yellow)database.active(ansi reset)           - Which database to use (demo or production)"
+            print $"  (ansi yellow)database.active(ansi reset)           - Which database to use [demo or production]"
             print $"  (ansi yellow)extensions.enabled(ansi reset)        - Which features to load"
             print $"  (ansi yellow)sync.sources.production(ansi reset)   - Where your RootsMagic database is stored\n"
             
             print $"(ansi cyan_bold)Examples:(ansi reset)"
-            print $"  (ansi dim)genq config(ansi reset)                          - Set up GenQuery interactively"
-            print $"  (ansi dim)genq config list(ansi reset)                     - See what database you're using"
-            print $"  (ansi dim)genq config get database.active(ansi reset)      - Check if using demo or production data\n"
+            print $"  (ansi light_gray)genq config(ansi reset)                          - Set up GenQuery interactively"
+            print $"  (ansi light_gray)genq config list(ansi reset)                     - See what database you're using"
+            print $"  (ansi light_gray)genq config get database.active(ansi reset)      - Check if using demo or production data\n"
             
             print $"(ansi blue)💡 Tip: Start with 'genq config' if you're new to GenQuery!(ansi reset)"
         }
@@ -252,7 +308,21 @@ def genq-config [
                 print $"(ansi cyan)Database you're using:(ansi reset) ($config.database.active)"
                 let db_path = ($config.database.connections | get $config.database.active)
                 print $"(ansi cyan)Database file:(ansi reset) ($db_path)"
-                print $"(ansi cyan)Extensions (features) loaded:(ansi reset) ($config.extensions.enabled | str join ', ')"
+                
+                # Try to get extensions, but don't fail if directory not found
+                try {
+                    let available_extensions = (discover-extensions)
+                    let available_names = ($available_extensions | get name)
+                    print $"(ansi cyan)Extensions (features) loaded:(ansi reset) ($config.extensions.enabled | str join ', ')"
+                    if ($available_names | length) > ($config.extensions.enabled | length) {
+                        let unloaded = ($available_names | where { |ext| $ext not-in $config.extensions.enabled })
+                        print $"(ansi light_gray)Available but not loaded:(ansi reset) ($unloaded | str join ', ')"
+                    }
+                } catch {
+                    print $"(ansi cyan)Extensions (features) loaded:(ansi reset) ($config.extensions.enabled | str join ', ')"
+                    print $"(ansi light_gray)Extension discovery not available from this location(ansi reset)"
+                }
+                
                 print $"(ansi cyan)Reports saved to:(ansi reset) ($config.paths.output_dir)"
                 
                 if ($config.sync? | default false) {
@@ -262,15 +332,15 @@ def genq-config [
                         print $"(ansi cyan)Your RootsMagic database:(ansi reset) ($config.sync.sources.production)"
                         print $"(ansi cyan)GenQuery working copy:(ansi reset) ($config.sync.targets.production)"
                     } else {
-                        print $"(ansi dim)Sync settings available when using production database(ansi reset)"
+                        print $"(ansi light_gray)Sync settings available when using production database(ansi reset)"
                     }
                 }
                 
                 print ""
                 print $"(ansi blue)💡 Run 'genq config' to change these settings(ansi reset)"
                 print $"(ansi blue)💡 Run 'genq config help' for more options(ansi reset)"
-            } catch {
-                print $"(ansi red)Could not read configuration file!(ansi reset)"
+            } catch { |error|
+                print $"(ansi red)Could not read configuration file! Error: ($error.msg)(ansi reset)"
                 print "Run 'genq config' to set up GenQuery."
             }
         }
@@ -290,24 +360,23 @@ def genq-config [
                 print ""
                 print "Options:"
                 print "  • demo - Practice with U.S. Presidents data (safe for learning)"
-                print "  • production - Use your actual RootsMagic genealogy database"
+                print "  • production - Use a copy of your actual RootsMagic genealogy database"
                 print ""
                 
-                let db_mode = loop {
+                mut db_mode = ""
+                while $db_mode == "" {
                     let input_val = (input "Which database would you like to use? (demo/production) [demo]: " | str trim)
                     if $input_val == "" or $input_val == "demo" {
-                        break "demo"
+                        $db_mode = "demo"
                     } else if $input_val == "production" {
-                        break "production"
+                        $db_mode = "production"
                     } else if $input_val == "help" {
                         print ""
                         print "• Choose 'demo' to practice with sample data first"
-                        print "• Choose 'production' when ready to work with your real genealogy data"
+                        print "• Choose 'production' when ready to work with a copy of your real genealogy data"
                         print ""
-                        continue
                     } else {
                         print $"(ansi red)Please enter 'demo' or 'production'(ansi reset)"
-                        continue
                     }
                 }
                 
@@ -316,13 +385,36 @@ def genq-config [
                 print "Extensions add extra commands for specific types of genealogy research."
                 print $"Currently loaded: (ansi cyan)($config.extensions.enabled | str join ', ')(ansi reset)"
                 print ""
-                print "Available extensions:"
-                print "  • miams - Personal genealogy tools (obituaries, FindAGrave, census records)"
-                print "  • pres2020 - Tools for the Presidents demo database"
-                print ""
                 
-                let extensions_input = (input "Which extensions to load? [miams,pres2020]: " | default "miams,pres2020")
-                let extensions = ($extensions_input | split row "," | each { |ext| $ext | str trim })
+                let available_extensions = (discover-extensions)
+                let extensions = if ($available_extensions | length) > 0 {
+                    print "Available extensions:"
+                    $available_extensions | each { |ext|
+                        print $"  • ($ext.name) - ($ext.description)"
+                    }
+                    print ""
+                    
+                    let default_extensions = ($available_extensions | get name | str join ",")
+                    let extensions_input = (input $"Which extensions to load? [($default_extensions)]: " | default $default_extensions)
+                    let requested_extensions = ($extensions_input | split row "," | each { |ext| $ext | str trim })
+                    
+                    # Validate that requested extensions exist
+                    let valid_extensions = ($requested_extensions | where { |ext| 
+                        $ext in ($available_extensions | get name)
+                    })
+                    let invalid_extensions = ($requested_extensions | where { |ext| 
+                        $ext not-in ($available_extensions | get name)
+                    })
+                    
+                    if ($invalid_extensions | length) > 0 {
+                        print $"(ansi yellow)Warning: These extensions were not found: ($invalid_extensions | str join ', ')(ansi reset)"
+                    }
+                    
+                    $valid_extensions
+                } else {
+                    print $"(ansi yellow)No extensions found in src/lib/ext/ directory(ansi reset)"
+                    []
+                }
             
                 # Sync configuration for production mode
                 if $db_mode == "production" {
@@ -336,7 +428,12 @@ def genq-config [
                     print "  • ~/Documents/RootsMagic/YourFamilyName.rmtree"
                     print ""
                     
-                    let sync_source = (input "Where is your RootsMagic database file? [~/Genealogy/RootsMagic/Database/Iiams.rmtree]: " | default "~/Genealogy/RootsMagic/Database/Iiams.rmtree")
+                    let sync_source_input = (input "Where is your RootsMagic database file? [~/Genealogy/RootsMagic/Database/Iiams.rmtree]: ")
+                    let sync_source = if ($sync_source_input | str trim | is-empty) { 
+                        "~/Genealogy/RootsMagic/Database/Iiams.rmtree" 
+                    } else { 
+                        $sync_source_input | str trim 
+                    }
                     
                     print $"\n(ansi green_bold)Configuration Summary:(ansi reset)"
                     print $"Database mode: (ansi cyan)($db_mode)(ansi reset) - Using your personal genealogy data"
@@ -411,7 +508,8 @@ def update-env-alias [
     # Check if env.nu exists
     if not ($env_path | path exists) {
         print $"(ansi red)Error: Could not find env.nu at ($env_path)(ansi reset)"
-        print "Please create the file first or add the alias manually."
+        print "Please create the file first or add the alias manually:"
+        print $alias_cmd
         return
     }
     
@@ -443,11 +541,13 @@ def update-env-alias [
             print $"(ansi green)✓ Added syncdb command to env.nu(ansi reset)"
         }
         
+        print $"(ansi blue)ℹ To activate immediately, run: source ~/.config/nushell/env.nu(ansi reset)"
+        
         # Verify the setup by reloading and testing
         verify-syncdb-setup $sync_source
         
-    } catch {
-        print $"(ansi red)Error: Failed to update env.nu(ansi reset)"
+    } catch { |error|
+        print $"(ansi red)Error: Failed to update env.nu - ($error.msg)(ansi reset)"
         print "Please add this line manually to your env.nu file:"
         print $alias_cmd
     }
@@ -459,16 +559,13 @@ def verify-syncdb-setup [
     expected_source: string   # Expected source path
 ] {
     try {
-        # Source the updated env.nu to reload aliases
-        source ($env.HOME | path join ".config" "nushell" "env.nu")
-        
-        # Get the current syncdb alias definition
+        # Check if the syncdb alias is working by testing if it exists in scope
         let aliases = (scope aliases)
         let syncdb_alias = ($aliases | where name == "syncdb")
         
         if ($syncdb_alias | is-empty) {
-            print $"(ansi yellow)Warning: syncdb command may not be available until you restart your shell(ansi reset)"
-            print "You can run 'source ~/.config/nushell/env.nu' to reload it now."
+            print $"(ansi yellow)Note: syncdb command will be available when you start a new shell(ansi reset)"
+            print "Or run: source ~/.config/nushell/env.nu"
         } else {
             let alias_expansion = ($syncdb_alias | get expansion.0)
             if ($alias_expansion | str contains $expected_source) {
@@ -481,4 +578,39 @@ def verify-syncdb-setup [
         print $"(ansi yellow)Note: syncdb command will be available when you start a new shell(ansi reset)"
         print "Or run: source ~/.config/nushell/env.nu"
     }
+}
+
+# Show help for GenQuery configuration commands.
+@category "genq-common"
+export def "genq config help" [] {
+    genq-config-impl help
+}
+
+# Show current GenQuery configuration settings.
+@category "genq-common" 
+export def "genq config list" [] {
+    genq-config-impl list
+}
+
+# Get a specific GenQuery configuration setting.
+@category "genq-common"
+export def "genq config get" [
+    setting: string  # The configuration setting to retrieve
+] {
+    genq-config-impl get $setting
+}
+
+# Set a specific GenQuery configuration setting.
+@category "genq-common"
+export def "genq config set" [
+    setting: string  # The configuration setting to change
+    value: string    # The new value for the setting
+] {
+    genq-config-impl set $setting $value
+}
+
+# Interactive configuration wizard for GenQuery settings.
+@category "genq-common"
+export def "genq config" [] {
+    genq-config-impl
 }
