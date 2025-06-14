@@ -7,7 +7,7 @@ export module 'genq list media'
 export module 'genq list people'
 export module 'genq list sources'
 export module 'genq md people'
+export module 'genq config'
 
-# Configuration and path utilities  
-export module 'config.nu'
+# Path utilities  
 export module 'paths.nu'
