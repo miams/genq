@@ -1,0 +1,24 @@
+# GenQuery Default Configuration (Fresh Installation)
+# This file ships with GenQuery and contains only demo database configuration
+# Users can run 'genq config' to set up their production database
+
+[database]
+active = "demo"
+
+[database.connections]
+demo = "./data/pres2020.rmtree"
+
+[paths]
+sql_dir = "sql"
+lib_dir = "src/lib"
+ext_dir = "src/lib/ext"
+output_dir = "vault"
+
+[display]
+date_format = 1
+table_mode = "rounded"
+
+[extensions]
+enabled = ["pres2020"]
+
+# Note: sync section will be created automatically when user configures production database

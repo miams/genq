@@ -14,20 +14,57 @@ use wizard.nu [config-wizard]
 # Configuration management main entry point
 @category "genq-common"
 def genq-config-impl [
-    subcommand?: string   # Subcommand: help, list, get, set, or empty for interactive mode
-    ...args: string       # Arguments for subcommands
+    subcommand?: string   # Subcommand: list or empty for interactive mode
+    ...args: string       # Arguments for subcommands (currently unused)
 ] {
     # Use GENQ_HOME environment variable to find config
     let genq_home = ($env.GENQ_HOME? | default $env.PWD)
     let config_path = ($genq_home | path join "config" "default.toml")
     
-    match $subcommand {
+    # Validate GENQ_HOME exists and is accessible
+    if not ($genq_home | path exists) {
+        print $"(ansi red)Error:(ansi reset) GENQ_HOME directory not found: ($genq_home)"
+        print "Make sure you're running from the GenQuery directory or GENQ_HOME is set correctly."
+        return
+    }
+    
+    # Validate config file exists
+    if not ($config_path | path exists) {
+        print $"(ansi red)Error:(ansi reset) Configuration file not found at ($config_path)"
+        print "This usually means GenQuery is not properly installed or configured."
+        print "Expected config structure: <genq_home>/config/default.toml"
+        return
+    }
+    
+    # Test config file is readable and valid
+    try {
+        let test_config = (open $config_path)
+    } catch { |error|
+        print $"(ansi red)Error:(ansi reset) Configuration file is corrupted or unreadable"
+        print $"Location: ($config_path)"
+        print $"Reason: ($error.msg)"
+        print "You may need to restore from backup or reinstall GenQuery."
+        return
+    }
+    
+    # Normalize subcommand input (case-insensitive)
+    let normalized_subcommand = ($subcommand | default "" | str downcase)
+    
+    match $normalized_subcommand {
         "list" => {
+            # Show current configuration settings
             list-config $config_path
         }
-        _ => {
-            # Interactive configuration wizard
+        "" => {
+            # Interactive configuration wizard (default when no subcommand)
             config-wizard $config_path
+        }
+        _ => {
+            # Handle invalid subcommands with helpful error message
+            print $"(ansi red)Error:(ansi reset) Unknown config command '($subcommand)'"
+            print "Valid commands:"
+            print "  genq config      - Interactive setup wizard"
+            print "  genq config list - Show current settings"
         }
     }
 }

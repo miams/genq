@@ -16,7 +16,10 @@ date_format = 1
 table_mode = "rounded"
 
 [extensions]
-enabled = ["miams"]
+enabled = [
+    "miams",
+    "pres2020",
+]
 
 [sync.sources]
 production = "/Users/miams/Genealogy/RootsMagic/Database/Iiams.rmtree"

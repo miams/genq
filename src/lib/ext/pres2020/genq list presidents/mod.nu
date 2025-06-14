@@ -1,4 +1,4 @@
-# List US Presidents"
+# List US Presidents.
 @category "genq-ext-pres2020"
 @example "Generate an ordered list of US Presidents" {'genq list presidents'
 } 

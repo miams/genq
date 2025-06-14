@@ -43,41 +43,39 @@ $env.RDMF = $config.display.date_format
 let FedCensus = [1790 1800 1810 1820 1830 1840 1850 1860 1870 1880 1900 1910 1920 1930 1940 1950]
 $env.SurnameGroup = [Iams, Iames, Iiams, Iiames, Ijams, Ijames, Imes, Eimes]
 
-def genq_action_completer [] { ["review-updates", "list", "tabulate", "assess", "config", "help" ] }
-def list_action_completer [] { ["findagrave", "people", "citations", "events", "families", "newspaper", "obits"]}
-def census_action_completer [] { ["year", "RIN", "quality", "help" ] }
-def config_action_completer [] { ["list"] }
 # GenQuery generates tabular reports from the RootsMagic database.
 @category "genq-common"
 export def genq [
-    action?: string@genq_action_completer,  # action command [updates, list, quality, help]
+    action?: string,  # action command - completion handled by module system
     ...objects: string  # additional directives, options vary based on action command
     ] {
 
-if ($action | is-empty) {
-        let $action = "help"
+let $action = if ($action | is-empty) {
+        "help"
+    } else {
+        $action | str downcase
     } 
     
- match $action {
+    match $action {
     "review-updates" => {
-        if ($objects | is-empty) {
-            print $'(ansi red_bold)List of recently updated records.(ansi reset)'
-            print 'citations, events, findagrave, obits, people, sources'
-            print $"(ansi yellow_bold)NO FUNCTIONALITY YET(ansi reset)\n"
-        } else {
-        }
+        print $"(ansi red)Error:(ansi reset) The 'review-updates' command has been removed from GenQuery"
+        print "This command was never fully implemented and has been cleaned up."
+        print "Available commands: list, tabulate, config, help"
+        print "Use 'genq help' to see all available functionality."
     },
     "list" => {
-        let mylist = "findagrave people citations families events newspaper obits"
-        list ($mylist)
+        # List subcommands are handled by the module system
+        # Tab completion shows available subcommands automatically
+        print "List command - use 'genq list <type>' where type is: people, citations, events, families, etc."
+        print "Available list types:"
+        print "  people, citations, events, families, findagrave, newspaper, obits"
+        print "Example: genq list people | first 10"
         },
-    'assess' => {
-        print $'(ansi red_bold)Perform variety of data quality checks for consistency and completeness.(ansi reset)'
-        print 'genq assess consistency findagrave'
-        print 'genq assess consistency sources'
-        print 'genq assess citation-breadth'
-        print 'genq assess citation-coverage'
-        print $"(ansi yellow_bold)NOT FUNCTIONAL YET - EVALUATION PHASE(ansi reset)\n"
+    "assess" => {
+        print $"(ansi red)Error:(ansi reset) The 'assess' command has been removed from GenQuery"
+        print "This command was never fully implemented and has been cleaned up."
+        print "Available commands: list, tabulate, config, help"
+        print "Use 'genq help' to see all available functionality."
     },
     'tabulate' => {
         print $'(ansi red_bold)Generate tabulated reports summarizing data. (ansi reset)'
@@ -106,13 +104,15 @@ if ($action | is-empty) {
        print "• Use 'genq help' to see all available commands"
        print ""
        let printstr = "At its core, GenQuery uses SQL (Structured Queried Language) to query RootsMagics SQLite database. In most cases, GenQuery removes the need to deal with SQL complexity.  GenQuery leverages its library of internal and third-party SQL queries to extract data. From there, you are able to access a rich set of Nushell commands to personalize your data analysis and reports to your individual needs." 
-       wrap-text $printstr (term size).columns},
+       wrap-text $printstr (term size).columns
+    },
     _ => {
         print "OVERVIEW" 
         let printstr = "GenQuery is an open-source, third-party RootsMagic reporting engine for use in the terminal. GenQuery is designed to let you quickly and easily pull data from your RootsMagic database. GenQuery is built on top of Nushell, a new kind of shell for OS X, Linux, and Windows. Unlike traditional shells such as bash, zsh or Powershell, Nushell uses structured data allowing for powerful but simple pipelines. It enables users to easily analyze and process data using easier more readable commands.\n"
         wrap-text $printstr (term size).columns
         let printstr = "At its core, GenQuery uses SQL (Structured Queried Language) to query RootsMagics SQLite database. In most cases, GenQuery removes the need to deal with SQL complexity.  GenQuery leverages its library of internal and third-party SQL queries to extract data. From there, you are able to access a rich set of Nushell commands to personalize your data analysis and reports to your individual needs." 
-        wrap-text $printstr (term size).columns}
+        wrap-text $printstr (term size).columns
+    }
     }
 }  
 
@@ -192,6 +192,30 @@ def wrap-text [text: string, width: int] {
         $text | str substring 0..$maxlen | [$in, "..."] | str join
     } else {
         $text
+    }
+}
+
+# Main entry point - route to appropriate genq command
+def main [...args: string] {
+    if ($args | length) == 0 {
+        genq
+    } else if ($args | length) == 1 {
+        # Single argument - try module command first, then main genq function
+        let action = $args.0
+        match $action {
+            "census" => { genq census }
+            _ => { genq $action }
+        }
+    } else {
+        # Multiple arguments - try module command first
+        let action = $args.0
+        let subcommand = $args.1
+        let rest_args = if ($args | length) > 2 { $args | skip 2 } else { [] }
+        
+        match $action {
+            "census" => { genq census $subcommand ...$rest_args }
+            _ => { genq $action $subcommand ...$rest_args }
+        }
     }
 }
 

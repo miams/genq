@@ -2,17 +2,10 @@
 #
 # Provides consistent path resolution across Windows, macOS, and Linux
 
-# Resolve a path with tilde expansion and platform-appropriate separators
+# Resolve a path using Nushell's native capabilities
+# This replaces manual tilde expansion and separator conversion
 export def resolve-path [path: string] {
-    # Handle tilde expansion
-    let expanded = ($path | str replace "~" $env.HOME)
-    
-    # Convert to platform-appropriate separators
-    if ($nu.os-info.name == "windows") {
-        $expanded | str replace -a "/" "\\"
-    } else {
-        $expanded
-    }
+    $path | path expand
 }
 
 # Get the platform-appropriate GenQuery data directory
@@ -33,15 +26,40 @@ export def genq-config-dir [] {
     }
 }
 
+# Get platform-specific standard directories following OS conventions
+export def platform-dirs [] {
+    {
+        config: (match $nu.os-info.family {
+            "windows" => ($env.APPDATA | path join "GenQuery")
+            "unix" => (match $nu.os-info.name {
+                "macos" => ($nu.home-path | path join "Library" "Application Support" "GenQuery")
+                _ => ($nu.home-path | path join ".config" "genq")
+            })
+        })
+        data: (match $nu.os-info.family {
+            "windows" => ($env.LOCALAPPDATA | path join "GenQuery" "data")
+            "unix" => (match $nu.os-info.name {
+                "macos" => ($nu.home-path | path join "Library" "Application Support" "GenQuery" "data")
+                _ => ($nu.home-path | path join ".local" "share" "genq")
+            })
+        })
+        nushell_config: (match $nu.os-info.family {
+            "windows" => ($env.APPDATA | path join "nushell")
+            "unix" => ($nu.home-path | path join ".config" "nushell")
+        })
+    }
+}
+
 # Convert a relative path to absolute based on GenQuery home
-export def resolve-genq-path [path: string, genq_home?: string] {
-    let base_dir = ($genq_home | default (pwd))
+# Uses Nushell's native path detection and joining
+export def resolve-genq-path [path: string, base_dir?: string] {
+    let base = ($base_dir | default (pwd))
     
-    # Check if path is absolute (starts with / on Unix or drive letter on Windows)
-    if ($path | str starts-with "/") or ($path | str contains ":\\") {
-        resolve-path $path
+    # Use Nushell's path detection - if path is absolute, expand it directly
+    if ($path | path split | first) == "" or ($path | str substring 1..2) == ":" {
+        $path | path expand
     } else {
-        resolve-path ($base_dir | path join $path)
+        $base | path join $path | path expand
     }
 }
 

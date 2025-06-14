@@ -1,11 +1,27 @@
-# List Fed Census by RIN or Year
+# List Census Records by RIN or Year.
 @category "genq-ext-miams"
 @example "List Census records for individual with RIN of 2." {genq census RIN 2} 
 @example "List all Census records for 1850." {genq census year 1850} 
-export def "main" [action?: string@census_action_completer, ...objects: string] {
-    match $action {
-        "RIN" => {
-            let RIN = $objects.0 | into int 
+export def "main" [action?: string, ...objects: string] {
+    match ($action | default "" | str downcase) {
+        "rin" => {
+            # Validate RIN parameter
+            if ($objects | length) == 0 {
+                print $"(ansi red)Error:(ansi reset) RIN parameter required. Usage: genq census RIN <number>"
+                return
+            }
+            
+            let RIN = try {
+                $objects.0 | into int
+            } catch {
+                print $"(ansi red)Error:(ansi reset) Invalid RIN '($objects.0)'. RIN must be a positive integer."
+                return
+            }
+            
+            if $RIN <= 0 {
+                print $"(ansi red)Error:(ansi reset) Invalid RIN ($RIN). RIN must be a positive integer."
+                return
+            } 
             let person = open $env.rmdb | query db $"SELECT Given, Surname, BirthYear, DeathYear from NameTable WHERE OwnerID = ($RIN)"
             print $"Census records for: (ansi gb)($person.Given.0) ($person.Surname.0) \(($person.BirthYear.0) - ($person.DeathYear.0)\)(ansi reset)"
             # Objective: List Persons in Census Events other than the Head person.   The goal will be to combine this table with a similar table of Census Events that include the Head person.
@@ -46,9 +62,25 @@ export def "main" [action?: string@census_action_completer, ...objects: string] 
             },
 
         "year" => {
+            # Validate year parameter
+            if ($objects | length) == 0 {
+                print $"(ansi red)Error:(ansi reset) Year parameter required. Usage: genq census year <year>"
+                return
+            }
+            
+            let year = try {
+                $objects.0 | into int
+            } catch {
+                print $"(ansi red)Error:(ansi reset) Invalid year '($objects.0)'. Year must be a 4-digit integer."
+                return
+            }
+            
+            if $year < 1790 or $year > 1950 {
+                print $"(ansi red)Error:(ansi reset) Invalid census year ($year). U.S. Federal Census years are typically 1790-1950 taken every 10 years."
+                return
+            }
 
             # Objective: List Persons in Census Events other than the Head person.   The goal will be to combine this table with a similar table of Census Events that include the Head person.
-            let year = $objects.0
             print $"Census records for the year: (ansi gb)($year)(ansi gb)"
 
             # -- Get People attached to Census Records
@@ -87,7 +119,7 @@ export def "main" [action?: string@census_action_completer, ...objects: string] 
             JOIN EventTable ON tmp_census_minimal.EventID=EventTable.EventID
             JOIN PlaceTable ON EventTable.PlaceID=PlaceTable.PlaceID
             JOIN NameTable ON NameTable.OwnerID=RIN 
-            ORDER BY Reverse ASC" | where Census == $year and Role == "Head" | reject Reverse Role
+            ORDER BY Reverse ASC" | where Census == ($year | into string) and Role == "Head" | reject Reverse Role
             },
 
         'help' => {

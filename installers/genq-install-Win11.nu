@@ -1,14 +1,15 @@
 # Create auto-loading config file
-mkdir $"($env.AppData)/nushell/vendor/autoload"
+mkdir ([$env.AppData, "nushell", "vendor", "autoload"] | path join)
 
 # Customize Nushell Configuration
-"# Tailored Nushell Configuration \n"                 | save -f $"($env.AppData)/nushell/config.nu"
-echo "$env.config.buffer_editor = \"notepad\"\n"      | save --append $"($env.AppData)/nushell/config.nu" 
-echo "\n"                                             | save --append $"($env.AppData)/nushell/config.nu" 
-echo "$env.config.history.file_format = \"sqlite\"\n" | save --append $"($env.AppData)/nushell/config.nu"
-echo "$env.config.history.max_size = 5_000_000\n"     | save --append $"($env.AppData)/nushell/config.nu"
-echo "$env.config.history.sync_on_enter = true\n"     | save --append $"($env.AppData)/nushell/config.nu"
-echo "$env.config.history.isolation = true\n"         | save --append $"($env.AppData)/nushell/config.nu"
+"# Tailored Nushell Configuration \n"                 | save -f ([$env.AppData, "nushell", "config.nu"] | path join)
+let config_file = ([$env.AppData, "nushell", "config.nu"] | path join)
+echo "$env.config.buffer_editor = \"notepad\"\n"      | save --append $config_file
+echo "\n"                                             | save --append $config_file
+echo "$env.config.history.file_format = \"sqlite\"\n" | save --append $config_file
+echo "$env.config.history.max_size = 5_000_000\n"     | save --append $config_file
+echo "$env.config.history.sync_on_enter = true\n"     | save --append $config_file
+echo "$env.config.history.isolation = true\n"         | save --append $config_file
 
 # With fresh install we are defaulting to a demo mode. 
 # Create startup config file with values for demo 
