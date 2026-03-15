@@ -166,7 +166,7 @@ export def main [
                 location: ($death_event.Location? | default "")
                 note: ($death_event.Note? | default "")
             } })
-        }
+        } | compact  # drop null birth/death fields for cleaner YAML output
 
     # Get parents (father first, then mother)
     let parents = ($people 

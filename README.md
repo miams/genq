@@ -1,6 +1,12 @@
 <h1 align="center">GenQuery (genq)</h1>
 <h3 align="center">A Terminal-based RootsMagic Reporting Engine</h3>
 
+![CI/CD](https://github.com/miams/genq/actions/workflows/tests.yaml/badge.svg)
+![Tests](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fgist.githubusercontent.com%2Fmiams%2F3a54ac22a61806671679d2822c246e5b%2Fraw%2Ftest-summary.json&query=%24.total&label=Tests)
+![Passed](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fgist.githubusercontent.com%2Fmiams%2F3a54ac22a61806671679d2822c246e5b%2Fraw%2Ftest-summary.json&query=%24.passed&label=Passed&color=%2331c654)
+![Failed](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fgist.githubusercontent.com%2Fmiams%2F3a54ac22a61806671679d2822c246e5b%2Fraw%2Ftest-summary.json&query=%24.failed&label=Failed&color=red)
+![Skipped](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fgist.githubusercontent.com%2Fmiams%2F3a54ac22a61806671679d2822c246e5b%2Fraw%2Ftest-summary.json&query=%24.skipped&label=Skipped&color=yellow)
+
 GenQuery executes blocks of Nushell code to query and parse RootsMagic's SQLite database (RootsMagic version 10 only) to generate tabular reports from the command line. This utility leverages Nushell's shell environment to create a quick, flexible and easy to use reporting tool.
 
 In the examples below, all queries are filtered to the first 20 records for demonstration purposes only.

@@ -32,20 +32,20 @@ export def platform-dirs [] {
         config: (match $nu.os-info.family {
             "windows" => ($env.APPDATA | path join "GenQuery")
             "unix" => (match $nu.os-info.name {
-                "macos" => ($nu.home-path | path join "Library" "Application Support" "GenQuery")
-                _ => ($nu.home-path | path join ".config" "genq")
+                "macos" => ($nu.home-dir | path join "Library" "Application Support" "GenQuery")
+                _ => ($nu.home-dir | path join ".config" "genq")
             })
         })
         data: (match $nu.os-info.family {
             "windows" => ($env.LOCALAPPDATA | path join "GenQuery" "data")
             "unix" => (match $nu.os-info.name {
-                "macos" => ($nu.home-path | path join "Library" "Application Support" "GenQuery" "data")
-                _ => ($nu.home-path | path join ".local" "share" "genq")
+                "macos" => ($nu.home-dir | path join "Library" "Application Support" "GenQuery" "data")
+                _ => ($nu.home-dir | path join ".local" "share" "genq")
             })
         })
         nushell_config: (match $nu.os-info.family {
             "windows" => ($env.APPDATA | path join "nushell")
-            "unix" => ($nu.home-path | path join ".config" "nushell")
+            "unix" => ($nu.home-dir | path join ".config" "nushell")
         })
     }
 }

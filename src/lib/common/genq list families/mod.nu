@@ -20,10 +20,8 @@ export def "main" [
         JOIN NameTable as Mother ON FamilyTable.MotherID = Mother.OwnerID 
         WHERE FatherIsPrimary AND MotherIsPrimary"
     
-        # FamilyTable.UTCModDate can be NULL
-    let family_dataframe = open $env.rmdb | query db $sqlquery | 
-    insert LastUpdate {|row| if ($row.LastUpdateUTC | is-not-empty) { $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S"} }
+    # FamilyTable.UTCModDate can be NULL
+    open $env.rmdb | query db $sqlquery
+    | insert LastUpdate {|row| if ($row.LastUpdateUTC | is-not-empty) { $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S"} }
     | reject LastUpdateUTC FatherIsPrimary MotherIsPrimary | startat1
-
-    $family_dataframe 
 }

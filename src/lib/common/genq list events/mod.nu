@@ -20,17 +20,15 @@ export def "main" [
     INNER JOIN FactTypeTable ON FactTypeTable.FactTypeID = EventTable.EventType
     JOIN NameTable ON NameTable.OwnerID = EventTable.OwnerID;"
 
-    if $ParseDate { 
-        let my_dataframe = open $env.rmdb | query db $sqlquery | 
-        insert LastUpdate {|row| $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S"} 
+    if $ParseDate {
+        open $env.rmdb | query db $sqlquery
+        | insert LastUpdate {|row| $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S"}
         | insert MoreColumns {|row| rmdate $row.FullDate} | flatten MoreColumns -a
-        | reject LastUpdateUTC FullDate EventDate| startat1
-        $my_dataframe } else {
-
-        let my_dataframe = open $env.rmdb | query db $sqlquery | 
-        insert LastUpdate {|row| $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S"} 
+        | reject LastUpdateUTC FullDate EventDate | startat1
+    } else {
+        open $env.rmdb | query db $sqlquery
+        | insert LastUpdate {|row| $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S"}
         | reject FullDate LastUpdateUTC | startat1
-        $my_dataframe
     }
 
 

@@ -10,5 +10,7 @@ docs/templates/Template_Person_Note.md
 docs/development/lessons-learned.md
 docs/development/beta-readiness-todo.md
 vault/
+# CI artifacts
+test-report.xml
 # Allow sample Presidents database
 # !pres2020.rmtree

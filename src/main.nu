@@ -43,10 +43,12 @@ $env.RDMF = $config.display.date_format
 let FedCensus = [1790 1800 1810 1820 1830 1840 1850 1860 1870 1880 1900 1910 1920 1930 1940 1950]
 $env.SurnameGroup = [Iams, Iames, Iiams, Iiames, Ijams, Ijames, Imes, Eimes]
 
+def genq-actions [] { ["list", "tabulate", "config", "help"] }
+
 # GenQuery generates tabular reports from the RootsMagic database.
 @category "genq-common"
 export def genq [
-    action?: string,  # action command - completion handled by module system
+    action?: string@genq-actions,  # action command
     ...objects: string  # additional directives, options vary based on action command
     ] {
 
