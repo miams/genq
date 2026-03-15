@@ -33,6 +33,22 @@ jobs:
         with:
           version: "*"
 
+      - name: Download Test Database from S3
+        shell: bash
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
+          GENQ_TEST_BUCKET: ${{ vars.GENQ_TEST_BUCKET }}
+        run: |
+          if [ -n "$AWS_ACCESS_KEY_ID" ] && [ -n "$GENQ_TEST_BUCKET" ]; then
+            aws s3 cp "s3://$GENQ_TEST_BUCKET/Iiams.rmtree" tests/fixtures/Iiams.rmtree
+            echo "GENQ_TEST_DB=tests/fixtures/Iiams.rmtree" >> $GITHUB_ENV
+            echo "Downloaded test database from s3://$GENQ_TEST_BUCKET/Iiams.rmtree"
+          else
+            echo "Skipping DB download: AWS credentials or GENQ_TEST_BUCKET not configured"
+          fi
+
       - name: Run Tests
         shell: nu {0}
         run: nu tests/run-tests.nu --ci

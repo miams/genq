@@ -12,5 +12,7 @@ docs/development/beta-readiness-todo.md
 vault/
 # CI artifacts
 test-report.xml
+# Test database fixtures (downloaded from S3, not committed)
+tests/fixtures/*.rmtree
 # Allow sample Presidents database
 # !pres2020.rmtree

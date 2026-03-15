@@ -11,7 +11,7 @@ use "../src/lib/common/genq config/validation.nu" *
 @test
 def "sanitize-file-path trims leading and trailing whitespace" [] {
     let result = (sanitize-file-path "  ~/test/path.txt  " "test")
-    assert ($result | str contains "test/path.txt")
+    assert ($result | str contains ("test" | path join "path.txt"))
 }
 
 @test
@@ -28,7 +28,7 @@ def "sanitize-file-path rejects empty input" [] {
 @test
 def "sanitize-file-path expands tilde" [] {
     let result = (sanitize-file-path "~/Documents/test.txt" "test")
-    assert ($result | str starts-with "/")
+    assert (not ($result | str contains "~"))
 }
 
 # --- validate-rmtree-file ---
@@ -50,9 +50,11 @@ def "validate-rmtree-file rejects wrong extension" [] {
 
 @test
 def "validate-directory-path accepts existing directory" [] {
-    let result = (validate-directory-path "/tmp" "temp")
+    let tmp = (mktemp -d -t "genq-test-XXXXXX")
+    let result = (validate-directory-path $tmp "temp")
     assert ($result | path exists)
     assert (($result | path type) == "dir")
+    rm -rf $tmp
 }
 
 @test

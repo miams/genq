@@ -11,15 +11,15 @@ use "../src/lib/common/paths.nu" *
 @test
 def "resolve-path expands tilde to absolute path" [] {
     let result = (resolve-path "~/Documents/test.txt")
-    assert ($result | str starts-with "/")
-    assert ($result | str contains "Documents/test.txt")
+    assert (not ($result | str contains "~"))
+    assert ($result | str contains ("Documents" | path join "test.txt"))
 }
 
 @test
 def "resolve-path passes through absolute paths" [] {
-    let result = (resolve-path "/tmp")
-    assert ($result | str starts-with "/")
-    assert ($result | str contains "tmp")
+    let abs = ($nu.home-dir | path expand)
+    let result = (resolve-path $abs)
+    assert equal $result $abs
 }
 
 # --- genq-data-dir ---
@@ -33,7 +33,8 @@ def "genq-data-dir returns non-empty string" [] {
 @test
 def "genq-data-dir returns absolute path" [] {
     let dir = (genq-data-dir)
-    assert ($dir | str starts-with "/")
+    assert (not ($dir | str starts-with "."))
+    assert (not ($dir | str contains "~"))
 }
 
 # --- genq-config-dir ---
@@ -47,28 +48,34 @@ def "genq-config-dir returns non-empty string" [] {
 @test
 def "genq-config-dir returns absolute path" [] {
     let dir = (genq-config-dir)
-    assert ($dir | str starts-with "/")
+    assert (not ($dir | str starts-with "."))
+    assert (not ($dir | str contains "~"))
 }
 
 # --- resolve-genq-path ---
 
 @test
 def "resolve-genq-path joins relative path to base dir" [] {
-    let result = (resolve-genq-path "config/default.toml" "/tmp")
-    assert equal $result "/tmp/config/default.toml"
+    let base = (mktemp -d -t "genq-test-XXXXXX")
+    let result = (resolve-genq-path "config/default.toml" $base)
+    let expected = ($base | path join "config" | path join "default.toml" | path expand)
+    assert equal $result $expected
+    rm -rf $base
 }
 
 @test
 def "resolve-genq-path passes through absolute paths" [] {
-    let result = (resolve-genq-path "/absolute/path.txt" "/tmp")
-    assert equal $result "/absolute/path.txt"
+    let abs = ($nu.home-dir | path expand)
+    let result = (resolve-genq-path $abs $nu.home-dir)
+    assert equal $result $abs
 }
 
 @test
 def "resolve-genq-path uses pwd when no base provided" [] {
     let result = (resolve-genq-path "config/default.toml")
-    assert ($result | str ends-with "config/default.toml")
-    assert ($result | str starts-with "/")
+    let expected_suffix = ("config" | path join "default.toml")
+    assert ($result | str ends-with $expected_suffix)
+    assert (not ($result | str starts-with "."))
 }
 
 # --- platform-dirs ---
