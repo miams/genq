@@ -6,13 +6,21 @@ export def "main" [
 ] {
 # Find RootsMagic configuration file using cross-platform path construction
 let config_filename = match $nu.os-info.name {
-    "macos" => ($nu.home-path | path join "RootsMagic" "Version 10" "RootsMagicUser.xml")
-    "windows" => ($nu.home-path | path join "AppData" "Roaming" "RootsMagic" "Version 10" "RootsMagicUser.xml")
-    _ => ($nu.home-path | path join ".config" "rootmagic" "RootsMagicUser.xml")  # Linux fallback
+    "macos" => ($nu.home-dir | path join "RootsMagic" "Version 10" "RootsMagicUser.xml")
+    "windows" => ($nu.home-dir | path join "AppData" "Roaming" "RootsMagic" "Version 10" "RootsMagicUser.xml")
+    _ => ($nu.home-dir | path join ".config" "rootmagic" "RootsMagicUser.xml")  # Linux fallback
 }
 
 if ($config_filename | path exists) {
-    let filepath = open $config_filename | xml xaccess [ preferences Folders Media ] | get content | flatten | get 0.content
+    let filepath = open $config_filename
+        | get content
+        | where tag == "Folders"
+        | first
+        | get content
+        | where tag == "Media"
+        | first
+        | get content
+        | get 0.content
     let sqlquery = "SELECT MediaID, MediaType, MediaPath, MediaFile, URL, Caption, Description, Date, SortDate 
         FROM MultimediaTable;"
     open $env.rmdb | query db $sqlquery 

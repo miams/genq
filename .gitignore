@@ -14,5 +14,8 @@ vault/
 test-report.xml
 # Test database fixtures (downloaded from S3, not committed)
 tests/fixtures/*.rmtree
+# SQLite WAL/SHM files created when tests write to .rmtree databases
+data/*.rmtree-wal
+data/*.rmtree-shm
 # Allow sample Presidents database
 # !pres2020.rmtree

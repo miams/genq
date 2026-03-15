@@ -9,5 +9,25 @@ export module 'genq list sources'
 export module 'genq md people'
 export module 'genq config'
 
-# Path utilities  
+# Path utilities
 export module 'paths.nu'
+
+# Shared utility functions used by sub-modules
+# Exported here so tests can load them via `use common *`
+
+# Start index at 1 instead of default 0.
+export def startat1 [] {
+    enumerate | flatten | each { |row| $row | upsert index ($row.index + 1) }
+}
+
+# Limit text in column with ellipsis
+export def limit [
+    text: string   # string to shorten
+    maxlen: int    # max length of string
+] {
+    if ($text | str length) > $maxlen {
+        $text | str substring 0..$maxlen | [$in, "..."] | str join
+    } else {
+        $text
+    }
+}

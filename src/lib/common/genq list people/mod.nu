@@ -12,8 +12,9 @@ export def "main" [
 
     print "List of individuals, as well as their aliases."
 
-    # Create and manage temporary tables; finally block ensures cleanup on success and error
-    try {
+    # Create and manage temporary tables; capture result then clean up unconditionally.
+    # Note: Nushell's `finally` block overwrites the return value, so we use a variable instead.
+    let result = try {
         # Create temp Table of people consisting of only Primary Names.
         open $env.rmdb | query db "DROP TABLE IF EXISTS tmpNames"
         open $env.rmdb | query db "CREATE TABLE tmpNames AS SELECT OwnerID, Given COLLATE NOCASE, Surname COLLATE NOCASE, BirthYear, DeathYear FROM NameTable WHERE IsPrimary=1"
@@ -27,15 +28,18 @@ export def "main" [
     } catch { |error|
         print $"(ansi red)Error:(ansi reset) Database query failed: ($error.msg)"
         print "This might indicate database corruption or insufficient permissions."
-    } finally {
-        # Clean up temporary tables unconditionally (runs on both success and error)
-        try {
-            open $env.rmdb | query db "DROP TABLE IF EXISTS tmpNames"
-            open $env.rmdb | query db "DROP TABLE IF EXISTS tmpFullNames"
-        } catch {
-            # Ignore cleanup errors - tables may not exist
-        }
+        null
     }
+
+    # Clean up temporary tables unconditionally
+    try {
+        open $env.rmdb | query db "DROP TABLE IF EXISTS tmpNames"
+        open $env.rmdb | query db "DROP TABLE IF EXISTS tmpFullNames"
+    } catch {
+        # Ignore cleanup errors - tables may not exist
+    }
+
+    $result
 }
 
 # @example "list all people" {
