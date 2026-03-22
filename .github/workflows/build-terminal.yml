@@ -137,19 +137,33 @@ jobs:
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
 
-      - name: Restore NuGet packages
+      - name: Restore SDK-style projects
         working-directory: genq-terminal-windows
-        run: nuget restore OpenConsole.slnx
+        shell: pwsh
+        run: |
+          # NuGet.Config uses <clear/> so only the private TerminalDependencies feed is active.
+          # That feed lacks .NET 8 runtime reference packs, so nuget.exe restore fails for
+          # SDK-style .csproj targets. Use dotnet restore instead — it resolves framework
+          # reference packs from the installed .NET SDK directly, bypassing the feed config.
+          $env:DOTNET_ROOT = 'C:\Program Files\dotnet'
+          $env:PATH = "C:\Program Files\dotnet;$env:PATH"
+          dotnet restore src\cascadia\WpfTerminalControl\WpfTerminalControl.csproj
+          dotnet restore src\cascadia\WpfTerminalTestNetCore\WpfTerminalTestNetCore.csproj
+          dotnet restore src\tools\TerminalStress\TerminalStress.csproj
 
       - name: Build x64 Release
         working-directory: genq-terminal-windows
+        shell: pwsh
         run: |
-          msbuild OpenConsole.slnx `
-            /p:Configuration=Release `
+          $env:DOTNET_ROOT = 'C:\Program Files\dotnet'
+          $env:PATH = "C:\Program Files\dotnet;$env:PATH"
+          Import-Module .\tools\OpenConsole.psm1
+          Set-MsBuildDevEnvironment
+          Invoke-OpenConsoleBuild `
             /p:Platform=x64 `
-            /p:BuildProjectReferences=true `
-            /m `
-            /verbosity:minimal
+            /p:Configuration=Release `
+            /p:WindowsTargetPlatformVersion=10.0.22621.0 `
+            /p:TargetPlatformVersion=10.0.22621.0
 
       - name: Package ZIP
         shell: pwsh
