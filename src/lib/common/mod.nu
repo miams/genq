@@ -8,6 +8,7 @@ export module 'genq list people'
 export module 'genq list sources'
 export module 'genq md people'
 export module 'genq config'
+export module 'genq tabulate trees'
 
 # Path utilities
 export module 'paths.nu'

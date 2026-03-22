@@ -1,0 +1,82 @@
+#!/bin/bash
+#
+# genquery-start — Launch script for GenQuery Terminal
+#
+# Supports two runtime modes:
+#   Bundle mode: Running inside GenQuery Terminal.app (GHOSTTY_RESOURCES_DIR is set)
+#   Dev mode:    Running directly from the genq repo checkout
+#
+# Phase 3 note: Bundle mode requires a bundled Nu binary and a minimal
+# genq-specific env.nu at $GHOSTTY_RESOURCES_DIR/genq/config/env.nu.
+# Until those exist, bundle mode falls back to the user's nushell config.
+
+set -e
+
+# ---------------------------------------------------------------------------
+# Resolve runtime mode
+# ---------------------------------------------------------------------------
+
+if [ -n "$GHOSTTY_RESOURCES_DIR" ] && [ -f "$GHOSTTY_RESOURCES_DIR/genq/src/main.nu" ]; then
+  # --- Bundle mode ---
+  # Running inside GenQuery Terminal.app with genq scripts bundled.
+
+  MAIN_NU="$GHOSTTY_RESOURCES_DIR/genq/src/main.nu"
+
+  # Prefer bundled Nu binary; fall back to PATH
+  if [ -x "$GHOSTTY_RESOURCES_DIR/bin/nu" ]; then
+    NU="$GHOSTTY_RESOURCES_DIR/bin/nu"
+  else
+    NU=$(command -v nu 2>/dev/null || true)
+  fi
+
+  # Prefer bundled minimal GenQuery env config (Phase 3 target).
+  # Fall back to user's nushell env.nu until the bundled config exists.
+  if [ -f "$GHOSTTY_RESOURCES_DIR/genq/config/env.nu" ]; then
+    ENV_ARGS="--env-config $GHOSTTY_RESOURCES_DIR/genq/config/env.nu"
+  elif [ -f "$HOME/.config/nushell/env.nu" ]; then
+    ENV_ARGS="--env-config $HOME/.config/nushell/env.nu"
+  else
+    ENV_ARGS=""
+  fi
+
+else
+  # --- Dev mode ---
+  # Running directly from a genq repo checkout.
+
+  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+  MAIN_NU="$SCRIPT_DIR/../src/main.nu"
+
+  # Find Nu in PATH or common install locations
+  NU=$(command -v nu 2>/dev/null \
+    || { [ -x /opt/homebrew/bin/nu ] && echo /opt/homebrew/bin/nu; } \
+    || { [ -x /usr/local/bin/nu ] && echo /usr/local/bin/nu; } \
+    || true)
+
+  if [ -f "$HOME/.config/nushell/env.nu" ]; then
+    ENV_ARGS="--env-config $HOME/.config/nushell/env.nu"
+  else
+    ENV_ARGS=""
+  fi
+
+fi
+
+# ---------------------------------------------------------------------------
+# Validate
+# ---------------------------------------------------------------------------
+
+if [ -z "$NU" ] || [ ! -x "$NU" ]; then
+  echo "Error: nushell not found." >&2
+  echo "Install with: brew install nushell" >&2
+  exit 1
+fi
+
+if [ ! -f "$MAIN_NU" ]; then
+  echo "Error: GenQuery main.nu not found at: $MAIN_NU" >&2
+  exit 1
+fi
+
+# ---------------------------------------------------------------------------
+# Launch
+# ---------------------------------------------------------------------------
+
+exec "$NU" --interactive $ENV_ARGS -e "source '$MAIN_NU'; genq"
