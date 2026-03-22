@@ -137,14 +137,19 @@ jobs:
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
 
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
       - name: Restore SDK-style projects
         working-directory: genq-terminal-windows
         shell: pwsh
         run: |
           # NuGet.Config uses <clear/> so only the private TerminalDependencies feed is active.
-          # That feed lacks .NET 8 runtime reference packs, so nuget.exe restore fails for
-          # SDK-style .csproj targets. Use dotnet restore instead — it resolves framework
-          # reference packs from the installed .NET SDK directly, bypassing the feed config.
+          # That feed lacks .NET 8 runtime reference packs. Installing the .NET 8 SDK above
+          # puts the targeting packs in C:\Program Files\dotnet\packs\ so dotnet restore
+          # finds them locally without needing any NuGet feed.
           $env:DOTNET_ROOT = 'C:\Program Files\dotnet'
           $env:PATH = "C:\Program Files\dotnet;$env:PATH"
           dotnet restore src\cascadia\WpfTerminalControl\WpfTerminalControl.csproj
