@@ -183,10 +183,10 @@ jobs:
           $signtool = "$sdkBin\signtool.exe"
           $certPwd  = $env:CERT_PASSWORD
 
-          $msix = Get-ChildItem -Path "genq-terminal-windows\bin" -Recurse -Filter "*.msix" |
-            Where-Object { $_.FullName -match "ARM64.*Release|Release.*ARM64" } |
+          $msix = Get-ChildItem -Path "genq-terminal-windows\src\cascadia\CascadiaPackage\AppPackages" -Recurse -Filter "*.msix" |
+            Where-Object { $_.Name -match "ARM64" } |
             Select-Object -First 1
-          if (-not $msix) { throw "ARM64 Release MSIX not found under genq-terminal-windows\bin" }
+          if (-not $msix) { throw "ARM64 MSIX not found under CascadiaPackage\AppPackages" }
 
           Write-Host "Signing $($msix.FullName)"
           & $signtool sign /fd SHA256 /f genq-signing.pfx /p $certPwd $msix.FullName
