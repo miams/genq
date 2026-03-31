@@ -117,6 +117,8 @@ jobs:
             libglib2.0-bin \
             libwayland-dev \
             wayland-protocols \
+            libgirepository1.0-dev \
+            gobject-introspection \
             valac \
             gettext \
             xdg-utils \
@@ -128,8 +130,9 @@ jobs:
           meson setup /tmp/blueprint-compiler/_build /tmp/blueprint-compiler
           sudo meson install -C /tmp/blueprint-compiler/_build
           # gtk4-layer-shell not packaged for Ubuntu 24.04 — build from source
+          # introspection+valac must be enabled so examples/meson.build can reference vapi
           git clone --depth=1 https://github.com/wmww/gtk4-layer-shell.git /tmp/gtk4-layer-shell
-          meson setup /tmp/gtk4-layer-shell/_build /tmp/gtk4-layer-shell -Dexamples=false -Ddocs=false -Dtests=false -Dintrospection=false
+          meson setup /tmp/gtk4-layer-shell/_build /tmp/gtk4-layer-shell -Ddocs=false -Dtests=false
           sudo meson install -C /tmp/gtk4-layer-shell/_build
           sudo ldconfig
 
