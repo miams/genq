@@ -31,6 +31,20 @@ jobs:
           ssh-key: ${{ secrets.GENQ_TERMINAL_DEPLOY_KEY }}
           path: genq-terminal
 
+      - name: Select Xcode 26 (genq-terminal requires macOS 26 SDK)
+        run: |
+          # genq-terminal/genq branch uses macOS 26 APIs — need Xcode 26
+          XCODE26=$(find /Applications -maxdepth 1 -name "Xcode_26*.app" -type d 2>/dev/null | sort | tail -1)
+          if [ -n "$XCODE26" ]; then
+            echo "Found Xcode 26 at: $XCODE26"
+            sudo xcode-select -s "$XCODE26/Contents/Developer"
+          else
+            echo "Xcode 26 not found. Available Xcode installs:"
+            ls -d /Applications/Xcode*.app 2>/dev/null || echo "(none found)"
+            echo "Proceeding with default: $(xcodebuild -version | head -1)"
+          fi
+          xcodebuild -version
+
       - name: Install Zig
         uses: mlugg/setup-zig@v2
         with:
