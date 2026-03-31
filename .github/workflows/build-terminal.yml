@@ -39,10 +39,8 @@ jobs:
       - name: Build
         working-directory: genq-terminal
         env:
-          # Suppress xcodebuild code-signing; we sign the app bundle afterward
+          # Use ad-hoc signing during build; the Sign step re-signs afterward
           CODE_SIGN_IDENTITY: "-"
-          CODE_SIGNING_REQUIRED: "NO"
-          CODE_SIGNING_ALLOWED: "NO"
         run: zig build -Doptimize=ReleaseFast
 
       - name: Sign
