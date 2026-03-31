@@ -17,7 +17,7 @@ jobs:
   # ---------------------------------------------------------------------------
   build-macos:
     name: Build macOS (Ghostty)
-    runs-on: macos-latest
+    runs-on: macos-26  # genq-terminal uses .icon format (macOS 26 Tahoe) — needs macOS 26 host for actool
 
     steps:
       - name: Checkout genq
