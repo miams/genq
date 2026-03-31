@@ -1,0 +1,120 @@
+name: Build Ghostty
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+
+  # ---------------------------------------------------------------------------
+  # macOS — Ghostty fork → DMG
+  # ---------------------------------------------------------------------------
+  build-macos:
+    name: Build macOS (Ghostty)
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout genq
+        uses: actions/checkout@v4
+
+      - name: Checkout genq-terminal (private, via deploy key)
+        uses: actions/checkout@v4
+        with:
+          repository: miams/genq-terminal
+          ref: genq
+          ssh-key: ${{ secrets.GENQ_TERMINAL_DEPLOY_KEY }}
+          path: genq-terminal
+
+      - name: Install Zig
+        uses: mlugg/setup-zig@v1
+        with:
+          version: "0.15.2"   # keep in sync with genq-terminal/build.zig.zon
+
+      - name: Build
+        working-directory: genq-terminal
+        run: zig build -Doptimize=ReleaseFast
+
+      - name: Sign
+        working-directory: genq-terminal
+        run: |
+          xattr -cr zig-out/Ghostty.app
+          codesign --force --deep --sign - "zig-out/Ghostty.app"
+
+      - name: Package DMG
+        working-directory: genq-terminal
+        run: |
+          mkdir -p /tmp/genq-dmg
+          cp -r "zig-out/Ghostty.app" "/tmp/genq-dmg/GenQuery Terminal.app"
+          ln -s /Applications /tmp/genq-dmg/Applications
+          hdiutil create \
+            -volname "GenQuery Terminal" \
+            -srcfolder /tmp/genq-dmg \
+            -ov -format UDZO \
+            -o "$GITHUB_WORKSPACE/GenQuery-Terminal-macOS.dmg"
+
+      - name: Upload DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: GenQuery-Terminal-macOS
+          path: GenQuery-Terminal-macOS.dmg
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # Linux — Ghostty fork → AppImage (stub, packaging TBD)
+  # ---------------------------------------------------------------------------
+  build-linux:
+    name: Build Linux (Ghostty)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout genq
+        uses: actions/checkout@v4
+
+      - name: Checkout genq-terminal (private, via deploy key)
+        uses: actions/checkout@v4
+        with:
+          repository: miams/genq-terminal
+          ref: genq
+          ssh-key: ${{ secrets.GENQ_TERMINAL_DEPLOY_KEY }}
+          path: genq-terminal
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            pkg-config \
+            libgtk-4-dev \
+            libadwaita-1-dev \
+            libglib2.0-dev \
+            blueprint-compiler \
+            libglib2.0-bin \
+            gettext \
+            xdg-utils
+
+      - name: Install Zig
+        uses: mlugg/setup-zig@v1
+        with:
+          version: "0.15.2"
+
+      - name: Build
+        working-directory: genq-terminal
+        run: zig build -Doptimize=ReleaseFast -Dapp-runtime=gtk
+
+      - name: Package (stub — AppImage packaging TBD in Phase 3)
+        working-directory: genq-terminal
+        run: |
+          tar -czf "$GITHUB_WORKSPACE/GenQuery-Terminal-Linux.tar.gz" \
+            -C zig-out/bin ghostty
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GenQuery-Terminal-Linux
+          path: GenQuery-Terminal-Linux.tar.gz
+          retention-days: 14
