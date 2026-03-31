@@ -50,6 +50,11 @@ jobs:
         with:
           version: "0.15.2"   # keep in sync with genq-terminal/build.zig.zon
 
+      - name: Clear Zig build cache
+        # Xcode version changed across runs — stale xcframework artifacts
+        # in the cache cause CompileAssetCatalogVariant to fail. Force clean.
+        run: rm -rf "${{ github.workspace }}/.zig-cache/o"
+
       - name: Build
         working-directory: genq-terminal
         env:
@@ -159,7 +164,7 @@ jobs:
   # ---------------------------------------------------------------------------
   build-windows:
     name: Build Windows (Windows Terminal)
-    runs-on: windows-latest
+    runs-on: windows-2022  # windows-latest (2025) has XAML compiler WMC9999 regression
 
     steps:
       # -----------------------------------------------------------------------
