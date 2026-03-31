@@ -32,9 +32,9 @@ jobs:
           path: genq-terminal
 
       - name: Install Zig
-        uses: mlugg/setup-zig@v1
-        with:
-          version: "0.15.2"   # keep in sync with genq-terminal/build.zig.zon
+        run: |
+          curl -L https://ziglang.org/download/0.15.2/zig-aarch64-macos-0.15.2.tar.xz | tar -xJ
+          echo "$PWD/zig-aarch64-macos-0.15.2" >> $GITHUB_PATH
 
       - name: Build
         working-directory: genq-terminal
@@ -98,9 +98,9 @@ jobs:
             xdg-utils
 
       - name: Install Zig
-        uses: mlugg/setup-zig@v1
-        with:
-          version: "0.15.2"
+        run: |
+          curl -L https://ziglang.org/download/0.15.2/zig-x86_64-linux-0.15.2.tar.xz | tar -xJ
+          echo "$PWD/zig-x86_64-linux-0.15.2" >> $GITHUB_PATH
 
       - name: Build
         working-directory: genq-terminal
