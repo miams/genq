@@ -99,11 +99,14 @@ jobs:
             libglib2.0-dev \
             libglib2.0-bin \
             gettext \
-            xdg-utils
+            xdg-utils \
+            meson \
+            ninja-build
           # apt ships blueprint-compiler 0.12.0; Ghostty requires 0.16.0+
-          # Not on PyPI — install from source (GNOME GitLab)
-          git clone --depth=1 https://gitlab.gnome.org/jwestman/blueprint-compiler /tmp/blueprint-compiler
-          pip3 install --break-system-packages /tmp/blueprint-compiler
+          # blueprint-compiler uses meson, not pip — install from source
+          git clone --depth=1 https://gitlab.gnome.org/jwestman/blueprint-compiler.git /tmp/blueprint-compiler
+          meson setup /tmp/blueprint-compiler/_build /tmp/blueprint-compiler
+          sudo meson install -C /tmp/blueprint-compiler/_build
 
       - name: Install Zig
         uses: mlugg/setup-zig@v2
