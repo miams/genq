@@ -60,7 +60,11 @@ jobs:
         env:
           # Use ad-hoc signing during build; the Sign step re-signs afterward
           CODE_SIGN_IDENTITY: "-"
-        run: zig build -Doptimize=ReleaseFast
+        run: |
+          # Zig 0.15.x linker needs explicit SDKROOT to find macOS 26 system library stubs
+          export SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
+          echo "SDKROOT=$SDKROOT"
+          zig build -Doptimize=ReleaseFast
 
       - name: Sign
         working-directory: genq-terminal
