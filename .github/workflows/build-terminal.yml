@@ -101,7 +101,9 @@ jobs:
             gettext \
             xdg-utils
           # apt ships blueprint-compiler 0.12.0; Ghostty requires 0.16.0+
-          pip3 install --break-system-packages blueprint-compiler
+          # Not on PyPI — install from source (GNOME GitLab)
+          git clone --depth=1 https://gitlab.gnome.org/jwestman/blueprint-compiler /tmp/blueprint-compiler
+          pip3 install --break-system-packages /tmp/blueprint-compiler
 
       - name: Install Zig
         uses: mlugg/setup-zig@v2
