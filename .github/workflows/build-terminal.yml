@@ -38,6 +38,11 @@ jobs:
 
       - name: Build
         working-directory: genq-terminal
+        env:
+          # Suppress xcodebuild code-signing; we sign the app bundle afterward
+          CODE_SIGN_IDENTITY: "-"
+          CODE_SIGNING_REQUIRED: "NO"
+          CODE_SIGNING_ALLOWED: "NO"
         run: zig build -Doptimize=ReleaseFast
 
       - name: Sign
@@ -92,10 +97,11 @@ jobs:
             libgtk-4-dev \
             libadwaita-1-dev \
             libglib2.0-dev \
-            blueprint-compiler \
             libglib2.0-bin \
             gettext \
             xdg-utils
+          # apt ships blueprint-compiler 0.12.0; Ghostty requires 0.16.0+
+          pip3 install --break-system-packages blueprint-compiler
 
       - name: Install Zig
         uses: mlugg/setup-zig@v2
