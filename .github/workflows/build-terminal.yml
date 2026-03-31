@@ -96,6 +96,7 @@ jobs:
             libadwaita-1-dev \
             libglib2.0-dev \
             libglib2.0-bin \
+            libgtk4-layer-shell-dev \
             gettext \
             xdg-utils \
             meson \
