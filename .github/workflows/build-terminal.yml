@@ -250,26 +250,25 @@ jobs:
           Copy-Item -Force "genq-terminal-windows\genq\scripts\env.nu"             "$pkgDir\scripts\"
 
           # Clean distribution config — no developer-specific paths
-          @"
-[database]
-active = ""
-
-[paths]
-sql_dir = "sql"
-lib_dir = "src/lib"
-ext_dir = "src/lib/ext"
-output_dir = "vault"
-
-[display]
-date_format = 1
-table_mode = "rounded"
-
-[extensions]
-enabled = [
-    "miams",
-    "pres2020",
-]
-"@ | Out-File -Encoding UTF8 "$pkgDir\config\default.toml"
+          # (Avoid PowerShell here-strings; TOML lines at column-0 terminate the YAML block scalar)
+          $configLines = @(
+            '[database]',
+            'active = ""',
+            '',
+            '[paths]',
+            'sql_dir = "sql"',
+            'lib_dir = "src/lib"',
+            'ext_dir = "src/lib/ext"',
+            'output_dir = "vault"',
+            '',
+            '[display]',
+            'date_format = 1',
+            'table_mode = "rounded"',
+            '',
+            '[extensions]',
+            'enabled = ["miams", "pres2020"]'
+          )
+          $configLines | Set-Content -Encoding UTF8 "$pkgDir\config\default.toml"
 
       # -----------------------------------------------------------------------
       # 6. Build x64 Release MSIX
