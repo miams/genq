@@ -1,0 +1,226 @@
+name: Build Windows x64
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+
+  # ---------------------------------------------------------------------------
+  # Windows x64 — Windows Terminal fork + bundled genq + Nushell → x64 .msix
+  # ---------------------------------------------------------------------------
+  build-windows-x64:
+    name: Build Windows x64 (Windows Terminal)
+    runs-on: windows-2022  # pinned: windows-latest is now 2025 which has XAML WMC9999 regression with SDK 10.0.26100.0
+
+    steps:
+      # -----------------------------------------------------------------------
+      # 1. Checkouts
+      # -----------------------------------------------------------------------
+      - name: Checkout genq
+        uses: actions/checkout@v4
+
+      - name: Checkout genq-terminal-windows
+        uses: actions/checkout@v4
+        with:
+          repository: miams/genq-terminal-windows
+          ref: genq
+          path: genq-terminal-windows
+
+      # -----------------------------------------------------------------------
+      # 2. Download Nushell x64 binary from GitHub releases
+      # -----------------------------------------------------------------------
+      - name: Download Nushell x64
+        shell: pwsh
+        run: |
+          $release = Invoke-RestMethod "https://api.github.com/repos/nushell/nushell/releases/latest"
+          $version = $release.tag_name
+          Write-Host "Bundling Nushell $version"
+          echo "NU_VERSION=$version" >> $env:GITHUB_ENV
+
+          $x64url = ($release.assets | Where-Object { $_.name -match "x86_64-pc-windows-msvc\.zip$" }).browser_download_url
+          Invoke-WebRequest $x64url -OutFile nu-x64.zip
+          Expand-Archive nu-x64.zip -DestinationPath nu-x64
+
+      # -----------------------------------------------------------------------
+      # 3. Build toolchain setup
+      # -----------------------------------------------------------------------
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore SDK-style projects
+        working-directory: genq-terminal-windows
+        shell: pwsh
+        run: |
+          # NuGet.Config uses <clear/> so only the private TerminalDependencies feed is active.
+          # That feed lacks .NET 8 runtime reference packs. Installing the .NET 8 SDK above
+          # puts the targeting packs in C:\Program Files\dotnet\packs\ so dotnet restore
+          # finds them locally without needing any NuGet feed.
+          $env:DOTNET_ROOT = 'C:\Program Files\dotnet'
+          $env:PATH = "C:\Program Files\dotnet;$env:PATH"
+          dotnet restore src\cascadia\WpfTerminalControl\WpfTerminalControl.csproj
+          dotnet restore src\cascadia\WpfTerminalTestNetCore\WpfTerminalTestNetCore.csproj
+          dotnet restore src\tools\TerminalStress\TerminalStress.csproj
+
+      # -----------------------------------------------------------------------
+      # 4. Create signing certificate
+      #    Subject must match Package.appxmanifest Publisher="CN=Zephyr Systems"
+      #    For production: set GENQ_SIGNING_PFX_B64 + GENQ_SIGNING_PFX_PASSWORD secrets.
+      # -----------------------------------------------------------------------
+      - name: Create signing certificate
+        shell: pwsh
+        run: |
+          if ($env:GENQ_SIGNING_PFX_B64) {
+            [System.IO.File]::WriteAllBytes(
+              "genq-signing.pfx",
+              [Convert]::FromBase64String($env:GENQ_SIGNING_PFX_B64)
+            )
+            echo "CERT_SOURCE=supplied" >> $env:GITHUB_ENV
+          } else {
+            $cert = New-SelfSignedCertificate `
+              -Type Custom `
+              -Subject "CN=Zephyr Systems" `
+              -KeyUsage DigitalSignature `
+              -FriendlyName "GenQuery Terminal (Development - not for distribution)" `
+              -CertStoreLocation "Cert:\CurrentUser\My" `
+              -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}")
+            $secPwd = ConvertTo-SecureString -String $env:CERT_PASSWORD -Force -AsPlainText
+            Export-PfxCertificate `
+              -Cert "Cert:\CurrentUser\My\$($cert.Thumbprint)" `
+              -FilePath "genq-signing.pfx" `
+              -Password $secPwd
+            echo "CERT_SOURCE=self-signed" >> $env:GITHUB_ENV
+          }
+        env:
+          GENQ_SIGNING_PFX_B64: ${{ secrets.GENQ_SIGNING_PFX_B64 }}
+          CERT_PASSWORD: ${{ secrets.GENQ_SIGNING_PFX_PASSWORD || 'genq-dev-temp-unsigned' }}
+
+      # -----------------------------------------------------------------------
+      # 5. Stage genq source files into CascadiaPackage
+      #    Config written as array, NOT a here-string: TOML lines at column-0
+      #    terminate YAML block scalars, causing silent truncation.
+      # -----------------------------------------------------------------------
+      - name: Stage genq source files
+        shell: pwsh
+        run: |
+          $pkgDir = "genq-terminal-windows\src\cascadia\CascadiaPackage\genq"
+          New-Item -ItemType Directory -Force -Path "$pkgDir\src\lib" | Out-Null
+          New-Item -ItemType Directory -Force -Path "$pkgDir\config"  | Out-Null
+          New-Item -ItemType Directory -Force -Path "$pkgDir\scripts" | Out-Null
+
+          Copy-Item -Force          "src\main.nu"       "$pkgDir\src\"
+          Copy-Item -Recurse -Force "src\lib\common"    "$pkgDir\src\lib\"
+          Copy-Item -Recurse -Force "src\lib\ext"       "$pkgDir\src\lib\"
+
+          # Launch scripts from genq-terminal-windows (copy if present)
+          $scriptsDir = "genq-terminal-windows\genq\scripts"
+          if (Test-Path $scriptsDir) {
+            Copy-Item -Recurse -Force "$scriptsDir\*" "$pkgDir\scripts\"
+          }
+
+          # Distribution config — no developer-specific paths
+          $cfg = @(
+            '[database]',
+            'active = ""',
+            '',
+            '[paths]',
+            'sql_dir = "sql"',
+            'lib_dir = "src/lib"',
+            'ext_dir = "src/lib/ext"',
+            'output_dir = "vault"',
+            '',
+            '[display]',
+            'date_format = 1',
+            'table_mode = "rounded"',
+            '',
+            '[extensions]',
+            'enabled = ["miams", "pres2020"]'
+          )
+          $cfg | Set-Content -Encoding UTF8 "$pkgDir\config\default.toml"
+
+      # -----------------------------------------------------------------------
+      # 6. Build x64 Release MSIX
+      # -----------------------------------------------------------------------
+      - name: Build x64 Release
+        working-directory: genq-terminal-windows
+        shell: pwsh
+        run: |
+          $nuExe = Get-ChildItem "..\nu-x64" -Recurse -Filter "nu.exe" | Select-Object -First 1
+          Copy-Item -Force $nuExe.FullName "src\cascadia\CascadiaPackage\genq\nu.exe"
+
+          $env:DOTNET_ROOT = 'C:\Program Files\dotnet'
+          $env:PATH = "C:\Program Files\dotnet;$env:PATH"
+          Import-Module .\tools\OpenConsole.psm1
+          Set-MsBuildDevEnvironment
+          Invoke-OpenConsoleBuild `
+            /p:Platform=x64 `
+            /p:Configuration=Release `
+            /p:WindowsTargetPlatformVersion=10.0.22621.0 `
+            /p:TargetPlatformVersion=10.0.22621.0 `
+            /p:WindowsTerminalBranding=Release
+
+      # -----------------------------------------------------------------------
+      # 7. Sign x64 MSIX
+      # -----------------------------------------------------------------------
+      - name: Sign x64 MSIX
+        shell: pwsh
+        run: |
+          $sdkBin   = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64"
+          $signtool = "$sdkBin\signtool.exe"
+          $certPwd  = $env:CERT_PASSWORD
+
+          $msix = Get-ChildItem -Path "genq-terminal-windows\bin" -Recurse -Filter "*.msix" |
+            Where-Object { $_.FullName -match "x64.*Release|Release.*x64" } |
+            Select-Object -First 1
+          if (-not $msix) { throw "x64 Release MSIX not found under genq-terminal-windows\bin" }
+
+          Write-Host "Signing $($msix.FullName)"
+          & $signtool sign /fd SHA256 /f genq-signing.pfx /p $certPwd $msix.FullName
+          if ($LASTEXITCODE -ne 0) { throw "signtool failed" }
+
+          Copy-Item $msix.FullName "$env:GITHUB_WORKSPACE\GenQuery-Terminal-Windows-x64.msix"
+          Write-Host "Signed MSIX: $($msix.FullName) ($env:CERT_SOURCE cert)"
+        env:
+          CERT_PASSWORD: ${{ secrets.GENQ_SIGNING_PFX_PASSWORD || 'genq-dev-temp-unsigned' }}
+
+      # -----------------------------------------------------------------------
+      # 8. Upload to S3 (skipped gracefully if credentials not configured)
+      # -----------------------------------------------------------------------
+      - name: Upload to S3
+        shell: pwsh
+        env:
+          AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION:    us-east-1
+          GENQ_RELEASES_BUCKET:  ${{ vars.GENQ_RELEASES_BUCKET }}
+        run: |
+          if (-not $env:AWS_ACCESS_KEY_ID -or -not $env:GENQ_RELEASES_BUCKET) {
+            Write-Host "S3 upload skipped (GENQ_RELEASES_BUCKET or AWS credentials not configured)"
+            exit 0
+          }
+          $shortSha = "${{ github.sha }}".Substring(0, 8)
+          $msix     = "$env:GITHUB_WORKSPACE\GenQuery-Terminal-Windows-x64.msix"
+          aws s3 cp $msix "s3://$env:GENQ_RELEASES_BUCKET/windows/x64/latest/GenQuery-Terminal-Windows-x64.msix"
+          aws s3 cp $msix "s3://$env:GENQ_RELEASES_BUCKET/windows/x64/$shortSha/GenQuery-Terminal-Windows-x64.msix"
+          Write-Host "Uploaded to s3://$env:GENQ_RELEASES_BUCKET/windows/x64/latest/ and /windows/x64/$shortSha/"
+
+      # -----------------------------------------------------------------------
+      # 9. Upload GitHub artifact (14-day retention)
+      # -----------------------------------------------------------------------
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GenQuery-Terminal-Windows-x64
+          path: GenQuery-Terminal-Windows-x64.msix
+          retention-days: 14

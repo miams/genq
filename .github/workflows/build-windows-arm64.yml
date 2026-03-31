@@ -1,4 +1,4 @@
-name: Build Windows
+name: Build Windows ARM64
 
 on:
   workflow_dispatch:
@@ -13,14 +13,10 @@ permissions:
 jobs:
 
   # ---------------------------------------------------------------------------
-  # Windows — Windows Terminal fork + bundled genq + Nushell → x64 .msix
-  #
-  # Produces a self-contained installer: the user needs no Nushell install.
-  # Bundled nu.exe is isolated from any system Nushell.
-  # x64 only; signed with a self-signed cert (replace with EV cert via secret).
+  # Windows ARM64 — Windows Terminal fork + bundled genq + Nushell → ARM64 .msix
   # ---------------------------------------------------------------------------
-  build-windows:
-    name: Build Windows (Windows Terminal)
+  build-windows-arm64:
+    name: Build Windows ARM64 (Windows Terminal)
     runs-on: windows-2022  # pinned: windows-latest is now 2025 which has XAML WMC9999 regression with SDK 10.0.26100.0
 
     steps:
@@ -38,9 +34,9 @@ jobs:
           path: genq-terminal-windows
 
       # -----------------------------------------------------------------------
-      # 2. Download Nushell x64 binary from GitHub releases
+      # 2. Download Nushell ARM64 binary from GitHub releases
       # -----------------------------------------------------------------------
-      - name: Download Nushell x64
+      - name: Download Nushell ARM64
         shell: pwsh
         run: |
           $release = Invoke-RestMethod "https://api.github.com/repos/nushell/nushell/releases/latest"
@@ -48,9 +44,9 @@ jobs:
           Write-Host "Bundling Nushell $version"
           echo "NU_VERSION=$version" >> $env:GITHUB_ENV
 
-          $x64url = ($release.assets | Where-Object { $_.name -match "x86_64-pc-windows-msvc\.zip$" }).browser_download_url
-          Invoke-WebRequest $x64url -OutFile nu-x64.zip
-          Expand-Archive nu-x64.zip -DestinationPath nu-x64
+          $armUrl = ($release.assets | Where-Object { $_.name -match "aarch64-pc-windows-msvc\.zip$" }).browser_download_url
+          Invoke-WebRequest $armUrl -OutFile nu-arm64.zip
+          Expand-Archive nu-arm64.zip -DestinationPath nu-arm64
 
       # -----------------------------------------------------------------------
       # 3. Build toolchain setup
@@ -154,30 +150,33 @@ jobs:
           $cfg | Set-Content -Encoding UTF8 "$pkgDir\config\default.toml"
 
       # -----------------------------------------------------------------------
-      # 6. Build x64 Release MSIX
+      # 6. Build ARM64 Release MSIX
+      #    /restore is required to fetch ARM64-specific runtime packs
+      #    (NETSDK1112: Microsoft.Windows.SDK.NET.Ref not found otherwise)
       # -----------------------------------------------------------------------
-      - name: Build x64 Release
+      - name: Build ARM64 Release
         working-directory: genq-terminal-windows
         shell: pwsh
         run: |
-          $nuExe = Get-ChildItem "..\nu-x64" -Recurse -Filter "nu.exe" | Select-Object -First 1
+          $nuExe = Get-ChildItem "..\nu-arm64" -Recurse -Filter "nu.exe" | Select-Object -First 1
           Copy-Item -Force $nuExe.FullName "src\cascadia\CascadiaPackage\genq\nu.exe"
 
           $env:DOTNET_ROOT = 'C:\Program Files\dotnet'
           $env:PATH = "C:\Program Files\dotnet;$env:PATH"
           Import-Module .\tools\OpenConsole.psm1
           Set-MsBuildDevEnvironment
-          Invoke-OpenConsoleBuild `
-            /p:Platform=x64 `
+          msbuild.exe OpenConsole.slnx `
+            /restore `
+            /p:Platform=ARM64 `
             /p:Configuration=Release `
             /p:WindowsTargetPlatformVersion=10.0.22621.0 `
             /p:TargetPlatformVersion=10.0.22621.0 `
             /p:WindowsTerminalBranding=Release
 
       # -----------------------------------------------------------------------
-      # 7. Sign x64 MSIX
+      # 7. Sign ARM64 MSIX
       # -----------------------------------------------------------------------
-      - name: Sign x64 MSIX
+      - name: Sign ARM64 MSIX
         shell: pwsh
         run: |
           $sdkBin   = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64"
@@ -185,15 +184,15 @@ jobs:
           $certPwd  = $env:CERT_PASSWORD
 
           $msix = Get-ChildItem -Path "genq-terminal-windows\bin" -Recurse -Filter "*.msix" |
-            Where-Object { $_.FullName -match "x64.*Release|Release.*x64" } |
+            Where-Object { $_.FullName -match "ARM64.*Release|Release.*ARM64" } |
             Select-Object -First 1
-          if (-not $msix) { throw "x64 Release MSIX not found under genq-terminal-windows\bin" }
+          if (-not $msix) { throw "ARM64 Release MSIX not found under genq-terminal-windows\bin" }
 
           Write-Host "Signing $($msix.FullName)"
           & $signtool sign /fd SHA256 /f genq-signing.pfx /p $certPwd $msix.FullName
           if ($LASTEXITCODE -ne 0) { throw "signtool failed" }
 
-          Copy-Item $msix.FullName "$env:GITHUB_WORKSPACE\GenQuery-Terminal-Windows.msix"
+          Copy-Item $msix.FullName "$env:GITHUB_WORKSPACE\GenQuery-Terminal-Windows-ARM64.msix"
           Write-Host "Signed MSIX: $($msix.FullName) ($env:CERT_SOURCE cert)"
         env:
           CERT_PASSWORD: ${{ secrets.GENQ_SIGNING_PFX_PASSWORD || 'genq-dev-temp-unsigned' }}
@@ -214,10 +213,10 @@ jobs:
             exit 0
           }
           $shortSha = "${{ github.sha }}".Substring(0, 8)
-          $msix     = "$env:GITHUB_WORKSPACE\GenQuery-Terminal-Windows.msix"
-          aws s3 cp $msix "s3://$env:GENQ_RELEASES_BUCKET/windows/latest/GenQuery-Terminal-Windows.msix"
-          aws s3 cp $msix "s3://$env:GENQ_RELEASES_BUCKET/windows/$shortSha/GenQuery-Terminal-Windows.msix"
-          Write-Host "Uploaded to s3://$env:GENQ_RELEASES_BUCKET/windows/latest/ and /windows/$shortSha/"
+          $msix     = "$env:GITHUB_WORKSPACE\GenQuery-Terminal-Windows-ARM64.msix"
+          aws s3 cp $msix "s3://$env:GENQ_RELEASES_BUCKET/windows/arm64/latest/GenQuery-Terminal-Windows-ARM64.msix"
+          aws s3 cp $msix "s3://$env:GENQ_RELEASES_BUCKET/windows/arm64/$shortSha/GenQuery-Terminal-Windows-ARM64.msix"
+          Write-Host "Uploaded to s3://$env:GENQ_RELEASES_BUCKET/windows/arm64/latest/ and /windows/arm64/$shortSha/"
 
       # -----------------------------------------------------------------------
       # 9. Upload GitHub artifact (14-day retention)
@@ -225,6 +224,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: GenQuery-Terminal-Windows
-          path: GenQuery-Terminal-Windows.msix
+          name: GenQuery-Terminal-Windows-ARM64
+          path: GenQuery-Terminal-Windows-ARM64.msix
           retention-days: 14
