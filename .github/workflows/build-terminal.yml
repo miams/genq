@@ -338,7 +338,8 @@ jobs:
 
       # -----------------------------------------------------------------------
       # 7. Build ARM64 Release MSIX
-      #    NuGet restore already done in step 6; call msbuild directly.
+      #    /restore triggers dotnet restore for win-arm64 runtime packs
+      #    (NETSDK1112: Microsoft.Windows.SDK.NET.Ref not found without it)
       # -----------------------------------------------------------------------
       - name: Build ARM64 Release
         working-directory: genq-terminal-windows
@@ -352,8 +353,9 @@ jobs:
           $env:PATH        = "C:\Program Files\dotnet;$env:PATH"
           Import-Module .\tools\OpenConsole.psm1
           Set-MsBuildDevEnvironment
-          # Skip NuGet restore (already done); call msbuild directly
+          # /restore downloads ARM64-specific runtime packs (e.g. Microsoft.Windows.SDK.NET.Ref)
           msbuild.exe OpenConsole.slnx `
+            /restore `
             /p:Platform=ARM64 `
             /p:Configuration=Release `
             /p:WindowsTargetPlatformVersion=10.0.22621.0 `
