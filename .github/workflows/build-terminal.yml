@@ -48,12 +48,13 @@ jobs:
       - name: Install Zig
         uses: mlugg/setup-zig@v2
         with:
-          version: "0.15.2"   # keep in sync with genq-terminal/build.zig.zon
+          # 0.15.2 (minimum per build.zig.zon) cannot compile compiler_rt on macOS 26 SDK.
+          # Use master (0.16.0-dev) which has macOS 26 linker support.
+          version: "master"
 
       - name: Clear Zig build cache
-        # Xcode version changed across runs — stale xcframework artifacts
-        # in the cache cause CompileAssetCatalogVariant to fail. Force clean.
-        run: rm -rf "${{ github.workspace }}/.zig-cache/o"
+        # Clear entire cache — compiler_rt hash changes across Zig versions
+        run: rm -rf "${{ github.workspace }}/.zig-cache"
 
       - name: Build
         working-directory: genq-terminal
@@ -61,7 +62,7 @@ jobs:
           # Use ad-hoc signing during build; the Sign step re-signs afterward
           CODE_SIGN_IDENTITY: "-"
         run: |
-          # Zig 0.15.x linker needs explicit SDKROOT to find macOS 26 system library stubs
+          # Explicit SDKROOT so Zig linker finds macOS 26 system library stubs
           export SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
           echo "SDKROOT=$SDKROOT"
           zig build -Doptimize=ReleaseFast
