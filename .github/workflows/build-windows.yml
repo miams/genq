@@ -13,12 +13,11 @@ permissions:
 jobs:
 
   # ---------------------------------------------------------------------------
-  # Windows — Windows Terminal fork + bundled genq + Nushell → .msixbundle
+  # Windows — Windows Terminal fork + bundled genq + Nushell → x64 .msix
   #
   # Produces a self-contained installer: the user needs no Nushell install.
   # Bundled nu.exe is isolated from any system Nushell.
-  # Builds x64 and ARM64; bundles into a single .msixbundle.
-  # Signed with a temporary self-signed cert (replace with EV cert via secret).
+  # x64 only; signed with a self-signed cert (replace with EV cert via secret).
   # ---------------------------------------------------------------------------
   build-windows:
     name: Build Windows (Windows Terminal)
@@ -39,9 +38,9 @@ jobs:
           path: genq-terminal-windows
 
       # -----------------------------------------------------------------------
-      # 2. Download Nushell binaries (x64 + ARM64) from GitHub releases
+      # 2. Download Nushell x64 binary from GitHub releases
       # -----------------------------------------------------------------------
-      - name: Download Nushell binaries
+      - name: Download Nushell x64
         shell: pwsh
         run: |
           $release = Invoke-RestMethod "https://api.github.com/repos/nushell/nushell/releases/latest"
@@ -50,12 +49,8 @@ jobs:
           echo "NU_VERSION=$version" >> $env:GITHUB_ENV
 
           $x64url = ($release.assets | Where-Object { $_.name -match "x86_64-pc-windows-msvc\.zip$" }).browser_download_url
-          $armUrl = ($release.assets | Where-Object { $_.name -match "aarch64-pc-windows-msvc\.zip$" }).browser_download_url
-
           Invoke-WebRequest $x64url -OutFile nu-x64.zip
-          Invoke-WebRequest $armUrl -OutFile nu-arm64.zip
-          Expand-Archive nu-x64.zip  -DestinationPath nu-x64
-          Expand-Archive nu-arm64.zip -DestinationPath nu-arm64
+          Expand-Archive nu-x64.zip -DestinationPath nu-x64
 
       # -----------------------------------------------------------------------
       # 3. Build toolchain setup
@@ -117,7 +112,6 @@ jobs:
 
       # -----------------------------------------------------------------------
       # 5. Stage genq source files into CascadiaPackage
-      #    (shared between x64 + ARM64 — only nu.exe differs per arch)
       #    Config written as array, NOT a here-string: TOML lines at column-0
       #    terminate YAML block scalars, causing silent truncation.
       # -----------------------------------------------------------------------
@@ -181,66 +175,31 @@ jobs:
             /p:WindowsTerminalBranding=Release
 
       # -----------------------------------------------------------------------
-      # 7. Build ARM64 Release MSIX
-      #    /restore is required to fetch ARM64-specific runtime packs
-      #    (NETSDK1112: Microsoft.Windows.SDK.NET.Ref not found otherwise)
+      # 7. Sign x64 MSIX
       # -----------------------------------------------------------------------
-      - name: Build ARM64 Release
-        working-directory: genq-terminal-windows
-        shell: pwsh
-        run: |
-          $nuExe = Get-ChildItem "..\nu-arm64" -Recurse -Filter "nu.exe" | Select-Object -First 1
-          Copy-Item -Force $nuExe.FullName "src\cascadia\CascadiaPackage\genq\nu.exe"
-
-          $env:DOTNET_ROOT = 'C:\Program Files\dotnet'
-          $env:PATH = "C:\Program Files\dotnet;$env:PATH"
-          Import-Module .\tools\OpenConsole.psm1
-          Set-MsBuildDevEnvironment
-          msbuild.exe OpenConsole.slnx `
-            /restore `
-            /p:Platform=ARM64 `
-            /p:Configuration=Release `
-            /p:WindowsTargetPlatformVersion=10.0.22621.0 `
-            /p:TargetPlatformVersion=10.0.22621.0 `
-            /p:WindowsTerminalBranding=Release
-
-      # -----------------------------------------------------------------------
-      # 8. Sign individual MSIXes, bundle into .msixbundle, sign bundle
-      # -----------------------------------------------------------------------
-      - name: Sign, bundle, and sign bundle
+      - name: Sign x64 MSIX
         shell: pwsh
         run: |
           $sdkBin   = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64"
           $signtool = "$sdkBin\signtool.exe"
-          $makeappx = "$sdkBin\makeappx.exe"
           $certPwd  = $env:CERT_PASSWORD
 
-          Get-ChildItem -Path "genq-terminal-windows\bin" -Recurse -Filter "*.msix" |
-            Where-Object { $_.FullName -match "Release" } |
-            ForEach-Object {
-              Write-Host "Signing $($_.FullName)"
-              & $signtool sign /fd SHA256 /f genq-signing.pfx /p $certPwd $_.FullName
-              if ($LASTEXITCODE -ne 0) { throw "signtool failed for $($_.FullName)" }
-            }
+          $msix = Get-ChildItem -Path "genq-terminal-windows\bin" -Recurse -Filter "*.msix" |
+            Where-Object { $_.FullName -match "x64.*Release|Release.*x64" } |
+            Select-Object -First 1
+          if (-not $msix) { throw "x64 Release MSIX not found under genq-terminal-windows\bin" }
 
-          .\genq-terminal-windows\build\scripts\Create-AppxBundle.ps1 `
-            -InputPath   "genq-terminal-windows\bin" `
-            -ProjectName "CascadiaPackage" `
-            -BundleVersion "0.1.1.0" `
-            -OutputPath  "$env:GITHUB_WORKSPACE\GenQuery-Terminal-Windows.msixbundle" `
-            -MakeAppxPath $makeappx
+          Write-Host "Signing $($msix.FullName)"
+          & $signtool sign /fd SHA256 /f genq-signing.pfx /p $certPwd $msix.FullName
+          if ($LASTEXITCODE -ne 0) { throw "signtool failed" }
 
-          & $signtool sign /fd SHA256 /f genq-signing.pfx /p $certPwd `
-            /tr http://timestamp.digicert.com /td SHA256 `
-            "$env:GITHUB_WORKSPACE\GenQuery-Terminal-Windows.msixbundle"
-          if ($LASTEXITCODE -ne 0) { throw "signtool failed for msixbundle" }
-
-          Write-Host "Bundle built and signed ($env:CERT_SOURCE cert)"
+          Copy-Item $msix.FullName "$env:GITHUB_WORKSPACE\GenQuery-Terminal-Windows.msix"
+          Write-Host "Signed MSIX: $($msix.FullName) ($env:CERT_SOURCE cert)"
         env:
           CERT_PASSWORD: ${{ secrets.GENQ_SIGNING_PFX_PASSWORD || 'genq-dev-temp-unsigned' }}
 
       # -----------------------------------------------------------------------
-      # 9. Upload to S3 (skipped gracefully if credentials not configured)
+      # 8. Upload to S3 (skipped gracefully if credentials not configured)
       # -----------------------------------------------------------------------
       - name: Upload to S3
         shell: pwsh
@@ -255,17 +214,17 @@ jobs:
             exit 0
           }
           $shortSha = "${{ github.sha }}".Substring(0, 8)
-          $bundle   = "$env:GITHUB_WORKSPACE\GenQuery-Terminal-Windows.msixbundle"
-          aws s3 cp $bundle "s3://$env:GENQ_RELEASES_BUCKET/windows/latest/GenQuery-Terminal-Windows.msixbundle"
-          aws s3 cp $bundle "s3://$env:GENQ_RELEASES_BUCKET/windows/$shortSha/GenQuery-Terminal-Windows.msixbundle"
+          $msix     = "$env:GITHUB_WORKSPACE\GenQuery-Terminal-Windows.msix"
+          aws s3 cp $msix "s3://$env:GENQ_RELEASES_BUCKET/windows/latest/GenQuery-Terminal-Windows.msix"
+          aws s3 cp $msix "s3://$env:GENQ_RELEASES_BUCKET/windows/$shortSha/GenQuery-Terminal-Windows.msix"
           Write-Host "Uploaded to s3://$env:GENQ_RELEASES_BUCKET/windows/latest/ and /windows/$shortSha/"
 
       # -----------------------------------------------------------------------
-      # 10. Upload GitHub artifact (14-day retention)
+      # 9. Upload GitHub artifact (14-day retention)
       # -----------------------------------------------------------------------
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: GenQuery-Terminal-Windows
-          path: GenQuery-Terminal-Windows.msixbundle
+          path: GenQuery-Terminal-Windows.msix
           retention-days: 14
