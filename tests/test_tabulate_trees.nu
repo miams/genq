@@ -1,10 +1,12 @@
 # Integration tests for genq tabulate trees
 # Requires the GENQ_TEST_DB environment variable pointing to the Iiams database file.
 # Tests skip gracefully when GENQ_TEST_DB is not set or the file does not exist.
+# Label: [db-read] — reads live DB (via private temp SQLite file), never writes to user's DB
 
 use std/testing *
 use std assert
 use "../src/lib/common/mod.nu" *
+use "./helpers.nu" *
 
 const PROJ = path self | path dirname | path join ".."
 
@@ -33,14 +35,16 @@ def ie [] {
 # =============================================================================
 
 @test
-def "tabulate trees - returns records" [] {
+def "db-iiams tabulate trees - returns records" [] {
     if (no-db) { return }
-    let result = (with-env (ie) { genq tabulate trees })
+    let result = (timed-test "db-iiams tabulate trees - returns records" {
+        with-env (ie) { genq tabulate trees }
+    })
     assert (($result | length) > 0)
 }
 
 @test
-def "tabulate trees - has correct columns" [] {
+def "db-iiams tabulate trees - has correct columns" [] {
     if (no-db) { return }
     let cols = (with-env (ie) { genq tabulate trees } | columns)
     for col in [index RIN Given Surname Count] {
@@ -49,14 +53,14 @@ def "tabulate trees - has correct columns" [] {
 }
 
 @test
-def "tabulate trees - returns exactly 68 trees" [] {
+def "db-iiams tabulate trees - returns exactly 68 trees" [] {
     if (no-db) { return }
     let result = (with-env (ie) { genq tabulate trees })
     assert equal ($result | length) 68
 }
 
 @test
-def "tabulate trees - sorted by Count descending" [] {
+def "db-iiams tabulate trees - sorted by Count descending" [] {
     if (no-db) { return }
     let result = (with-env (ie) { genq tabulate trees })
     let counts = ($result | get Count)
@@ -65,7 +69,7 @@ def "tabulate trees - sorted by Count descending" [] {
 }
 
 @test
-def "tabulate trees - main tree is RIN 1 with 10570 members" [] {
+def "db-iiams tabulate trees - main tree is RIN 1 with 10570 members" [] {
     if (no-db) { return }
     let result = (with-env (ie) { genq tabulate trees })
     let top = ($result | first)
@@ -76,7 +80,7 @@ def "tabulate trees - main tree is RIN 1 with 10570 members" [] {
 }
 
 @test
-def "tabulate trees - tree 5 is RIN 14 Crawford with 54 members" [] {
+def "db-iiams tabulate trees - tree 5 is RIN 14 Crawford with 54 members" [] {
     if (no-db) { return }
     let result = (with-env (ie) { genq tabulate trees })
     let tree5 = ($result | where RIN == 14 | first)
@@ -85,7 +89,7 @@ def "tabulate trees - tree 5 is RIN 14 Crawford with 54 members" [] {
 }
 
 @test
-def "tabulate trees - all counts are positive integers" [] {
+def "db-iiams tabulate trees - all counts are positive integers" [] {
     if (no-db) { return }
     let result = (with-env (ie) { genq tabulate trees })
     let invalid = ($result | where Count <= 0)
@@ -97,14 +101,16 @@ def "tabulate trees - all counts are positive integers" [] {
 # =============================================================================
 
 @test
-def "tabulate trees --rin 1 - returns 10570 rows" [] {
+def "db-iiams tabulate trees --rin 1 - returns 10570 rows" [] {
     if (no-db) { return }
-    let result = (with-env (ie) { genq tabulate trees --rin 1 })
+    let result = (timed-test "db-iiams tabulate trees --rin 1 - returns 10570 rows" {
+        with-env (ie) { genq tabulate trees --rin 1 }
+    })
     assert equal ($result | length) 10570
 }
 
 @test
-def "tabulate trees --rin 2471 - returns 54 rows" [] {
+def "db-iiams tabulate trees --rin 2471 - returns 54 rows" [] {
     if (no-db) { return }
     # RIN 2471 (Eli Iams) is in Catherine Crawford's tree (RIN 14, 54 members)
     let result = (with-env (ie) { genq tabulate trees --rin 2471 })
@@ -112,7 +118,7 @@ def "tabulate trees --rin 2471 - returns 54 rows" [] {
 }
 
 @test
-def "tabulate trees --rin - has correct columns" [] {
+def "db-iiams tabulate trees --rin - has correct columns" [] {
     if (no-db) { return }
     let cols = (with-env (ie) { genq tabulate trees --rin 1 } | columns)
     for col in [index RIN Given Surname Sex BirthYear DeathYear Ga Gb Degree] {
@@ -121,7 +127,7 @@ def "tabulate trees --rin - has correct columns" [] {
 }
 
 @test
-def "tabulate trees --rin - anchor has Ga=0 Gb=0 Degree=0" [] {
+def "db-iiams tabulate trees --rin - anchor has Ga=0 Gb=0 Degree=0" [] {
     if (no-db) { return }
     let result = (with-env (ie) { genq tabulate trees --rin 1 })
     let anchor = ($result | where RIN == 1 | first)
@@ -131,7 +137,7 @@ def "tabulate trees --rin - anchor has Ga=0 Gb=0 Degree=0" [] {
 }
 
 @test
-def "tabulate trees --rin - blood relatives have positive Degree" [] {
+def "db-iiams tabulate trees --rin - blood relatives have positive Degree" [] {
     if (no-db) { return }
     let result = (with-env (ie) { genq tabulate trees --rin 1 })
     # Exclude self (Degree=0); all other blood relatives must have Degree > 0
@@ -141,7 +147,7 @@ def "tabulate trees --rin - blood relatives have positive Degree" [] {
 }
 
 @test
-def "tabulate trees --rin - spouses have null Ga Gb and null Degree" [] {
+def "db-iiams tabulate trees --rin - spouses have null Ga Gb and null Degree" [] {
     if (no-db) { return }
     let result = (with-env (ie) { genq tabulate trees --rin 1 })
     let spouses = ($result | where ($it.Ga | is-empty))
@@ -151,7 +157,7 @@ def "tabulate trees --rin - spouses have null Ga Gb and null Degree" [] {
 }
 
 @test
-def "tabulate trees --rin - Degree equals Ga plus Gb for blood relatives" [] {
+def "db-iiams tabulate trees --rin - Degree equals Ga plus Gb for blood relatives" [] {
     if (no-db) { return }
     let result = (with-env (ie) { genq tabulate trees --rin 1 })
     let blood = ($result | where (not ($it.Ga | is-empty)))
@@ -160,7 +166,7 @@ def "tabulate trees --rin - Degree equals Ga plus Gb for blood relatives" [] {
 }
 
 @test
-def "tabulate trees --rin - Ga and Gb are non-negative for blood relatives" [] {
+def "db-iiams tabulate trees --rin - Ga and Gb are non-negative for blood relatives" [] {
     if (no-db) { return }
     let result = (with-env (ie) { genq tabulate trees --rin 1 })
     let blood = ($result | where (not ($it.Ga | is-empty)))

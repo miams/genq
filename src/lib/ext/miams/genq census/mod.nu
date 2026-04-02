@@ -1,126 +1,107 @@
 # List Census Records by RIN or Year.
 @category "genq-ext-miams"
-@example "List Census records for individual with RIN of 2." {genq census RIN 2} 
-@example "List all Census records for 1850." {genq census year 1850} 
+@example "List Census records for individual with RIN of 2." {genq census RIN 2}
+@example "List all Census records for 1850." {genq census year 1850}
 export def "main" [action?: string, ...objects: string] {
+
+    # Shared CTE — builds census_all from head (prime) + witness (attached) records.
+    # Read-only: no CREATE VIEW / DROP VIEW, so no write lock on the user's database.
+    let census_cte = "
+WITH census_attached AS (
+    SELECT SUBSTR(EventTable.Date, 4, 4) AS CensusDate,
+        EventTable.EventID AS EventID,
+        EventTable.OwnerID AS RIN,
+        RoleName COLLATE NOCASE AS Role,
+        WitnessTable.PersonID AS PersonID
+    FROM WitnessTable
+    JOIN EventTable ON WitnessTable.EventID = EventTable.EventID
+    JOIN RoleTable ON WitnessTable.Role = RoleTable.RoleID
+    WHERE EventTable.EventType = 18 AND WitnessTable.PersonID > 0
+),
+census_prime AS (
+    SELECT SUBSTR(EventTable.Date, 4, 4) AS CensusDate,
+        EventID,
+        EventTable.OwnerID AS RIN,
+        'Head' AS Role,
+        EventTable.OwnerID AS PersonID
+    FROM EventTable
+    WHERE EventType = 18
+),
+census_all AS (
+    SELECT * FROM census_prime
+    UNION ALL
+    SELECT * FROM census_attached
+)"
+
     match ($action | default "" | str downcase) {
         "rin" => {
-            # Validate RIN parameter
             if ($objects | length) == 0 {
                 print $"(ansi red)Error:(ansi reset) RIN parameter required. Usage: genq census RIN <number>"
                 return
             }
-            
+
             let RIN = try {
                 $objects.0 | into int
             } catch {
                 print $"(ansi red)Error:(ansi reset) Invalid RIN '($objects.0)'. RIN must be a positive integer."
                 return
             }
-            
+
             if $RIN <= 0 {
                 print $"(ansi red)Error:(ansi reset) Invalid RIN ($RIN). RIN must be a positive integer."
                 return
-            } 
-            let person = open $env.rmdb | query db $"SELECT Given, Surname, BirthYear, DeathYear from NameTable WHERE OwnerID = ($RIN)"
+            }
+
+            let person = open $env.rmdb | query db $"SELECT Given COLLATE NOCASE AS Given, Surname COLLATE NOCASE AS Surname, BirthYear, DeathYear FROM NameTable WHERE OwnerID = ($RIN) AND IsPrimary = 1"
             print $"Census records for: (ansi gb)($person.Given.0) ($person.Surname.0) \(($person.BirthYear.0) - ($person.DeathYear.0)\)(ansi reset)"
-            # Objective: List Persons in Census Events other than the Head person.   The goal will be to combine this table with a similar table of Census Events that include the Head person.
-            # -- Get People attached to Census Records
-            open $env.rmdb | query db "DROP VIEW IF EXISTS tmp_census_attached_minimal"
-            open $env.rmdb | query db "CREATE VIEW tmp_census_attached_minimal AS SELECT Substr(EventTable.Date,4,4) COLLATE NOCASE AS CensusDate, 
-            EventTable.EventID COLLATE NOCASE AS EventID, 
-            EventTable.OwnerID AS RIN, 
-            RoleName COLLATE NOCASE AS Role, 
-            PersonID COLLATE NOCASE
-            FROM WitnessTable 
-            JOIN EventTable ON WitnessTable.EventID=EventTable.EventID
-            JOIN RoleTable ON WitnessTable.Role = RoleTable.RoleID
-            WHERE EventTable.EventType=18 and PersonID>0 ORDER BY PersonID ASC, CensusDate ASC;"
 
+            let sqlquery = [$census_cte, "
+SELECT CensusDate,
+    SUBSTR(PlaceTable.Name, 1, LENGTH(PlaceTable.Name) - 15) AS Place,
+    census_all.RIN, Role, census_all.PersonID
+FROM census_all
+JOIN EventTable ON census_all.EventID = EventTable.EventID
+JOIN PlaceTable ON EventTable.PlaceID = PlaceTable.PlaceID
+WHERE census_all.PersonID = ", ($RIN | into string), "
+ORDER BY CensusDate"] | str join
 
-            # -- Get primary Census Records
-            open $env.rmdb | query db "DROP VIEW IF EXISTS tmp_census_prime_minimal"
-            open $env.rmdb | query db "CREATE VIEW tmp_census_prime_minimal AS SELECT Substr(EventTable.Date,4,4) COLLATE NOCASE AS CensusDate, 
-            EventID COLLATE NOCASE, 
-            EventTable.OwnerID COLLATE NOCASE AS RIN, 
-            'Head' AS Role, 
-            EventTable.OwnerID COLLATE NOCASE AS PersonID
-            FROM EventTable
-            WHERE EventType=18 ORDER BY PersonID ASC, CensusDate ASC;"
-
-
-            # -- Consolidate Census Records albeit with minimal supporting data
-            open $env.rmdb | query db "DROP VIEW IF EXISTS tmp_census_minimal"
-            open $env.rmdb | query db "CREATE VIEW tmp_census_minimal AS select * from tmp_census_prime_minimal
-            UNION ALL
-            SELECT * FROM tmp_census_attached_minimal ORDER BY PersonID ASC, CensusDate ASC;"
-
-
-            open $env.rmdb | query db "SELECT CensusDate, SUBSTR(PlaceTable.Name, 1, Length(PlaceTable.Name) -  15) AS Place, RIN, Role, PersonID FROM tmp_census_minimal 
-            JOIN EventTable ON tmp_census_minimal.EventID=EventTable.EventID
-            JOIN PlaceTable ON EventTable.PlaceID=PlaceTable.PlaceID" | where PersonID == $RIN | sort-by CensusDate
-            },
+            open $env.rmdb | query db $sqlquery
+        },
 
         "year" => {
-            # Validate year parameter
             if ($objects | length) == 0 {
                 print $"(ansi red)Error:(ansi reset) Year parameter required. Usage: genq census year <year>"
                 return
             }
-            
+
             let year = try {
                 $objects.0 | into int
             } catch {
                 print $"(ansi red)Error:(ansi reset) Invalid year '($objects.0)'. Year must be a 4-digit integer."
                 return
             }
-            
+
             if $year < 1790 or $year > 1950 {
                 print $"(ansi red)Error:(ansi reset) Invalid census year ($year). U.S. Federal Census years are typically 1790-1950 taken every 10 years."
                 return
             }
 
-            # Objective: List Persons in Census Events other than the Head person.   The goal will be to combine this table with a similar table of Census Events that include the Head person.
-            print $"Census records for the year: (ansi gb)($year)(ansi gb)"
+            print $"Census records for the year: (ansi gb)($year)(ansi reset)"
 
-            # -- Get People attached to Census Records
-            open $env.rmdb | query db "DROP VIEW IF EXISTS tmp_census_attached_minimal"
-            open $env.rmdb | query db "CREATE VIEW tmp_census_attached_minimal AS SELECT Substr(EventTable.Date,4,4) COLLATE NOCASE AS CensusDate, 
-            EventTable.EventID COLLATE NOCASE AS EventID, 
-            EventTable.OwnerID AS RIN, 
-            RoleName COLLATE NOCASE AS Role, 
-            PersonID COLLATE NOCASE
-            FROM WitnessTable 
-            JOIN EventTable ON WitnessTable.EventID=EventTable.EventID
-            JOIN RoleTable ON WitnessTable.Role = RoleTable.RoleID
-            WHERE EventTable.EventType=18 and PersonID>0 ORDER BY PersonID ASC, CensusDate ASC;"
+            let sqlquery = [$census_cte, "
+SELECT CensusDate AS Census, census_all.RIN,
+    NameTable.Surname COLLATE NOCASE AS Surname,
+    NameTable.Given COLLATE NOCASE AS Given,
+    SUBSTR(PlaceTable.Name, 1, LENGTH(PlaceTable.Name) - 15) AS Place
+FROM census_all
+JOIN EventTable ON census_all.EventID = EventTable.EventID
+JOIN PlaceTable ON EventTable.PlaceID = PlaceTable.PlaceID
+JOIN NameTable ON NameTable.OwnerID = census_all.RIN AND NameTable.IsPrimary = 1
+WHERE CensusDate = '", ($year | into string), "' AND Role = 'Head'
+ORDER BY NameTable.Surname COLLATE NOCASE, NameTable.Given COLLATE NOCASE"] | str join
 
-
-            # -- Get primary Census Records
-            open $env.rmdb | query db "DROP VIEW IF EXISTS tmp_census_prime_minimal"
-            open $env.rmdb | query db "CREATE VIEW tmp_census_prime_minimal AS SELECT Substr(EventTable.Date,4,4) COLLATE NOCASE AS CensusDate, 
-            EventID COLLATE NOCASE, 
-            EventTable.OwnerID COLLATE NOCASE AS RIN, 
-            'Head' AS Role, 
-            EventTable.OwnerID COLLATE NOCASE AS PersonID
-            FROM EventTable
-            WHERE EventType=18 ORDER BY PersonID ASC, CensusDate ASC;"
-
-            # -- Consolidate Census Records albeit with minimal supporting data
-            open $env.rmdb | query db "DROP VIEW IF EXISTS tmp_census_minimal"
-            open $env.rmdb | query db "CREATE VIEW tmp_census_minimal AS select * from tmp_census_prime_minimal
-            UNION ALL
-            SELECT * FROM tmp_census_attached_minimal ORDER BY PersonID ASC, CensusDate ASC;"
-
-            open $env.rmdb | query db "SELECT CensusDate as Census, RIN, NameTable.Surname COLLATE NOCASE AS Surname, 
-               NameTable.Given COLLATE NOCASE AS Given, Reverse COLLATE NOCASE AS Reverse, 
-               SUBSTR(PlaceTable.Name, 1, Length(PlaceTable.Name) -  15) AS Place, Role 
-            FROM tmp_census_minimal 
-            JOIN EventTable ON tmp_census_minimal.EventID=EventTable.EventID
-            JOIN PlaceTable ON EventTable.PlaceID=PlaceTable.PlaceID
-            JOIN NameTable ON NameTable.OwnerID=RIN 
-            ORDER BY Reverse ASC" | where Census == ($year | into string) and Role == "Head" | reject Reverse Role
-            },
+            open $env.rmdb | query db $sqlquery
+        },
 
         'help' => {
             print "GenQuery Census provides the following two capabilities:\n"
@@ -131,11 +112,14 @@ export def "main" [action?: string, ...objects: string] {
             print "   has a precise date recorded.\n"
             print "Examples:\n"
             print '   genq census RIN 2'
-            print '   genq census year 1850'},
+            print '   genq census year 1850'
+        },
 
-        _ => {print "To use GenQuery Census, you must specify subcommand: RIN or year\n"
-              print "Examples:\n"
-              print '   genq census RIN 2'
-              print '   genq census year 1850'}
+        _ => {
+            print "To use GenQuery Census, you must specify subcommand: RIN or year\n"
+            print "Examples:\n"
+            print '   genq census RIN 2'
+            print '   genq census year 1850'
         }
     }
+}

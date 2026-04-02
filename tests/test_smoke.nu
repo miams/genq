@@ -1,6 +1,7 @@
 # Smoke tests — syntax checks for GenQuery source files
 # These tests verify that all key source files parse without errors.
 # No database required; safe for CI.
+# Label: [fast] — no database required
 
 use std/testing *
 use std assert
@@ -25,31 +26,31 @@ def nu-check [rel_path: string]: nothing -> int {
 # --- Core source files ---
 
 @test
-def "src/main.nu passes syntax check" [] {
+def "fast src/main.nu passes syntax check" [] {
     assert equal (nu-check "src/main.nu") 0
 }
 
 @test
-def "src/lib/common/mod.nu passes syntax check" [] {
+def "fast src/lib/common/mod.nu passes syntax check" [] {
     assert equal (nu-check "src/lib/common/mod.nu") 0
 }
 
 @test
-def "src/lib/common/paths.nu passes syntax check" [] {
+def "fast src/lib/common/paths.nu passes syntax check" [] {
     assert equal (nu-check "src/lib/common/paths.nu") 0
 }
 
 @test
-def "genq config validation.nu passes syntax check" [] {
+def "fast genq config validation.nu passes syntax check" [] {
     assert equal (nu-check "src/lib/common/genq config/validation.nu") 0
 }
 
 @test
-def "src/lib/common/genq list people/mod.nu passes syntax check" [] {
+def "fast src/lib/common/genq list people/mod.nu passes syntax check" [] {
     assert equal (nu-check "src/lib/common/genq list people/mod.nu") 0
 }
 
 @test
-def "src/lib/common/genq list events/mod.nu passes syntax check" [] {
+def "fast src/lib/common/genq list events/mod.nu passes syntax check" [] {
     assert equal (nu-check "src/lib/common/genq list events/mod.nu") 0
 }

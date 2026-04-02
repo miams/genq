@@ -1,5 +1,6 @@
 # Tests for GenQuery configuration file structure and validation
 # Uses temporary config environments to avoid touching user config
+# Label: [fast] — no database required
 
 use std/testing *
 use std assert
@@ -22,35 +23,35 @@ def teardown [] {
 # --- Config file structure ---
 
 @test
-def "config TOML has database section" [] {
+def "fast config TOML has database section" [] {
     let ctx = $in
     let config = (open $ctx.config_path)
     assert ($config | columns | any { |c| $c == "database" })
 }
 
 @test
-def "config database has active key" [] {
+def "fast config database has active key" [] {
     let ctx = $in
     let config = (open $ctx.config_path)
     assert ($config.database | columns | any { |c| $c == "active" })
 }
 
 @test
-def "config database active is demo" [] {
+def "fast config database active is demo" [] {
     let ctx = $in
     let config = (open $ctx.config_path)
     assert equal $config.database.active "demo"
 }
 
 @test
-def "config database connections has demo key" [] {
+def "fast config database connections has demo key" [] {
     let ctx = $in
     let config = (open $ctx.config_path)
     assert ($config.database.connections | columns | any { |c| $c == "demo" })
 }
 
 @test
-def "config extensions section exists" [] {
+def "fast config extensions section exists" [] {
     let ctx = $in
     let config = (open $ctx.config_path)
     assert ($config | columns | any { |c| $c == "extensions" })
@@ -59,7 +60,7 @@ def "config extensions section exists" [] {
 # --- Validate that demo_basic scenario is readable ---
 
 @test
-def "demo_basic scenario loads without error" [] {
+def "fast demo_basic scenario loads without error" [] {
     let ctx = $in
     let config = (open $ctx.config_path)
     assert (not ($config | is-empty))
@@ -68,7 +69,7 @@ def "demo_basic scenario loads without error" [] {
 # --- Config validation integration ---
 
 @test
-def "validate-database-mode demo matches config active" [] {
+def "fast validate-database-mode demo matches config active" [] {
     let ctx = $in
     let config = (open $ctx.config_path)
     let active = $config.database.active

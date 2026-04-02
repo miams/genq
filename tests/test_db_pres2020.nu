@@ -1,5 +1,6 @@
 # Integration tests against pres2020.rmtree (US Presidents demo database)
 # Always runs in CI — this database is committed to the repo.
+# Label: [db-read] — reads live DB, never writes
 #
 # Uses a per-test temp copy to avoid writing into the committed .rmtree file.
 
@@ -7,6 +8,7 @@ use std/testing *
 use std assert
 use "../src/lib/common/mod.nu" *
 use "../src/lib/ext/pres2020/mod.nu" *
+use "./helpers.nu" *
 
 const PROJ = path self | path dirname | path join ".."
 
@@ -39,7 +41,7 @@ def e [ctx: record] {
 # =============================================================================
 
 @test
-def "list people pres2020 - has expected columns" [] {
+def "db-pres2020 list people pres2020 - has expected columns" [] {
     let ctx = $in
     let cols = (with-env (e $ctx) { genq list people } | columns)
     for col in [index RIN Given Surname Sex BirthYear DeathYear] {
@@ -48,21 +50,23 @@ def "list people pres2020 - has expected columns" [] {
 }
 
 @test
-def "list people pres2020 - returns records" [] {
+def "db-pres2020 list people pres2020 - returns records" [] {
     let ctx = $in
-    let result = (with-env (e $ctx) { genq list people })
+    let result = (timed-test "db-pres2020 list people pres2020 - returns records" {
+        with-env (e $ctx) { genq list people }
+    })
     assert (($result | length) > 0)
 }
 
 @test
-def "list people pres2020 - contains Washington" [] {
+def "db-pres2020 list people pres2020 - contains Washington" [] {
     let ctx = $in
     let result = (with-env (e $ctx) { genq list people })
     assert (($result | where Surname == "Washington" | length) > 0)
 }
 
 @test
-def "list people pres2020 - Sex values are M or F only" [] {
+def "db-pres2020 list people pres2020 - Sex values are M or F only" [] {
     let ctx = $in
     let result = (with-env (e $ctx) { genq list people })
     let invalid = ($result | where { |r| $r.Sex != "M" and $r.Sex != "F" })
@@ -70,14 +74,14 @@ def "list people pres2020 - Sex values are M or F only" [] {
 }
 
 @test
-def "list people pres2020 - index starts at 1" [] {
+def "db-pres2020 list people pres2020 - index starts at 1" [] {
     let ctx = $in
     let result = (with-env (e $ctx) { genq list people })
     assert equal ($result | first | get index) 1
 }
 
 @test
-def "list people pres2020 - RIN values are positive" [] {
+def "db-pres2020 list people pres2020 - RIN values are positive" [] {
     let ctx = $in
     let result = (with-env (e $ctx) { genq list people })
     assert equal ($result | where RIN <= 0 | length) 0
@@ -88,7 +92,7 @@ def "list people pres2020 - RIN values are positive" [] {
 # =============================================================================
 
 @test
-def "list events pres2020 - has expected columns" [] {
+def "db-pres2020 list events pres2020 - has expected columns" [] {
     let ctx = $in
     let cols = (with-env (e $ctx) { genq list events } | columns)
     for col in [index EventID RIN Given Surname Event Description EventDate LastUpdate] {
@@ -97,21 +101,21 @@ def "list events pres2020 - has expected columns" [] {
 }
 
 @test
-def "list events pres2020 - returns records" [] {
+def "db-pres2020 list events pres2020 - returns records" [] {
     let ctx = $in
     let result = (with-env (e $ctx) { genq list events })
     assert (($result | length) > 0)
 }
 
 @test
-def "list events pres2020 - has Occupation events" [] {
+def "db-pres2020 list events pres2020 - has Occupation events" [] {
     let ctx = $in
     let result = (with-env (e $ctx) { genq list events })
     assert (($result | where Event == "Occupation" | length) > 0)
 }
 
 @test
-def "list events pres2020 - EventDate is 4-digit year or empty" [] {
+def "db-pres2020 list events pres2020 - EventDate is 4-digit year or empty" [] {
     let ctx = $in
     let result = (with-env (e $ctx) { genq list events })
     let invalid = ($result | where { |r|
@@ -122,7 +126,7 @@ def "list events pres2020 - EventDate is 4-digit year or empty" [] {
 }
 
 @test
-def "list events pres2020 - index starts at 1" [] {
+def "db-pres2020 list events pres2020 - index starts at 1" [] {
     let ctx = $in
     let result = (with-env (e $ctx) { genq list events })
     assert equal ($result | first | get index) 1
@@ -133,7 +137,7 @@ def "list events pres2020 - index starts at 1" [] {
 # =============================================================================
 
 @test
-def "list families pres2020 - has expected columns" [] {
+def "db-pres2020 list families pres2020 - has expected columns" [] {
     let ctx = $in
     let cols = (with-env (e $ctx) { genq list families } | columns)
     for col in [index FamilyID FatherID FatherGiven FatherSurname MotherID MotherGiven MotherSurname HusbOrder WifeOrder] {
@@ -142,14 +146,14 @@ def "list families pres2020 - has expected columns" [] {
 }
 
 @test
-def "list families pres2020 - returns records" [] {
+def "db-pres2020 list families pres2020 - returns records" [] {
     let ctx = $in
     let result = (with-env (e $ctx) { genq list families })
     assert (($result | length) > 0)
 }
 
 @test
-def "list families pres2020 - FatherID and MotherID are positive" [] {
+def "db-pres2020 list families pres2020 - FatherID and MotherID are positive" [] {
     let ctx = $in
     let result = (with-env (e $ctx) { genq list families })
     assert equal ($result | where FatherID <= 0 | length) 0
@@ -161,7 +165,7 @@ def "list families pres2020 - FatherID and MotherID are positive" [] {
 # =============================================================================
 
 @test
-def "list sources pres2020 - runs without error" [] {
+def "db-pres2020 list sources pres2020 - runs without error" [] {
     let ctx = $in
     # pres2020 may have no freeform sources (TemplateID=0); just verify no crash
     let result = (with-env (e $ctx) { genq list sources })
@@ -173,7 +177,7 @@ def "list sources pres2020 - runs without error" [] {
 # =============================================================================
 
 @test
-def "list media pres2020 - runs without error" [] {
+def "db-pres2020 list media pres2020 - runs without error" [] {
     let ctx = $in
     with-env (e $ctx) { genq list media } | ignore
 }
@@ -183,7 +187,7 @@ def "list media pres2020 - runs without error" [] {
 # =============================================================================
 
 @test
-def "list presidents pres2020 - has expected columns" [] {
+def "db-pres2020 list presidents pres2020 - has expected columns" [] {
     let ctx = $in
     let cols = (with-env (e $ctx) { genq list presidents } | columns)
     for col in [index RIN Given Surname Event Description EventDate] {
@@ -192,14 +196,14 @@ def "list presidents pres2020 - has expected columns" [] {
 }
 
 @test
-def "list presidents pres2020 - returns records" [] {
+def "db-pres2020 list presidents pres2020 - returns records" [] {
     let ctx = $in
     let result = (with-env (e $ctx) { genq list presidents })
     assert (($result | length) > 0)
 }
 
 @test
-def "list presidents pres2020 - all descriptions contain US President" [] {
+def "db-pres2020 list presidents pres2020 - all descriptions contain US President" [] {
     let ctx = $in
     let result = (with-env (e $ctx) { genq list presidents })
     let non_pres = ($result | where { |r| not ($r.Description | str contains "US President") })
@@ -207,7 +211,7 @@ def "list presidents pres2020 - all descriptions contain US President" [] {
 }
 
 @test
-def "list presidents pres2020 - Washington is included" [] {
+def "db-pres2020 list presidents pres2020 - Washington is included" [] {
     let ctx = $in
     let result = (with-env (e $ctx) { genq list presidents })
     assert (($result | where Surname == "Washington" | length) > 0)

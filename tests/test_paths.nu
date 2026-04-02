@@ -1,6 +1,7 @@
 # Tests for GenQuery cross-platform path utilities
 # Covers: resolve-path, genq-data-dir, genq-config-dir,
 #         resolve-genq-path, platform-dirs
+# Label: [fast] — no database required
 
 use std/testing *
 use std assert
@@ -9,14 +10,14 @@ use "../src/lib/common/paths.nu" *
 # --- resolve-path ---
 
 @test
-def "resolve-path expands tilde to absolute path" [] {
+def "fast resolve-path expands tilde to absolute path" [] {
     let result = (resolve-path "~/Documents/test.txt")
     assert (not ($result | str contains "~"))
     assert ($result | str contains ("Documents" | path join "test.txt"))
 }
 
 @test
-def "resolve-path passes through absolute paths" [] {
+def "fast resolve-path passes through absolute paths" [] {
     let abs = ($nu.home-dir | path expand)
     let result = (resolve-path $abs)
     assert equal $result $abs
@@ -25,13 +26,13 @@ def "resolve-path passes through absolute paths" [] {
 # --- genq-data-dir ---
 
 @test
-def "genq-data-dir returns non-empty string" [] {
+def "fast genq-data-dir returns non-empty string" [] {
     let dir = (genq-data-dir)
     assert (($dir | str length) > 0)
 }
 
 @test
-def "genq-data-dir returns absolute path" [] {
+def "fast genq-data-dir returns absolute path" [] {
     let dir = (genq-data-dir)
     assert (not ($dir | str starts-with "."))
     assert (not ($dir | str contains "~"))
@@ -40,13 +41,13 @@ def "genq-data-dir returns absolute path" [] {
 # --- genq-config-dir ---
 
 @test
-def "genq-config-dir returns non-empty string" [] {
+def "fast genq-config-dir returns non-empty string" [] {
     let dir = (genq-config-dir)
     assert (($dir | str length) > 0)
 }
 
 @test
-def "genq-config-dir returns absolute path" [] {
+def "fast genq-config-dir returns absolute path" [] {
     let dir = (genq-config-dir)
     assert (not ($dir | str starts-with "."))
     assert (not ($dir | str contains "~"))
@@ -55,7 +56,7 @@ def "genq-config-dir returns absolute path" [] {
 # --- resolve-genq-path ---
 
 @test
-def "resolve-genq-path joins relative path to base dir" [] {
+def "fast resolve-genq-path joins relative path to base dir" [] {
     let base = (mktemp -d -t "genq-test-XXXXXX")
     let result = (resolve-genq-path "config/default.toml" $base)
     let expected = ($base | path join "config" | path join "default.toml" | path expand)
@@ -64,14 +65,14 @@ def "resolve-genq-path joins relative path to base dir" [] {
 }
 
 @test
-def "resolve-genq-path passes through absolute paths" [] {
+def "fast resolve-genq-path passes through absolute paths" [] {
     let abs = ($nu.home-dir | path expand)
     let result = (resolve-genq-path $abs $nu.home-dir)
     assert equal $result $abs
 }
 
 @test
-def "resolve-genq-path uses pwd when no base provided" [] {
+def "fast resolve-genq-path uses pwd when no base provided" [] {
     let result = (resolve-genq-path "config/default.toml")
     let expected_suffix = ("config" | path join "default.toml")
     assert ($result | str ends-with $expected_suffix)
@@ -81,19 +82,19 @@ def "resolve-genq-path uses pwd when no base provided" [] {
 # --- platform-dirs ---
 
 @test
-def "platform-dirs record has config key" [] {
+def "fast platform-dirs record has config key" [] {
     let dirs = (platform-dirs)
     assert ($dirs | columns | any { |c| $c == "config" })
 }
 
 @test
-def "platform-dirs record has data key" [] {
+def "fast platform-dirs record has data key" [] {
     let dirs = (platform-dirs)
     assert ($dirs | columns | any { |c| $c == "data" })
 }
 
 @test
-def "platform-dirs config value is non-empty" [] {
+def "fast platform-dirs config value is non-empty" [] {
     let dirs = (platform-dirs)
     assert (($dirs.config | str length) > 0)
 }
