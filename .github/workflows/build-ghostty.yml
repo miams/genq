@@ -31,14 +31,14 @@ jobs:
           ssh-key: ${{ secrets.GENQ_TERMINAL_DEPLOY_KEY }}
           path: genq-terminal
 
-      - name: Install Zig
-        run: |
-          curl -L https://ziglang.org/download/0.15.2/zig-aarch64-macos-0.15.2.tar.xz | tar -xJ
-          echo "$PWD/zig-aarch64-macos-0.15.2" >> $GITHUB_PATH
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
 
       - name: Build
         working-directory: genq-terminal
-        run: zig build -Doptimize=ReleaseFast
+        run: nix develop -c zig build -Doptimize=ReleaseFast
 
       - name: Sign
         working-directory: genq-terminal
@@ -84,27 +84,14 @@ jobs:
           ssh-key: ${{ secrets.GENQ_TERMINAL_DEPLOY_KEY }}
           path: genq-terminal
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            pkg-config \
-            libgtk-4-dev \
-            libadwaita-1-dev \
-            libglib2.0-dev \
-            blueprint-compiler \
-            libglib2.0-bin \
-            gettext \
-            xdg-utils
-
-      - name: Install Zig
-        run: |
-          curl -L https://ziglang.org/download/0.15.2/zig-x86_64-linux-0.15.2.tar.xz | tar -xJ
-          echo "$PWD/zig-x86_64-linux-0.15.2" >> $GITHUB_PATH
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
 
       - name: Build
         working-directory: genq-terminal
-        run: zig build -Doptimize=ReleaseFast -Dapp-runtime=gtk
+        run: nix develop -c zig build -Doptimize=ReleaseFast -Dapp-runtime=gtk
 
       - name: Package (stub — AppImage packaging TBD in Phase 3)
         working-directory: genq-terminal
