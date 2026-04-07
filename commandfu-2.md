@@ -133,7 +133,7 @@ genq list events
 ```nu
 genq list events
 | reject LastUpdate EventID
-| sort-by EventDate
+| sort-date-by EventDate
 | startat1
 | explore
 ```
@@ -154,39 +154,69 @@ genq list events
 ## Sources
 
 The next few commands pull specific “chunks” out of source XML fields.  
-They assume the most recent `Book:` source is the one you want (`| last`).
+This list all sources of type `Book:`.
 
 ### Footnote
 
 ```nu
-genq list sources
-| where Name =~ 'Book:'
-| last
-| $in.Fields
-| from xml
-| get content.0.content.0.content.1.content.content.0
+open $env.rmdb | query db "
+     SELECT
+       SourceID as SrcID,
+       Name as SourceName,
+       cast(Fields AS TEXT) as Fields
+     FROM SourceTable
+     WHERE TemplateID = 0
+   "
+   | where SourceName =~ 'Book:'
+   | each {|row|
+       {
+         SrcID: $row.SrcID
+         SourceName: $row.SourceName
+         Footnote: ($row.Fields | from xml | get content.0.content.0.content.1.content.content.0)
+       }
+   } | sort-by Footnote | explore
 ```
 
 ### Short footnote
 
 ```nu
-genq list sources
-| where Name =~ 'Book:'
-| last
-| $in.Fields
-| from xml
-| get content.0.content.1.content.1.content.content.0
+open $env.rmdb | query db "
+     SELECT
+       SourceID as SrcID,
+       Name as SourceName,
+       cast(Fields AS TEXT) as Fields
+     FROM SourceTable
+     WHERE TemplateID = 0
+   "
+   | where SourceName =~ 'Book:'
+   | each {|row|
+       {
+         SrcID: $row.SrcID
+         SourceName: $row.SourceName
+         ShortFootnote: ($row.Fields | from xml | get content.0.content.1.content.1.content.content.0)
+       }
+   } | sort-by ShortFootnote | explore
 ```
 
-### Source
+### Bibliography
 
 ```nu
-genq list sources
-| where Name =~ 'Book:'
-| last
-| $in.Fields
-| from xml
-| get content.0.content.2.content.1.content.content.0
+open $env.rmdb | query db "
+     SELECT
+       SourceID as SrcID,
+       Name as SourceName,
+       cast(Fields AS TEXT) as Fields
+     FROM SourceTable
+     WHERE TemplateID = 0
+   "
+   | where SourceName =~ 'Book:'
+   | each {|row|
+       {
+         SrcID: $row.SrcID
+         SourceName: $row.SourceName
+         Bibliography: ($row.Fields | from xml | get content.0.content.2.content.1.content.content.0)
+       }
+   } | sort-by Bibliography | explore
 ```
 
 ---

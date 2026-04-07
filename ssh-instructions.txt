@@ -1,0 +1,45 @@
+On your Mac (generate and copy the key)
+
+  # Generate a key (skip if you already have one you want to use)
+  ssh-keygen -t ed25519 -C "mac-to-windows"
+
+  # Check the VM's IP
+  # (run this on the Windows VM, or check Parallels Network settings)
+  # Typically 10.211.55.x
+
+  # First-time connection using password to copy the key
+  ssh-copy-id miams@10.211.55.x
+
+  If ssh-copy-id isn't available on your Mac:
+  cat ~/.ssh/id_ed25519.pub | ssh miams@10.211.55.x "mkdir -p ~/.ssh; Add-Content -Path \$HOME\.ssh\authorized_keys -Value '\$(cat)'"
+
+  Actually simpler — just do it manually:
+
+  ---
+  Manual approach (most reliable for Windows)
+
+  On Mac — copy your public key to clipboard:
+  cat ~/.ssh/id_ed25519.pub | pbcopy
+
+  On Windows VM — paste it into the authorized_keys file:
+  # Create .ssh directory if needed
+  New-Item -ItemType Directory -Force -Path "$HOME\.ssh"
+
+  # Paste your public key (replace the key text)
+  Add-Content -Path "$HOME\.ssh\authorized_keys" -Value "ssh-ed25519 AAAA...your key here..."
+
+  # Fix permissions (Windows SSH is strict about this)
+  icacls "$HOME\.ssh\authorized_keys" /inheritance:r /grant:r "$($env:USERNAME):(R,W)" "SYSTEM:(R,W)"
+
+  ---
+  Test from Mac
+
+  ssh miams@10.211.55.x
+
+  Should connect without a password prompt.
+
+  ---
+  Find the VM's IP (if you don't know it)
+
+  On the Windows VM:
+  ipconfig | findstr "10.211"

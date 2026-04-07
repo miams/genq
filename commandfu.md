@@ -28,13 +28,15 @@ genq list citations | reject LinkiD CitID SrcID Uniq Sfx Pfx | where RIN == 2
 List Families where Father has multiple wives.
 
 ```
-genq list families | reject index | uniq-by FatherID -d | startat1  # -d is return values that occur more than once
+
+
 ```
 
 Event/Fact - Frequency of type used.
 
 ```
-genq list events | histogram Event
+
+
 ```
 
 Footnote
@@ -65,7 +67,7 @@ $env.SurnameGroup | enumerate | par-each { |surname| genq list people | where Su
 List record number 100 and display vertically to see all data
 
 ```
-genq list citations | range 100..100 | transpose
+genq list citations | slice 100..100 | transpose
 ```
 
 Show the Rootsmagic database schema
@@ -101,7 +103,7 @@ genq list events | uniq-by Event | sort-by Event | startat1
 - Event dates range from 1016 to 2018
 
 ```
-genq list events | reject LastUpdate EventID | sort-by EventDate | startat1 | explore
+genq list events | reject LastUpdate EventID | sort-date-by EventDate | startat1 | explore
 ```
 
 - George Washington and his family comprise 111 people in the database.
