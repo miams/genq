@@ -16,6 +16,46 @@ export def main [
     --format(-f): int     # desired date output format, default to env.RDMF
     --verbose(-v):        # print all columns, default to false    
 ] {
+    let empty_result = [{
+        FormattedDate: ""
+        SortableDate: ""
+        DateType: "Empty Date"
+        DateQualifier: "Empty"
+        DateERA: "Empty"
+        DateYear: ""
+        MonthShortName: ""
+        MonthLongName: ""
+        DayofMonth: ""
+        CalendarDate: "Empty"
+        DateDescriptor: "Empty"
+    }]
+
+    let passthrough_result = {|text|
+        [{
+            FormattedDate: $text
+            SortableDate: ""
+            DateType: "Text Date"
+            DateQualifier: ""
+            DateERA: ""
+            DateYear: ""
+            MonthShortName: ""
+            MonthLongName: ""
+            DayofMonth: ""
+            CalendarDate: ""
+            DateDescriptor: ""
+        }]
+    }
+
+    if ($eventdate | is-empty) or $eventdate == "." {
+        return $empty_result
+    }
+
+    let rm_prefixes = [D R Q T .]
+    let first_char = ($eventdate | str substring 0..0)
+    if (($eventdate | str length) < 13) or not ($rm_prefixes | any {|p| $p == $first_char }) {
+        return (do $passthrough_result $eventdate)
+    }
+
     # pos is for position in the 13 character date string
     # Date Type
     const pos1 = [

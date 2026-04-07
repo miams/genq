@@ -95,7 +95,7 @@ def "db-pres2020 list people pres2020 - RIN values are positive" [] {
 def "db-pres2020 list events pres2020 - has expected columns" [] {
     let ctx = $in
     let cols = (with-env (e $ctx) { genq list events } | columns)
-    for col in [index EventID RIN Given Surname Event Description EventDate LastUpdate] {
+    for col in [index EventID RIN Given Surname Event Description EventDate SortDate LastUpdate] {
         assert ($cols | any { |c| $c == $col })
     }
 }
@@ -115,14 +115,21 @@ def "db-pres2020 list events pres2020 - has Occupation events" [] {
 }
 
 @test
-def "db-pres2020 list events pres2020 - EventDate is 4-digit year or empty" [] {
+def "db-pres2020 list events pres2020 - SortDate is YYYY-MM-DD or empty" [] {
     let ctx = $in
     let result = (with-env (e $ctx) { genq list events })
     let invalid = ($result | where { |r|
-        let d = $r.EventDate
-        not (($d | is-empty) or (($d | str length) == 4))
+        let d = $r.SortDate
+        not (($d | is-empty) or ($d =~ '^\d{4}-\d{2}-\d{2}$'))
     })
     assert equal ($invalid | length) 0
+}
+
+@test
+def "db-pres2020 list events pres2020 - sort-date-by orders SortDate ascending" [] {
+    let ctx = $in
+    let sorted = (with-env (e $ctx) { genq list events | sort-date-by EventDate | get SortDate | where $it != "" })
+    assert equal $sorted ($sorted | sort)
 }
 
 @test

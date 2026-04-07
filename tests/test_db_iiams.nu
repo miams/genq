@@ -96,7 +96,7 @@ def "db-iiams list events iiams - returns records" [] {
 def "db-iiams list events iiams - has expected columns" [] {
     if (no-db) { return }
     let cols = (with-env (ie) { genq list events } | columns)
-    for col in [index EventID RIN Given Surname Event Description EventDate LastUpdate] {
+    for col in [index EventID RIN Given Surname Event Description EventDate SortDate LastUpdate] {
         assert ($cols | any { |c| $c == $col })
     }
 }
@@ -110,14 +110,21 @@ def "db-iiams list events iiams - has multiple event types" [] {
 }
 
 @test
-def "db-iiams list events iiams - EventDate is 4-digit year or empty" [] {
+def "db-iiams list events iiams - SortDate is YYYY-MM-DD or empty" [] {
     if (no-db) { return }
     let result = (with-env (ie) { genq list events })
     let invalid = ($result | where { |r|
-        let d = $r.EventDate
-        not (($d | is-empty) or (($d | str length) == 4))
+        let d = $r.SortDate
+        not (($d | is-empty) or ($d =~ '^\d{4}-\d{2}-\d{2}$'))
     })
     assert equal ($invalid | length) 0
+}
+
+@test
+def "db-iiams list events iiams - sort-date-by orders SortDate ascending" [] {
+    if (no-db) { return }
+    let sorted = (with-env (ie) { genq list events | sort-date-by EventDate | get SortDate | where $it != "" })
+    assert equal $sorted ($sorted | sort)
 }
 
 # =============================================================================

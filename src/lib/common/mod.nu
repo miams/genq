@@ -23,7 +23,44 @@ export module 'paths.nu'
 
 # Start index at 1 instead of default 0.
 export def startat1 [] {
-    enumerate | flatten | each { |row| $row | upsert index ($row.index + 1) }
+    $in | enumerate | each { |row| $row.item | upsert index ($row.index + 1) }
+}
+
+export def "sort-date-by" [
+    column: string
+    --reverse(-r)
+    --no-empty
+    --only-empty
+] {
+    let rows = $in
+    if ($rows | is-empty) {
+        return $rows
+    }
+
+    let sort_column = if $column == "EventDate" and (($rows | columns) | any {|c| $c == "SortDate" }) {
+        "SortDate"
+    } else {
+        $column
+    }
+
+    let with_dates = ($rows | where {|row| (($row | get --optional $sort_column | default "") | is-not-empty) })
+    let without_dates = ($rows | where {|row| (($row | get --optional $sort_column | default "") | is-empty) })
+
+    if $only_empty {
+        return $without_dates
+    }
+
+    let sorted = if $reverse {
+        $with_dates | sort-by {|row| $row | get $sort_column } --reverse
+    } else {
+        $with_dates | sort-by {|row| $row | get $sort_column }
+    }
+
+    if $no_empty {
+        $sorted
+    } else {
+        [$sorted, $without_dates] | flatten
+    }
 }
 
 # Limit text in column with ellipsis

@@ -13,13 +13,13 @@ The pres2020.rmtree database is an import of a [public GEDCOM](https://github.co
 - An ordered list of Presidents
 
 ```
-genq list events | where Event == Occupation | where Description =~ "US President" | sort-by Description -n
+genq list events | where Event == "Occupation" | where Description =~ "US President" | sort-by Description -n
 ```
 
 - 281 people have Occupations/Titles listed.
 
 ```
-genq list events | where Event == Occupation | startat1
+genq list events | where Event == "Occupation" | startat1
 ```
 
 - A total of 19 Event/Fact types are use.
@@ -31,7 +31,7 @@ genq list events | uniq-by Event | sort-by Event | startat1
 - Event dates range from 1016 to 2018
 
 ```
-genq list events | reject LastUpdate EventID | sort-by EventDate | startat1 | explore
+genq list events | reject LastUpdate EventID | sort-date-by EventDate | startat1 | explore
 ```
 
 - George Washington and his family comprise 111 people in the database.
