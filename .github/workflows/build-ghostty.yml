@@ -32,22 +32,21 @@ jobs:
           ssh-key: ${{ secrets.GENQ_TERMINAL_DEPLOY_KEY }}
           path: genq-terminal
 
-      - name: Install Nix
-        uses: cachix/install-nix-action@v31
-        with:
-          nix_path: nixpkgs=channel:nixos-unstable
-
-      - name: Select Xcode
+      - name: Install Zig 0.15.2
         run: |
-          # DockTilePlugin was created with Xcode 26.2; requires Xcode 26+
-          xcode=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1)
-          echo "Selecting Xcode: $xcode"
-          sudo xcode-select --switch "$xcode/Contents/Developer"
-          xcodebuild -version
+          # Install Zig directly (not via Nix) so it uses the system macOS 26
+          # SDK rather than Nix's isolated macOS 15 SDK, which causes linker
+          # failures (undefined symbols: _abort, _free, etc.)
+          ZIG_VERSION="0.15.2"
+          ZIG_URL="https://ziglang.org/download/${ZIG_VERSION}/zig-macos-aarch64-${ZIG_VERSION}.tar.xz"
+          curl -fsSL "$ZIG_URL" | tar -xJ -C /tmp
+          sudo mv "/tmp/zig-macos-aarch64-${ZIG_VERSION}" /usr/local/zig
+          sudo ln -sf /usr/local/zig/zig /usr/local/bin/zig
+          zig version
 
       - name: Build
         working-directory: genq-terminal
-        run: nix develop -c zig build -Doptimize=ReleaseFast
+        run: zig build -Doptimize=ReleaseFast
 
       - name: Sign
         working-directory: genq-terminal
