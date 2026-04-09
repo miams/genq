@@ -38,16 +38,7 @@ jobs:
 
       - name: Build
         working-directory: genq-terminal
-        continue-on-error: true
         run: nix develop -c zig build -Doptimize=ReleaseFast
-
-      - name: Diagnose xcodebuild failure
-        working-directory: genq-terminal/macos
-        run: |
-          echo "=== Xcode version ==="
-          xcodebuild -version
-          echo "=== DockTilePlugin build (verbose) ==="
-          xcodebuild -target DockTilePlugin -configuration ReleaseLocal 2>&1 || true
 
       - name: Sign
         working-directory: genq-terminal
