@@ -27,7 +27,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: miams/genq-terminal
-          ref: main
+          ref: genq
           ssh-key: ${{ secrets.GENQ_TERMINAL_DEPLOY_KEY }}
           path: genq-terminal
 
@@ -80,7 +80,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: miams/genq-terminal
-          ref: main
+          ref: genq
           ssh-key: ${{ secrets.GENQ_TERMINAL_DEPLOY_KEY }}
           path: genq-terminal
 
