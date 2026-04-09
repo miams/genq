@@ -38,9 +38,9 @@ jobs:
           # SDK rather than Nix's isolated macOS 15 SDK, which causes linker
           # failures (undefined symbols: _abort, _free, etc.)
           ZIG_VERSION="0.15.2"
-          ZIG_URL="https://ziglang.org/download/${ZIG_VERSION}/zig-macos-aarch64-${ZIG_VERSION}.tar.xz"
+          ZIG_URL="https://ziglang.org/download/${ZIG_VERSION}/zig-aarch64-macos-${ZIG_VERSION}.tar.xz"
           curl -fsSL "$ZIG_URL" | tar -xJ -C /tmp
-          sudo mv "/tmp/zig-macos-aarch64-${ZIG_VERSION}" /usr/local/zig
+          sudo mv "/tmp/zig-aarch64-macos-${ZIG_VERSION}" /usr/local/zig
           sudo ln -sf /usr/local/zig/zig /usr/local/bin/zig
           zig version
 
