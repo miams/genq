@@ -26,7 +26,7 @@ export def "main" [] {
        JOIN NameTable ON NameTable.OwnerID=RIN 
        WHERE OwnerType=0 and IsPrimary=1"
        
-    open $env.rmdb | query db $sqlquery 
+    open $env.rmdb | query db $sqlquery | startat1
 
     
 

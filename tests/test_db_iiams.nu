@@ -75,8 +75,9 @@ def "db-iiams list people iiams - BirthYear is historical or zero" [] {
     if (no-db) { return }
     let result = (with-env (ie) { genq list people })
     # 0 = unknown; known years must be in a plausible historical range
+    # Iiams DB has 16th-century ancestors (earliest ~1566)
     let invalid = ($result | where { |r|
-        $r.BirthYear != 0 and ($r.BirthYear < 1600 or $r.BirthYear > 2030)
+        $r.BirthYear != 0 and ($r.BirthYear < 1400 or $r.BirthYear > 2030)
     })
     assert equal ($invalid | length) 0
 }
@@ -194,7 +195,7 @@ def "db-iiams list citations iiams - has expected columns" [] {
     let result = (with-env (ie) { genq list citations })
     if ($result | length) == 0 { return }
     let cols = ($result | columns)
-    for col in [index RIN Surname Given Source] {
+    for col in [index RIN Surname Givens Source] {
         assert ($cols | any { |c| $c == $col })
     }
 }

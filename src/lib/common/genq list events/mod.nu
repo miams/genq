@@ -39,7 +39,7 @@ export def "main" [
         ELSE ''
     END)"
 
-    let sqlquery = (["SELECT EventID, EventTable.OwnerID AS RIN, NameTable.Given as Given, NameTable.Surname as Surname, Name as Event,
+    let sqlquery = (["SELECT EventID, EventTable.OwnerID AS RIN, NameTable.Given as Given, NameTable.Surname as Surname, FactTypeTable.Name as Event,
        COALESCE(Details, '') as Description,
        CASE
            WHEN COALESCE(EventTable.Date, '') IN ('', '.') THEN ''
