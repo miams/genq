@@ -71,6 +71,26 @@ jobs:
             -ov -format UDZO \
             -o "$GITHUB_WORKSPACE/GenQuery-Terminal-macOS.dmg"
 
+      - name: Upload to S3
+        if: github.ref == 'refs/heads/main'
+        env:
+          AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION:    us-east-1
+          GENQ_RELEASES_BUCKET:  ${{ vars.GENQ_RELEASES_BUCKET }}
+        run: |
+          if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$GENQ_RELEASES_BUCKET" ]; then
+            echo "S3 upload skipped (GENQ_RELEASES_BUCKET or AWS credentials not configured)"
+            exit 0
+          fi
+          SHORT_SHA="${{ github.sha }}"
+          SHORT_SHA="${SHORT_SHA:0:8}"
+          aws s3 cp GenQuery-Terminal-macOS.dmg \
+            "s3://$GENQ_RELEASES_BUCKET/macos/latest/GenQuery-Terminal-macOS.dmg"
+          aws s3 cp GenQuery-Terminal-macOS.dmg \
+            "s3://$GENQ_RELEASES_BUCKET/macos/$SHORT_SHA/GenQuery-Terminal-macOS.dmg"
+          echo "Uploaded to s3://$GENQ_RELEASES_BUCKET/macos/latest/ and /macos/$SHORT_SHA/"
+
       - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:
@@ -111,6 +131,26 @@ jobs:
         run: |
           tar -czf "$GITHUB_WORKSPACE/GenQuery-Terminal-Linux.tar.gz" \
             -C zig-out/bin ghostty
+
+      - name: Upload to S3
+        if: github.ref == 'refs/heads/main'
+        env:
+          AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION:    us-east-1
+          GENQ_RELEASES_BUCKET:  ${{ vars.GENQ_RELEASES_BUCKET }}
+        run: |
+          if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$GENQ_RELEASES_BUCKET" ]; then
+            echo "S3 upload skipped (GENQ_RELEASES_BUCKET or AWS credentials not configured)"
+            exit 0
+          fi
+          SHORT_SHA="${{ github.sha }}"
+          SHORT_SHA="${SHORT_SHA:0:8}"
+          aws s3 cp GenQuery-Terminal-Linux.tar.gz \
+            "s3://$GENQ_RELEASES_BUCKET/linux/latest/GenQuery-Terminal-Linux.tar.gz"
+          aws s3 cp GenQuery-Terminal-Linux.tar.gz \
+            "s3://$GENQ_RELEASES_BUCKET/linux/$SHORT_SHA/GenQuery-Terminal-Linux.tar.gz"
+          echo "Uploaded to s3://$GENQ_RELEASES_BUCKET/linux/latest/ and /linux/$SHORT_SHA/"
 
       - name: Upload Linux artifact
         uses: actions/upload-artifact@v4
