@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
     branches: [main]
 
@@ -37,6 +38,15 @@ jobs:
           ssh-key: ${{ secrets.GENQ_TERMINAL_DEPLOY_KEY }}
           path: genq-terminal
 
+      - name: Compute build version
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "BUILD_VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
+          else
+            SHORT_SHA="${{ github.sha }}"
+            echo "BUILD_VERSION=${SHORT_SHA:0:8}" >> $GITHUB_ENV
+          fi
+
       - name: Install Zig 0.15.2
         run: |
           # Install Zig directly (not via Nix) so it uses the system macOS 26
@@ -49,30 +59,49 @@ jobs:
           sudo ln -sf /usr/local/zig/zig /usr/local/bin/zig
           zig version
 
-      - name: Build
+      - name: Build (arm64)
         working-directory: genq-terminal
-        run: zig build -Doptimize=ReleaseFast
+        run: |
+          zig build -Doptimize=ReleaseFast
+          cp -r zig-out/Ghostty.app /tmp/Ghostty-arm64.app
+
+      - name: Build (x86_64)
+        working-directory: genq-terminal
+        run: zig build -Doptimize=ReleaseFast -Dtarget=x86_64-macos
 
       - name: Sign
         working-directory: genq-terminal
         run: |
+          xattr -cr /tmp/Ghostty-arm64.app
+          codesign --force --deep --sign - /tmp/Ghostty-arm64.app
           xattr -cr zig-out/Ghostty.app
           codesign --force --deep --sign - "zig-out/Ghostty.app"
 
-      - name: Package DMG
+      - name: Package DMGs
         working-directory: genq-terminal
         run: |
-          mkdir -p /tmp/genq-dmg
-          cp -r "zig-out/Ghostty.app" "/tmp/genq-dmg/GenQuery Terminal.app"
-          ln -s /Applications /tmp/genq-dmg/Applications
+          # arm64 DMG
+          mkdir -p /tmp/genq-dmg-arm64
+          cp -r /tmp/Ghostty-arm64.app "/tmp/genq-dmg-arm64/GenQuery Terminal.app"
+          ln -s /Applications /tmp/genq-dmg-arm64/Applications
           hdiutil create \
             -volname "GenQuery Terminal" \
-            -srcfolder /tmp/genq-dmg \
+            -srcfolder /tmp/genq-dmg-arm64 \
             -ov -format UDZO \
-            -o "$GITHUB_WORKSPACE/GenQuery-Terminal-macOS.dmg"
+            -o "$GITHUB_WORKSPACE/GenQuery-Terminal-macOS-arm64.dmg"
+
+          # x86_64 DMG
+          mkdir -p /tmp/genq-dmg-x86_64
+          cp -r "zig-out/Ghostty.app" "/tmp/genq-dmg-x86_64/GenQuery Terminal.app"
+          ln -s /Applications /tmp/genq-dmg-x86_64/Applications
+          hdiutil create \
+            -volname "GenQuery Terminal" \
+            -srcfolder /tmp/genq-dmg-x86_64 \
+            -ov -format UDZO \
+            -o "$GITHUB_WORKSPACE/GenQuery-Terminal-macOS-x86_64.dmg"
 
       - name: Upload to S3
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
         env:
           AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -83,19 +112,26 @@ jobs:
             echo "S3 upload skipped (GENQ_RELEASES_BUCKET or AWS credentials not configured)"
             exit 0
           fi
-          SHORT_SHA="${{ github.sha }}"
-          SHORT_SHA="${SHORT_SHA:0:8}"
-          aws s3 cp GenQuery-Terminal-macOS.dmg \
-            "s3://$GENQ_RELEASES_BUCKET/macos/latest/GenQuery-Terminal-macOS.dmg"
-          aws s3 cp GenQuery-Terminal-macOS.dmg \
-            "s3://$GENQ_RELEASES_BUCKET/macos/$SHORT_SHA/GenQuery-Terminal-macOS.dmg"
-          echo "Uploaded to s3://$GENQ_RELEASES_BUCKET/macos/latest/ and /macos/$SHORT_SHA/"
+          for ARCH in arm64 x86_64; do
+            aws s3 cp "GenQuery-Terminal-macOS-${ARCH}.dmg" \
+              "s3://$GENQ_RELEASES_BUCKET/macos/${ARCH}/latest/GenQuery-Terminal-macOS-${ARCH}.dmg"
+            aws s3 cp "GenQuery-Terminal-macOS-${ARCH}.dmg" \
+              "s3://$GENQ_RELEASES_BUCKET/macos/${ARCH}/$BUILD_VERSION/GenQuery-Terminal-macOS-${ARCH}.dmg"
+          done
+          echo "Uploaded arm64 and x86_64 to s3://$GENQ_RELEASES_BUCKET/macos/ (version: $BUILD_VERSION)"
 
-      - name: Upload DMG
+      - name: Upload arm64 DMG
         uses: actions/upload-artifact@v4
         with:
-          name: GenQuery-Terminal-macOS
-          path: GenQuery-Terminal-macOS.dmg
+          name: GenQuery-Terminal-macOS-arm64
+          path: GenQuery-Terminal-macOS-arm64.dmg
+          retention-days: 14
+
+      - name: Upload x86_64 DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: GenQuery-Terminal-macOS-x86_64
+          path: GenQuery-Terminal-macOS-x86_64.dmg
           retention-days: 14
 
   # ---------------------------------------------------------------------------
@@ -117,6 +153,15 @@ jobs:
           ssh-key: ${{ secrets.GENQ_TERMINAL_DEPLOY_KEY }}
           path: genq-terminal
 
+      - name: Compute build version
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "BUILD_VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
+          else
+            SHORT_SHA="${{ github.sha }}"
+            echo "BUILD_VERSION=${SHORT_SHA:0:8}" >> $GITHUB_ENV
+          fi
+
       - name: Install Nix
         uses: cachix/install-nix-action@v31
         with:
@@ -133,7 +178,7 @@ jobs:
             -C zig-out/bin ghostty
 
       - name: Upload to S3
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
         env:
           AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -144,13 +189,11 @@ jobs:
             echo "S3 upload skipped (GENQ_RELEASES_BUCKET or AWS credentials not configured)"
             exit 0
           fi
-          SHORT_SHA="${{ github.sha }}"
-          SHORT_SHA="${SHORT_SHA:0:8}"
           aws s3 cp GenQuery-Terminal-Linux.tar.gz \
             "s3://$GENQ_RELEASES_BUCKET/linux/latest/GenQuery-Terminal-Linux.tar.gz"
           aws s3 cp GenQuery-Terminal-Linux.tar.gz \
-            "s3://$GENQ_RELEASES_BUCKET/linux/$SHORT_SHA/GenQuery-Terminal-Linux.tar.gz"
-          echo "Uploaded to s3://$GENQ_RELEASES_BUCKET/linux/latest/ and /linux/$SHORT_SHA/"
+            "s3://$GENQ_RELEASES_BUCKET/linux/$BUILD_VERSION/GenQuery-Terminal-Linux.tar.gz"
+          echo "Uploaded to s3://$GENQ_RELEASES_BUCKET/linux/latest/ and /linux/$BUILD_VERSION/"
 
       - name: Upload Linux artifact
         uses: actions/upload-artifact@v4

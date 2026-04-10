@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
     branches: [main]
 
@@ -35,6 +36,16 @@ jobs:
           repository: miams/genq-terminal-windows
           ref: genq
           path: genq-terminal-windows
+
+      - name: Compute build version
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -eq "tag") {
+            "BUILD_VERSION=${{ github.ref_name }}" >> $env:GITHUB_ENV
+          } else {
+            $shortSha = "${{ github.sha }}".Substring(0, 8)
+            "BUILD_VERSION=$shortSha" >> $env:GITHUB_ENV
+          }
 
       # -----------------------------------------------------------------------
       # 2. Download Nushell ARM64 binary from GitHub releases
@@ -267,6 +278,7 @@ jobs:
       # 8. Upload to S3 (skipped gracefully if credentials not configured)
       # -----------------------------------------------------------------------
       - name: Upload to S3
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
         shell: pwsh
         env:
           AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -278,11 +290,11 @@ jobs:
             Write-Host "S3 upload skipped (GENQ_RELEASES_BUCKET or AWS credentials not configured)"
             exit 0
           }
-          $shortSha = "${{ github.sha }}".Substring(0, 8)
-          $msix     = "$env:GITHUB_WORKSPACE\GenQuery-Terminal-Windows-ARM64.msix"
+          $buildVersion = $env:BUILD_VERSION
+          $msix         = "$env:GITHUB_WORKSPACE\GenQuery-Terminal-Windows-ARM64.msix"
           aws s3 cp $msix "s3://$env:GENQ_RELEASES_BUCKET/windows/arm64/latest/GenQuery-Terminal-Windows-ARM64.msix"
-          aws s3 cp $msix "s3://$env:GENQ_RELEASES_BUCKET/windows/arm64/$shortSha/GenQuery-Terminal-Windows-ARM64.msix"
-          Write-Host "Uploaded to s3://$env:GENQ_RELEASES_BUCKET/windows/arm64/latest/ and /windows/arm64/$shortSha/"
+          aws s3 cp $msix "s3://$env:GENQ_RELEASES_BUCKET/windows/arm64/$buildVersion/GenQuery-Terminal-Windows-ARM64.msix"
+          Write-Host "Uploaded to s3://$env:GENQ_RELEASES_BUCKET/windows/arm64/latest/ and /windows/arm64/$buildVersion/"
 
       # -----------------------------------------------------------------------
       # 9. Upload GitHub artifact (14-day retention)
