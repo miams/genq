@@ -177,7 +177,29 @@ jobs:
           Write-Host "NuGet.Config updated — nuget.org added"
 
       # -----------------------------------------------------------------------
-      # 6b. Build ARM64 Release MSIX via Invoke-OpenConsoleBuild
+      # 6b. Restore SDK projects with RuntimeIdentifier=any (ARM64 cross-compile)
+      #
+      #     Microsoft.Windows.SDK.NET.Ref only publishes an 'any' RID variant.
+      #     When building for ARM64, MSBuild resolves runtime packs against 'any'.
+      #     The earlier dotnet restore (step 3) uses the host-platform RID and
+      #     downloads packs from local SDK — it does NOT fetch the 'any' pack.
+      #     This restore runs AFTER the NuGet.Config patch so nuget.org is
+      #     available to download the 'any' runtime pack.
+      #
+      #     Affects: WpfTerminalControl (net8.0-windows) and WpfTerminalTestNetCore.
+      #     x64 builds do not need this: the host SDK already has compatible packs.
+      # -----------------------------------------------------------------------
+      - name: Restore SDK projects with RuntimeIdentifier=any (ARM64 runtime packs)
+        working-directory: genq-terminal-windows
+        shell: pwsh
+        run: |
+          $env:DOTNET_ROOT = 'C:\Program Files\dotnet'
+          $env:PATH = "C:\Program Files\dotnet;$env:PATH"
+          dotnet restore src\cascadia\WpfTerminalControl\WpfTerminalControl.csproj -r any
+          dotnet restore src\cascadia\WpfTerminalTestNetCore\WpfTerminalTestNetCore.csproj -r any
+
+      # -----------------------------------------------------------------------
+      # 6d. Build ARM64 Release MSIX via Invoke-OpenConsoleBuild
       #
       #     WHY Invoke-OpenConsoleBuild (not raw msbuild):
       #     Raw `msbuild /restore` only handles PackageReference (SDK-style)
