@@ -13,8 +13,8 @@ const PROJECT_ROOT = path self | path dirname | path join ".."
 # Returns exit code (0 = ok, 1 = parse error).
 def nu-check [rel_path: string]: nothing -> int {
     let abs_path  = ($PROJECT_ROOT | path join $rel_path | path expand)
-    let lib_dirs  = ([$PROJECT_ROOT, $PROJECT_ROOT]
-                    | zip ["src/lib", "src/lib/ext"]
+    let lib_dirs  = ([$PROJECT_ROOT, $PROJECT_ROOT, $PROJECT_ROOT]
+                    | zip ["src/lib", "src/lib/ext", "src/lib/common"]
                     | each { |pair| $pair.0 | path join $pair.1 | path expand }
                     | str join (char esep))
     with-env { NU_LIB_DIRS: $lib_dirs } {
