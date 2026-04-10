@@ -193,10 +193,20 @@ jobs:
         working-directory: genq-terminal-windows
         shell: pwsh
         run: |
+          #
+          # WHY --force:
+          # Step 3 (dotnet restore, no -r flag) ran before nuget.org was added to
+          # NuGet.Config (step 6a). NuGet created project.assets.json referencing
+          # Microsoft.Windows.SDK.NET.Ref for the 'any' RID but could not download
+          # it (nuget.org was absent). Step 6b's incremental-restore fast path sees
+          # assets.json already exists and exits in ~300ms without downloading the pack.
+          # --force bypasses the incremental check and forces NuGet to evaluate and
+          # download all packages, ensuring the 'any' runtime pack lands in the cache.
+          #
           $env:DOTNET_ROOT = 'C:\Program Files\dotnet'
           $env:PATH = "C:\Program Files\dotnet;$env:PATH"
-          dotnet restore src\cascadia\WpfTerminalControl\WpfTerminalControl.csproj -r any
-          dotnet restore src\cascadia\WpfTerminalTestNetCore\WpfTerminalTestNetCore.csproj -r any
+          dotnet restore src\cascadia\WpfTerminalControl\WpfTerminalControl.csproj -r any --force
+          dotnet restore src\cascadia\WpfTerminalTestNetCore\WpfTerminalTestNetCore.csproj -r any --force
 
       # -----------------------------------------------------------------------
       # 6d. Build ARM64 Release MSIX via Invoke-OpenConsoleBuild
