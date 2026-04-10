@@ -9,7 +9,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   # Opt into Node.js 24 for actions (checkout, upload-artifact) before the
@@ -201,3 +201,52 @@ jobs:
           name: GenQuery-Terminal-Linux
           path: GenQuery-Terminal-Linux.tar.gz
           retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # Publish GitHub Release — only on v* tags
+  # ---------------------------------------------------------------------------
+  publish-release:
+    name: Publish GitHub Release
+    runs-on: ubuntu-latest
+    needs: [build-macos, build-linux]
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Download macOS arm64 DMG
+        uses: actions/download-artifact@v4
+        with:
+          name: GenQuery-Terminal-macOS-arm64
+
+      - name: Download macOS x86_64 DMG
+        uses: actions/download-artifact@v4
+        with:
+          name: GenQuery-Terminal-macOS-x86_64
+
+      - name: Download Linux tar.gz
+        uses: actions/download-artifact@v4
+        with:
+          name: GenQuery-Terminal-Linux
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          # Create the release if it doesn't exist; update if it does
+          if gh release view "$TAG" --repo ${{ github.repository }} > /dev/null 2>&1; then
+            echo "Release $TAG already exists — uploading assets"
+            gh release upload "$TAG" \
+              GenQuery-Terminal-macOS-arm64.dmg \
+              GenQuery-Terminal-macOS-x86_64.dmg \
+              GenQuery-Terminal-Linux.tar.gz \
+              --repo ${{ github.repository }} \
+              --clobber
+          else
+            gh release create "$TAG" \
+              GenQuery-Terminal-macOS-arm64.dmg \
+              GenQuery-Terminal-macOS-x86_64.dmg \
+              GenQuery-Terminal-Linux.tar.gz \
+              --repo ${{ github.repository }} \
+              --title "GenQuery Terminal $TAG" \
+              --generate-notes
+          fi
