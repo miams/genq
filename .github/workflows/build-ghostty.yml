@@ -63,7 +63,7 @@ jobs:
         working-directory: genq-terminal
         run: |
           zig build -Doptimize=ReleaseFast
-          cp -r zig-out/Ghostty.app /tmp/Ghostty-arm64.app
+          ditto zig-out/Ghostty.app /tmp/Ghostty-arm64.app
 
       - name: Build (x86_64)
         working-directory: genq-terminal
@@ -82,7 +82,7 @@ jobs:
         run: |
           # arm64 DMG
           mkdir -p /tmp/genq-dmg-arm64
-          cp -r /tmp/Ghostty-arm64.app "/tmp/genq-dmg-arm64/GenQuery Terminal.app"
+          ditto /tmp/Ghostty-arm64.app "/tmp/genq-dmg-arm64/GenQuery Terminal.app"
           ln -s /Applications /tmp/genq-dmg-arm64/Applications
           hdiutil create \
             -volname "GenQuery Terminal" \
@@ -92,7 +92,7 @@ jobs:
 
           # x86_64 DMG
           mkdir -p /tmp/genq-dmg-x86_64
-          cp -r "zig-out/Ghostty.app" "/tmp/genq-dmg-x86_64/GenQuery Terminal.app"
+          ditto "zig-out/Ghostty.app" "/tmp/genq-dmg-x86_64/GenQuery Terminal.app"
           ln -s /Applications /tmp/genq-dmg-x86_64/Applications
           hdiutil create \
             -volname "GenQuery Terminal" \
