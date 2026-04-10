@@ -157,7 +157,27 @@ jobs:
           $cfg | Set-Content -Encoding UTF8 "$pkgDir\config\default.toml"
 
       # -----------------------------------------------------------------------
-      # 6. Build x64 Release MSIX
+      # 6a. Patch NuGet.Config to add nuget.org for packages.config C++ projects
+      #     The project NuGet.Config has <clear/> which removes nuget.org, leaving
+      #     only the private TerminalDependencies feed. C++ packages.config projects
+      #     (e.g. WIL / Microsoft.Windows.ImplementationLibrary) need nuget.org.
+      # -----------------------------------------------------------------------
+      - name: Add nuget.org to NuGet sources (packages.config C++ restore)
+        working-directory: genq-terminal-windows
+        shell: pwsh
+        run: |
+          $configPath = "NuGet.Config"
+          $xml = [xml](Get-Content $configPath)
+          $src = $xml.configuration.packageSources
+          $add = $xml.CreateElement("add")
+          $add.SetAttribute("key", "nuget.org")
+          $add.SetAttribute("value", "https://api.nuget.org/v3/index.json")
+          $src.AppendChild($add) | Out-Null
+          $xml.Save((Resolve-Path $configPath))
+          Write-Host "NuGet.Config updated — nuget.org added for C++ packages.config restore"
+
+      # -----------------------------------------------------------------------
+      # 6b. Build x64 Release MSIX
       # -----------------------------------------------------------------------
       - name: Build x64 Release
         working-directory: genq-terminal-windows
@@ -205,7 +225,6 @@ jobs:
       # 8. Upload to S3 (skipped gracefully if credentials not configured)
       # -----------------------------------------------------------------------
       - name: Upload to S3
-        continue-on-error: true
         shell: pwsh
         env:
           AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
