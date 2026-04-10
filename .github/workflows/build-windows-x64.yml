@@ -10,6 +10,9 @@ on:
 permissions:
   contents: read
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
 
   # ---------------------------------------------------------------------------
@@ -38,8 +41,12 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Download Nushell x64
         shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
-          $release = Invoke-RestMethod "https://api.github.com/repos/nushell/nushell/releases/latest"
+          $release = Invoke-RestMethod `
+            -Uri "https://api.github.com/repos/nushell/nushell/releases/latest" `
+            -Headers @{Authorization = "Bearer $env:GITHUB_TOKEN"}
           $version = $release.tag_name
           Write-Host "Bundling Nushell $version"
           echo "NU_VERSION=$version" >> $env:GITHUB_ENV
@@ -198,6 +205,7 @@ jobs:
       # 8. Upload to S3 (skipped gracefully if credentials not configured)
       # -----------------------------------------------------------------------
       - name: Upload to S3
+        continue-on-error: true
         shell: pwsh
         env:
           AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}

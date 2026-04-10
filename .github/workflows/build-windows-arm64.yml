@@ -10,6 +10,9 @@ on:
 permissions:
   contents: read
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
 
   # ---------------------------------------------------------------------------
@@ -38,8 +41,12 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Download Nushell ARM64
         shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
-          $release = Invoke-RestMethod "https://api.github.com/repos/nushell/nushell/releases/latest"
+          $release = Invoke-RestMethod `
+            -Uri "https://api.github.com/repos/nushell/nushell/releases/latest" `
+            -Headers @{Authorization = "Bearer $env:GITHUB_TOKEN"}
           $version = $release.tag_name
           Write-Host "Bundling Nushell $version"
           echo "NU_VERSION=$version" >> $env:GITHUB_ENV
@@ -171,7 +178,8 @@ jobs:
             /p:Configuration=Release `
             /p:WindowsTargetPlatformVersion=10.0.22621.0 `
             /p:TargetPlatformVersion=10.0.22621.0 `
-            /p:WindowsTerminalBranding=Release
+            /p:WindowsTerminalBranding=Release `
+            "/p:RestoreAdditionalProjectSources=https://api.nuget.org/v3/index.json"
 
       # -----------------------------------------------------------------------
       # 7. Sign ARM64 MSIX
@@ -201,6 +209,7 @@ jobs:
       # 8. Upload to S3 (skipped gracefully if credentials not configured)
       # -----------------------------------------------------------------------
       - name: Upload to S3
+        continue-on-error: true
         shell: pwsh
         env:
           AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID }}
