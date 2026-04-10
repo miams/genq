@@ -19,7 +19,7 @@
 #   GENQ_SOURCE=ci-ubuntu-latest nu tests/ingest-results.nu
 
 def main [] {
-    let url   = $env.TURSO_DB_URL?    | default ""
+    let url   = ($env.TURSO_DB_URL?    | default "" | str replace --regex '^libsql://' 'https://')
     let token = $env.TURSO_AUTH_TOKEN? | default ""
 
     if ($url | is-empty) or ($token | is-empty) {
