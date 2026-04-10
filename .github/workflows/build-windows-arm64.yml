@@ -178,7 +178,20 @@ jobs:
           Write-Host "NuGet.Config updated — nuget.org added for C++ packages.config restore"
 
       # -----------------------------------------------------------------------
-      # 6b. Build ARM64 Release MSIX
+      # 6b. Restore packages.config C++ packages via nuget.exe
+      #     msbuild /restore only handles PackageReference (SDK-style) projects.
+      #     packages.config vcxproj projects (WIL, etc.) need nuget.exe restore.
+      #     Invoke-OpenConsoleBuild (used for x64) triggers this automatically;
+      #     raw msbuild (used for ARM64) does not.
+      # -----------------------------------------------------------------------
+      - name: Restore packages.config packages (nuget.exe)
+        working-directory: genq-terminal-windows
+        shell: pwsh
+        run: |
+          nuget restore OpenConsole.slnx -NonInteractive -Verbosity normal
+
+      # -----------------------------------------------------------------------
+      # 6c. Build ARM64 Release MSIX
       #     /restore is required to fetch ARM64-specific runtime packs
       #     (NETSDK1112: Microsoft.Windows.SDK.NET.Ref not found otherwise)
       # -----------------------------------------------------------------------
