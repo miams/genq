@@ -2,7 +2,7 @@
 # The reference point can be a PlaceID, place name, or raw coordinates.
 # Rows with no GPS data (Latitude = 0 and Longitude = 0) receive null for Distance.
 @category "genq-common"
-@search-terms "distance haversine gps coordinates near location geography"
+@search-terms "distance gps coordinates near location geography"
 @example "distances in km from a PlaceID" { 'genq list places --coordinates | genq distance-from --place-id 1' }
 @example "distances in miles from a named place" { 'genq list places --coordinates | genq distance-from --place-name "Washington, District of Columbia, USA" --unit mi' }
 @example "distances from raw coordinates, custom column name" { 'genq list places --coordinates | genq distance-from --lat 38.8951 --lon -77.0364 --column DistKm' }
