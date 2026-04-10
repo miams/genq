@@ -177,61 +177,27 @@ jobs:
           Write-Host "NuGet.Config updated — nuget.org added"
 
       # -----------------------------------------------------------------------
-      # 6b. Restore SDK projects with RuntimeIdentifier=any (ARM64 cross-compile)
+      # 6b. Build ARM64 Release MSIX
       #
-      #     Microsoft.Windows.SDK.NET.Ref only publishes an 'any' RID variant.
-      #     When building for ARM64, MSBuild resolves runtime packs against 'any'.
-      #     The earlier dotnet restore (step 3) uses the host-platform RID and
-      #     downloads packs from local SDK — it does NOT fetch the 'any' pack.
-      #     This restore runs AFTER the NuGet.Config patch so nuget.org is
-      #     available to download the 'any' runtime pack.
+      #     Invoke-OpenConsoleBuild (tools/OpenConsole.psm1) does three things:
+      #       1. dep\nuget\nuget.exe restore OpenConsole.slnx   (packages.config #1)
+      #       2. dep\nuget\nuget.exe restore dep\nuget\packages.config  (the 17 C++ packs)
+      #       3. msbuild.exe OpenConsole.slnx @args              (build, NO /restore flag)
       #
-      #     Affects: WpfTerminalControl (net8.0-windows) and WpfTerminalTestNetCore.
-      #     x64 builds do not need this: the host SDK already has compatible packs.
-      # -----------------------------------------------------------------------
-      - name: Restore SDK projects with RuntimeIdentifier=any (ARM64 runtime packs)
-        working-directory: genq-terminal-windows
-        shell: pwsh
-        run: |
-          #
-          # WHY win-arm64 (not 'any'):
-          # Step 3 restores using the host RID (win-x64 on the runner). That creates
-          # project.assets.json with win-x64 entries.
-          #
-          # Restoring with -r any creates assets.json with 'any' as the target RID.
-          # But the build runs with Platform=ARM64 → effective RID=win-arm64. MSBuild's
-          # ResolveRuntimePackAssets looks up win-arm64 in assets.json, finds nothing
-          # (only 'any' is there), and emits NETSDK1112. The 'any' RID is NOT in the
-          # standard RID fallback graph (win-arm64 → win → any does NOT auto-cascade
-          # from win-arm64 to 'any' in the assets.json lookup).
-          #
-          # Restoring with -r win-arm64 causes NuGet to walk the fallback graph
-          # win-arm64 → win → any, find Microsoft.Windows.SDK.NET.Ref published under
-          # 'any', download it, and record the win-arm64→any resolution in assets.json.
-          # The build then finds the correct entry and NETSDK1112 does not fire.
-          #
-          $env:DOTNET_ROOT = 'C:\Program Files\dotnet'
-          $env:PATH = "C:\Program Files\dotnet;$env:PATH"
-          dotnet restore src\cascadia\WpfTerminalControl\WpfTerminalControl.csproj -r win-arm64 --force
-          dotnet restore src\cascadia\WpfTerminalTestNetCore\WpfTerminalTestNetCore.csproj -r win-arm64 --force
-
-      # -----------------------------------------------------------------------
-      # 6d. Build ARM64 Release MSIX via Invoke-OpenConsoleBuild
+      #     The msbuild call has NO /restore, so it does NOT re-run the SDK restore
+      #     and does NOT overwrite project.assets.json. However, Invoke-OpenConsoleBuild
+      #     does not pass RuntimeIdentifier=win-arm64 to msbuild, so the SDK restore
+      #     never runs with the ARM64 context needed for Microsoft.Windows.SDK.NET.Ref.
       #
-      #     WHY Invoke-OpenConsoleBuild (not raw msbuild):
-      #     Raw `msbuild /restore` only handles PackageReference (SDK-style)
-      #     projects. The C++ vcxproj files use packages.config (WIL, CppWinRT,
-      #     XAML, WebView2, etc. — 17 packages total). MSBuild's build-integrated
-      #     NuGet automatic restore, triggered by Invoke-OpenConsoleBuild, correctly
-      #     discovers vcxproj packages.config files and restores them before
-      #     EnsureNuGetPackageBuildImports fires.
+      #     Microsoft.Windows.SDK.NET.Ref is a FrameworkReference (not a regular
+      #     PackageReference). `dotnet restore -r win-arm64` does not resolve it
+      #     correctly — it stays missing in project.assets.json. Only
+      #     `msbuild /t:Restore /p:Platform=ARM64` (which derives RuntimeIdentifier
+      #     from Platform) resolves it properly and downloads it from nuget.org.
       #
-      #     `nuget.exe restore OpenConsole.slnx` does NOT work: nuget.exe cannot
-      #     discover vcxproj packages.config files from the .slnx format, so it
-      #     only restores 1 package instead of 17.
-      #
-      #     RestoreAdditionalProjectSources: safety net for Microsoft.Windows.SDK.NET.Ref
-      #     (ARM64 runtime packs) which is not in the TerminalDependencies feed.
+      #     Solution: replicate Invoke-OpenConsoleBuild's two nuget.exe calls for
+      #     packages.config, then run msbuild /t:Restore with Platform=ARM64 so the
+      #     SDK restore handles Microsoft.Windows.SDK.NET.Ref correctly, then build.
       # -----------------------------------------------------------------------
       - name: Build ARM64 Release
         working-directory: genq-terminal-windows
@@ -244,13 +210,34 @@ jobs:
           $env:PATH = "C:\Program Files\dotnet;$env:PATH"
           Import-Module .\tools\OpenConsole.psm1
           Set-MsBuildDevEnvironment
-          Invoke-OpenConsoleBuild `
+
+          # Phase 1: packages.config restore — same two nuget.exe calls as Invoke-OpenConsoleBuild.
+          # "Invalid input 'OpenConsole.slnx'. The file type was not recognized." is expected.
+          & ".\dep\nuget\nuget.exe" restore OpenConsole.slnx
+          & ".\dep\nuget\nuget.exe" restore dep\nuget\packages.config
+
+          # Phase 2: SDK restore with ARM64 context.
+          # msbuild /t:Restore derives RuntimeIdentifier=win-arm64 from Platform=ARM64.
+          # NuGet walks win-arm64 → win → any, downloads Microsoft.Windows.SDK.NET.Ref
+          # from nuget.org (added in step 6a), and writes the path into project.assets.json
+          # so ResolveRuntimePackAssets can find it at build time.
+          # Runs AFTER nuget.exe so nothing overwrites the ARM64 assets.json.
+          msbuild OpenConsole.slnx `
+            /t:Restore `
             /p:Platform=ARM64 `
             /p:Configuration=Release `
             /p:WindowsTargetPlatformVersion=10.0.22621.0 `
             /p:TargetPlatformVersion=10.0.22621.0 `
-            /p:WindowsTerminalBranding=Release `
             "/p:RestoreAdditionalProjectSources=https://api.nuget.org/v3/index.json"
+
+          # Phase 3: Build — no /t:Restore so project.assets.json is not overwritten.
+          msbuild OpenConsole.slnx `
+            /m `
+            /p:Platform=ARM64 `
+            /p:Configuration=Release `
+            /p:WindowsTargetPlatformVersion=10.0.22621.0 `
+            /p:TargetPlatformVersion=10.0.22621.0 `
+            /p:WindowsTerminalBranding=Release
 
       # -----------------------------------------------------------------------
       # 7. Sign ARM64 MSIX
