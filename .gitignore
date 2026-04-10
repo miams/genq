@@ -10,6 +10,8 @@ docs/templates/Template_Person_Note.md
 docs/development/lessons-learned.md
 docs/development/beta-readiness-todo.md
 vault/
+# PowerShell modules dropped by Windows CI tooling
+.PowershellModules/
 # CI artifacts
 test-report.xml
 # Test database fixtures (downloaded from S3, not committed)
