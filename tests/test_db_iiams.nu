@@ -58,8 +58,17 @@ def "db-iiams list people iiams - substantially larger than pres2020" [] {
 def "db-iiams list people iiams - has expected columns" [] {
     if (no-db) { return }
     let cols = (with-env (ie) { genq list people } | columns)
-    for col in [index RIN Given Surname Sex BirthYear DeathYear] {
+    for col in [index RIN Given Surname Sex BirthDate DeathDate] {
         assert ($cols | any { |c| $c == $col })
+    }
+}
+
+@test
+def "db-iiams list people iiams - omits sort dates and year columns by default" [] {
+    if (no-db) { return }
+    let cols = (with-env (ie) { genq list people } | columns)
+    for col in [BirthSortDate DeathSortDate BirthYear DeathYear] {
+        assert not ($cols | any { |c| $c == $col })
     }
 }
 
@@ -68,18 +77,6 @@ def "db-iiams list people iiams - contains Iiams surname" [] {
     if (no-db) { return }
     let result = (with-env (ie) { genq list people })
     assert (($result | where Surname == "Iiams" | length) > 0)
-}
-
-@test
-def "db-iiams list people iiams - BirthYear is historical or zero" [] {
-    if (no-db) { return }
-    let result = (with-env (ie) { genq list people })
-    # 0 = unknown; known years must be in a plausible historical range
-    # Iiams DB has 16th-century ancestors (earliest ~1566)
-    let invalid = ($result | where { |r|
-        $r.BirthYear != 0 and ($r.BirthYear < 1400 or $r.BirthYear > 2030)
-    })
-    assert equal ($invalid | length) 0
 }
 
 # =============================================================================

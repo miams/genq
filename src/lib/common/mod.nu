@@ -1,4 +1,6 @@
 # common submodules
+export use rmdate *
+
 export module 'rmdate'
 export module 'genq list associations'
 export module 'genq list children'

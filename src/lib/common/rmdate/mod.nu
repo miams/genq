@@ -190,7 +190,11 @@ export def main [
 
     # if date format not specified in parameter, default to $env.RDMF
     # $env.RDMF = random int 1..8
-    mut format = $format | default $env.RDMF
+    mut format = if ($format | is-empty) {
+        $env.RDMF? | default 1
+    } else {
+        $format
+    }
     
     # Compute fully formatted date.   
     let printDateQualifier = if $DateQualifier != "On" {$"($DateQualifier) "} else {""}  # On is assumed by default, only print if not On
@@ -221,4 +225,205 @@ export def main [
     mut my_dataframe = [{'FormattedDate': $"($FormattedDate)" }]
     $my_dataframe | insert "SortableDate" $SortableDate | insert "DateType" $DateType | insert "DateQualifier" $DateQualifier | insert "DateERA" $DateERA | insert "DateYear" $DateYear | insert "MonthShortName" $MonthShortName | insert "MonthLongName" $MonthLongName | insert "DayofMonth" $DayofMonth  | insert "CalendarDate" $CalendarDate | insert "DateDescriptor" $DateDescriptor
    # $my_dataframe | insert "DateType" $DateType | insert "DateQualifier" $DateQualifier | insert "DateERA" $DateERA | insert "DateYear" $DateYear | insert "MonthShortName" $MonthShortName | insert "MonthLongName" $MonthLongName | insert "DayofMonth" $DayofMonth  | insert "CalendarDate" $CalendarDate | insert "DateDescriptor" $DateDescriptor
+}
+
+# Parse a RootsMagic date string and return the single parsed date record.
+export def "parse-rm-date" [
+    eventdate: string       # RootsMagic date string
+    --format(-f): int       # desired date output format, defaults to $env.RDMF or 1
+] {
+    if ($format | is-empty) {
+        main $eventdate | first
+    } else {
+        main $eventdate --format $format | first
+    }
+}
+
+# Format a RootsMagic date string for display.
+def "fast-format-rm-date" [
+    eventdate: string       # RootsMagic date string
+    date_format: int        # desired date output format
+] {
+    if ($eventdate | is-empty) or $eventdate == "." {
+        return { FormattedDate: "", SortableDate: "", IsFast: true }
+    }
+
+    let is_standard_date = (
+        (($eventdate | str length) >= 13)
+        and (($eventdate | str substring 0..0) == "D")
+        and (($eventdate | str substring 2..2) == "+")
+    )
+
+    if not $is_standard_date {
+        return { FormattedDate: "", SortableDate: "", IsFast: false }
+    }
+
+    let qualifier_code = ($eventdate | str substring 1..1)
+    let descriptor_code = ($eventdate | str substring 12..12)
+    let qualifier = match $qualifier_code {
+        "." => ""
+        "B" => "Bef "
+        "Y" => "By "
+        "T" => "To "
+        "U" => "Until "
+        "F" => "From "
+        "I" => "Since "
+        "A" => "After "
+        "R" => "Bet/And "
+        "S" => "From/To "
+        "-" => "– "
+        "O" => "Or "
+        _ => null
+    }
+    let descriptor = match $descriptor_code {
+        "." => ""
+        "?" => "Maybe "
+        "1" => "Prhps "
+        "2" => "Appar "
+        "3" => "Lkly "
+        "4" => "Poss "
+        "5" => "Prob "
+        "6" => "Cert "
+        "A" => "Abt "
+        "C" => "Ca "
+        "E" => "Est "
+        "L" => "Calc "
+        "S" => "Say "
+        _ => null
+    }
+
+    if ($qualifier == null) or ($descriptor == null) {
+        return { FormattedDate: "", SortableDate: "", IsFast: false }
+    }
+
+    let year = ($eventdate | str substring 3..6)
+    let month_num = ($eventdate | str substring 7..8)
+    let day = ($eventdate | str substring 9..10)
+
+    if $month_num == "00" {
+        return {
+            FormattedDate: $"($descriptor)($qualifier)($year)"
+            SortableDate: $"($year)-01-01"
+            IsFast: true
+        }
+    }
+
+    let month_int = ($month_num | into int)
+    if ($month_int < 1) or ($month_int > 12) {
+        return { FormattedDate: "", SortableDate: "", IsFast: false }
+    }
+
+    let month_index = ($month_int - 1)
+    let month_short = ([Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec] | get $month_index)
+    let month_long = ([January February March April May June July August September October November December] | get $month_index)
+    let month = match $date_format {
+        1 | 2 => $month_short
+        3 | 4 => $month_long
+        5 | 6 => ($month_short | str upcase)
+        7 | 8 => ($month_long | str upcase)
+        _ => $month_short
+    }
+
+    if $day == "00" {
+        return {
+            FormattedDate: $"($descriptor)($qualifier)($month) ($year)"
+            SortableDate: $"($year)-($month_num)-01"
+            IsFast: true
+        }
+    }
+
+    let day_month_year = if ($date_format mod 2) == 0 {
+        $"($month) ($day), ($year)"
+    } else {
+        $"($day) ($month) ($year)"
+    }
+
+    {
+        FormattedDate: $"($descriptor)($qualifier)($day_month_year)"
+        SortableDate: $"($year)-($month_num)-($day)"
+        IsFast: true
+    }
+}
+
+# Format a RootsMagic date string for display.
+export def "format-rm-date" [
+    eventdate: string       # RootsMagic date string
+    --format(-f): int       # desired date output format, defaults to $env.RDMF or 1
+] {
+    mut date_format = if ($format | is-empty) {
+        $env.RDMF? | default 1
+    } else {
+        $format
+    }
+
+    let fast_date = (fast-format-rm-date $eventdate $date_format)
+    if $fast_date.IsFast {
+        return $fast_date.FormattedDate
+    }
+
+    let parsed = if ($format | is-empty) {
+        parse-rm-date $eventdate
+    } else {
+        parse-rm-date $eventdate --format $format
+    }
+
+    $parsed.FormattedDate
+}
+
+# Format a RootsMagic date string and return display + sortable dates.
+export def "format-sort-rm-date" [
+    eventdate: string       # RootsMagic date string
+    --format(-f): int       # desired date output format, defaults to $env.RDMF or 1
+] {
+    mut date_format = if ($format | is-empty) {
+        $env.RDMF? | default 1
+    } else {
+        $format
+    }
+
+    let fast_date = (fast-format-rm-date $eventdate $date_format)
+    if $fast_date.IsFast {
+        return {
+            FormattedDate: $fast_date.FormattedDate
+            SortableDate: $fast_date.SortableDate
+        }
+    }
+
+    let parsed = if ($format | is-empty) {
+        parse-rm-date $eventdate
+    } else {
+        parse-rm-date $eventdate --format $format
+    }
+
+    {
+        FormattedDate: $parsed.FormattedDate
+        SortableDate: $parsed.SortableDate
+    }
+}
+
+# Upsert formatted display and optional sort columns from a raw RootsMagic date column.
+export def "upsert-rm-date" [
+    raw_column: string      # input column containing the raw RootsMagic date string
+    display_column: string  # output column for the formatted date
+    sort_column?: string    # optional output column for SortableDate
+    --format(-f): int       # desired date output format, defaults to $env.RDMF or 1
+] {
+    $in | each {|row|
+        let eventdate = ($row | get --optional $raw_column | default "")
+        if ($sort_column | is-empty) {
+            let display_date = if ($format | is-empty) {
+                format-rm-date $eventdate
+            } else {
+                format-rm-date $eventdate --format $format
+            }
+            $row | upsert $display_column $display_date
+        } else {
+            let formatted = if ($format | is-empty) {
+                format-sort-rm-date $eventdate
+            } else {
+                format-sort-rm-date $eventdate --format $format
+            }
+            $row | upsert $display_column $formatted.FormattedDate | upsert $sort_column $formatted.SortableDate
+        }
+    }
 }

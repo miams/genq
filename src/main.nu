@@ -132,12 +132,68 @@ def "genq tabulate" [] {
 
 # List sources for Federal census records. [wide]
 @category "genq-miams"
-def "genq list census" [] {
+def "genq list census" [
+    --short-footnote (-s)  # Show short footnote instead of footnote
+    --bibliography (-b)    # Show bibliography instead of footnote
+] {
+    if $short_footnote and $bibliography {
+        print $"(ansi red)Error:(ansi reset) Use only one of --short-footnote or --bibliography."
+        return
+    }
+
+    if not ($env.rmdb? | default "" | path exists) {
+        print $"(ansi red)Error:(ansi reset) Database not found or not accessible"
+        print $"Expected location: ($env.rmdb? | default 'not set')"
+        print "Make sure your database is configured correctly with 'genq config'."
+        return
+    }
+
     print "List of sources for Federal census records (1790-1950)."
-    # | insert Footnote {|row| $row.Fields | from xml | get content.0.content.0.content.1.content.content} | flatten 
-    # | insert ShortFootnote {|row| $row.Fields | from xml | get content.0.content.1.content.1.content.content} | flatten 
-    # | insert Bibliography {|row| $row.Fields | from xml | get content.0.content.2.content.1.content.content} | flatten 
-    # | reject Fields | startat1
+
+    let field_name = if $bibliography {
+        "Bibliography"
+    } else if $short_footnote {
+        "ShortFootnote"
+    } else {
+        "Footnote"
+    }
+
+    def source-field [fields: string, field_name: string] {
+        if ($fields | is-empty) {
+            return ""
+        }
+
+        try {
+            let source_fields = ($fields | from xml | get content.0.content)
+            let matching_field = (
+                $source_fields
+                | where {|field| (($field | get --optional content.0.content.0.content | default "") == $field_name) }
+                | first
+            )
+
+            $matching_field | get --optional content.1.content.0.content | default ""
+        } catch {
+            ""
+        }
+    }
+
+    let sqlquery = "SELECT
+        Name COLLATE NOCASE as SourceName,
+        cast(Fields AS TEXT) as Fields
+    FROM SourceTable
+    WHERE TemplateID = 0
+      AND (
+          Name LIKE 'Fed Census:%' COLLATE NOCASE
+          OR Name LIKE 'Fed Census %' COLLATE NOCASE
+          OR Name LIKE 'Federal Census:%' COLLATE NOCASE
+          OR Name LIKE 'Federal Census %' COLLATE NOCASE
+      )
+    ORDER BY Name COLLATE NOCASE"
+
+    open $env.rmdb | query db $sqlquery
+    | insert $field_name {|row| source-field $row.Fields $field_name}
+    | reject Fields
+    | startat1
 }
 
 # Colorize RTF strings found in RM note files.

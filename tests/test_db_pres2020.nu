@@ -44,9 +44,27 @@ def e [ctx: record] {
 def "db-pres2020 list people pres2020 - has expected columns" [] {
     let ctx = $in
     let cols = (with-env (e $ctx) { genq list people } | columns)
-    for col in [index RIN Given Surname Sex BirthYear DeathYear] {
+    for col in [index RIN Given Surname Sex BirthDate DeathDate] {
         assert ($cols | any { |c| $c == $col })
     }
+}
+
+@test
+def "db-pres2020 list people pres2020 - omits sort dates and year columns by default" [] {
+    let ctx = $in
+    let cols = (with-env (e $ctx) { genq list people } | columns)
+    for col in [BirthSortDate DeathSortDate BirthYear DeathYear] {
+        assert not ($cols | any { |c| $c == $col })
+    }
+}
+
+@test
+def "db-pres2020 list people pres2020 - formats birth and death dates" [] {
+    let ctx = $in
+    let washington = (with-env (e $ctx) { genq list people | where RIN == 394 | first })
+
+    assert equal $washington.BirthDate "11 Feb 1732"
+    assert equal $washington.DeathDate "14 Dec 1799"
 }
 
 @test

@@ -1,4 +1,6 @@
 # List all individuals.
+use rmdate *
+
 @category "genq-common"
 @search-terms "people persons individuals names RIN"
 @example "list the first 10 people" {'genq list people | first 10'}
@@ -17,8 +19,32 @@ export def "main" [
         print "List of individuals with alternate names."
         # COLLATE NOCASE inside CTEs overrides any RMNOCASE collation stored in the DB schema
         let sqlquery = "WITH primary_names AS (
-            SELECT OwnerID, Given COLLATE NOCASE as Given, Surname COLLATE NOCASE as Surname, BirthYear, DeathYear
+            SELECT OwnerID, Given COLLATE NOCASE as Given, Surname COLLATE NOCASE as Surname
             FROM NameTable WHERE IsPrimary = 1
+        ),
+        birth_events AS (
+            SELECT OwnerID, COALESCE(Date, '') COLLATE NOCASE as BirthFullDate
+            FROM (
+                SELECT OwnerID, Date, ROW_NUMBER() OVER (
+                    PARTITION BY OwnerID
+                    ORDER BY CASE WHEN SortDate IS NULL OR SortDate = 0 THEN 1 ELSE 0 END, SortDate, EventID
+                ) as rn
+                FROM EventTable
+                WHERE OwnerType = 0 AND EventType = 1
+            )
+            WHERE rn = 1
+        ),
+        death_events AS (
+            SELECT OwnerID, COALESCE(Date, '') COLLATE NOCASE as DeathFullDate
+            FROM (
+                SELECT OwnerID, Date, ROW_NUMBER() OVER (
+                    PARTITION BY OwnerID
+                    ORDER BY CASE WHEN SortDate IS NULL OR SortDate = 0 THEN 1 ELSE 0 END, SortDate, EventID
+                ) as rn
+                FROM EventTable
+                WHERE OwnerType = 0 AND EventType = 2
+            )
+            WHERE rn = 1
         ),
         alt_names AS (
             SELECT OwnerID,
@@ -44,29 +70,65 @@ export def "main" [
             n.Given as Given,
             n.Surname as Surname,
             CASE WHEN p.Sex = 1 THEN 'F' ELSE 'M' END as Sex,
-            n.BirthYear,
-            n.DeathYear,
+            COALESCE(b.BirthFullDate, '') as BirthFullDate,
+            COALESCE(d.DeathFullDate, '') as DeathFullDate,
             COALESCE(a.AlternateNames, '') as AlternateNames
         FROM primary_names n
         INNER JOIN PersonTable p ON n.OwnerID = p.PersonID
+        LEFT JOIN birth_events b ON p.PersonID = b.OwnerID
+        LEFT JOIN death_events d ON p.PersonID = d.OwnerID
         LEFT JOIN alt_names a ON p.PersonID = a.OwnerID"
-        open $env.rmdb | query db $sqlquery | startat1
+        open $env.rmdb | query db $sqlquery
+        | upsert-rm-date BirthFullDate BirthDate
+        | upsert-rm-date DeathFullDate DeathDate
+        | select RIN Given Surname Sex BirthDate DeathDate AlternateNames
+        | startat1
     } else {
         print "List of individuals."
         # COLLATE NOCASE inside CTE overrides any RMNOCASE collation stored in the DB schema
         let sqlquery = "WITH primary_names AS (
-            SELECT OwnerID, Given COLLATE NOCASE as Given, Surname COLLATE NOCASE as Surname, BirthYear, DeathYear
+            SELECT OwnerID, Given COLLATE NOCASE as Given, Surname COLLATE NOCASE as Surname
             FROM NameTable WHERE IsPrimary = 1
+        ),
+        birth_events AS (
+            SELECT OwnerID, COALESCE(Date, '') COLLATE NOCASE as BirthFullDate
+            FROM (
+                SELECT OwnerID, Date, ROW_NUMBER() OVER (
+                    PARTITION BY OwnerID
+                    ORDER BY CASE WHEN SortDate IS NULL OR SortDate = 0 THEN 1 ELSE 0 END, SortDate, EventID
+                ) as rn
+                FROM EventTable
+                WHERE OwnerType = 0 AND EventType = 1
+            )
+            WHERE rn = 1
+        ),
+        death_events AS (
+            SELECT OwnerID, COALESCE(Date, '') COLLATE NOCASE as DeathFullDate
+            FROM (
+                SELECT OwnerID, Date, ROW_NUMBER() OVER (
+                    PARTITION BY OwnerID
+                    ORDER BY CASE WHEN SortDate IS NULL OR SortDate = 0 THEN 1 ELSE 0 END, SortDate, EventID
+                ) as rn
+                FROM EventTable
+                WHERE OwnerType = 0 AND EventType = 2
+            )
+            WHERE rn = 1
         )
         SELECT
             p.PersonID as RIN,
             n.Given as Given,
             n.Surname as Surname,
             CASE WHEN p.Sex = 1 THEN 'F' ELSE 'M' END as Sex,
-            n.BirthYear,
-            n.DeathYear
+            COALESCE(b.BirthFullDate, '') as BirthFullDate,
+            COALESCE(d.DeathFullDate, '') as DeathFullDate
         FROM primary_names n
-        INNER JOIN PersonTable p ON n.OwnerID = p.PersonID"
-        open $env.rmdb | query db $sqlquery | startat1
+        INNER JOIN PersonTable p ON n.OwnerID = p.PersonID
+        LEFT JOIN birth_events b ON p.PersonID = b.OwnerID
+        LEFT JOIN death_events d ON p.PersonID = d.OwnerID"
+        open $env.rmdb | query db $sqlquery
+        | upsert-rm-date BirthFullDate BirthDate
+        | upsert-rm-date DeathFullDate DeathDate
+        | select RIN Given Surname Sex BirthDate DeathDate
+        | startat1
     }
 }
