@@ -157,13 +157,12 @@ jobs:
           $cfg | Set-Content -Encoding UTF8 "$pkgDir\config\default.toml"
 
       # -----------------------------------------------------------------------
-      # 6a. Patch NuGet.Config to add nuget.org for packages.config C++ projects
-      #     The project NuGet.Config has <clear/> which removes nuget.org, leaving
-      #     only the private TerminalDependencies feed. C++ packages.config projects
-      #     (e.g. WIL / Microsoft.Windows.ImplementationLibrary) need nuget.org.
-      #     RestoreAdditionalProjectSources only helps PackageReference projects.
+      # 6a. Patch NuGet.Config to add nuget.org
+      #     The project NuGet.Config has <clear/> leaving only TerminalDependencies.
+      #     nuget.org is needed for Microsoft.Windows.SDK.NET.Ref (ARM64 runtime
+      #     packs) which is not in the private feed.
       # -----------------------------------------------------------------------
-      - name: Add nuget.org to NuGet sources (packages.config C++ restore)
+      - name: Add nuget.org to NuGet sources
         working-directory: genq-terminal-windows
         shell: pwsh
         run: |
@@ -175,25 +174,25 @@ jobs:
           $add.SetAttribute("value", "https://api.nuget.org/v3/index.json")
           $src.AppendChild($add) | Out-Null
           $xml.Save((Resolve-Path $configPath))
-          Write-Host "NuGet.Config updated — nuget.org added for C++ packages.config restore"
+          Write-Host "NuGet.Config updated — nuget.org added"
 
       # -----------------------------------------------------------------------
-      # 6b. Restore packages.config C++ packages via nuget.exe
-      #     msbuild /restore only handles PackageReference (SDK-style) projects.
-      #     packages.config vcxproj projects (WIL, etc.) need nuget.exe restore.
-      #     Invoke-OpenConsoleBuild (used for x64) triggers this automatically;
-      #     raw msbuild (used for ARM64) does not.
-      # -----------------------------------------------------------------------
-      - name: Restore packages.config packages (nuget.exe)
-        working-directory: genq-terminal-windows
-        shell: pwsh
-        run: |
-          nuget restore OpenConsole.slnx -NonInteractive -Verbosity normal
-
-      # -----------------------------------------------------------------------
-      # 6c. Build ARM64 Release MSIX
-      #     /restore is required to fetch ARM64-specific runtime packs
-      #     (NETSDK1112: Microsoft.Windows.SDK.NET.Ref not found otherwise)
+      # 6b. Build ARM64 Release MSIX via Invoke-OpenConsoleBuild
+      #
+      #     WHY Invoke-OpenConsoleBuild (not raw msbuild):
+      #     Raw `msbuild /restore` only handles PackageReference (SDK-style)
+      #     projects. The C++ vcxproj files use packages.config (WIL, CppWinRT,
+      #     XAML, WebView2, etc. — 17 packages total). MSBuild's build-integrated
+      #     NuGet automatic restore, triggered by Invoke-OpenConsoleBuild, correctly
+      #     discovers vcxproj packages.config files and restores them before
+      #     EnsureNuGetPackageBuildImports fires.
+      #
+      #     `nuget.exe restore OpenConsole.slnx` does NOT work: nuget.exe cannot
+      #     discover vcxproj packages.config files from the .slnx format, so it
+      #     only restores 1 package instead of 17.
+      #
+      #     RestoreAdditionalProjectSources: safety net for Microsoft.Windows.SDK.NET.Ref
+      #     (ARM64 runtime packs) which is not in the TerminalDependencies feed.
       # -----------------------------------------------------------------------
       - name: Build ARM64 Release
         working-directory: genq-terminal-windows
@@ -206,8 +205,7 @@ jobs:
           $env:PATH = "C:\Program Files\dotnet;$env:PATH"
           Import-Module .\tools\OpenConsole.psm1
           Set-MsBuildDevEnvironment
-          msbuild.exe OpenConsole.slnx `
-            /restore `
+          Invoke-OpenConsoleBuild `
             /p:Platform=ARM64 `
             /p:Configuration=Release `
             /p:WindowsTargetPlatformVersion=10.0.22621.0 `
