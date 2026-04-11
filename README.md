@@ -28,18 +28,11 @@ Queries in screencast are filtered to the first 20 records for demonstration pur
 
 Example
 
-<video autoplay loop style="width:250%; height: auto; position:absolute; z-index: -1;">
-  <source src="https://genq.s3.us-east-1.amazonaws.com/example1.mp4" type="video/mp4" />
-  <img src="https://genq.s3.us-east-1.amazonaws.com/example1.png"">
-</video>
-
-[![Example Video](https://genq.s3.us-east-1.amazonaws.com/example1.png)](https://genq.s3.us-east-1.amazonaws.com/example1.mp4)
-
-Example
-
-<video autoplay loop style="width:250%; height: auto; position:absolute; z-index: -1;">
-  <source src="https://rmgc.s3.us-east-1.amazonaws.com/example1.mp4" type="video/mp4" />
-  <img src="https://rmgc.s3.us-east-1.amazonaws.com/example1.png"">
+<video controls width="100%">
+  <source src="https://genquery.s3.us-east-1.amazonaws.com/example1.mp4" type="video/mp4" />
+  <a href="https://genquery.s3.us-east-1.amazonaws.com/example1.mp4">
+    <img src="https://genquery.s3.us-east-1.amazonaws.com/example1.png" alt="Example Video" />
+  </a>
 </video>
 
 

@@ -582,6 +582,9 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
+      - name: Checkout genq
+        uses: actions/checkout@v4
+
       - name: Download macOS arm64 DMG
         uses: actions/download-artifact@v4
         with:
@@ -631,5 +634,5 @@ jobs:
               GenQuery-Terminal-Windows-ARM64.msix \
               --repo ${{ github.repository }} \
               --title "GenQuery Terminal $TAG" \
-              --generate-notes
+              --notes-file RELEASE_NOTES.md
           fi
