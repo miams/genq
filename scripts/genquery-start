@@ -12,9 +12,11 @@ set -e
 # Resolve runtime mode
 # ---------------------------------------------------------------------------
 
-if [ -n "${GHOSTTY_RESOURCES_DIR:-}" ] && [ -f "$GHOSTTY_RESOURCES_DIR/genq/src/main.nu" ]; then
+if [ -n "${GHOSTTY_RESOURCES_DIR:-}" ] && [ -f "$(dirname "$GHOSTTY_RESOURCES_DIR")/genq/src/main.nu" ]; then
   # --- Bundle mode ---
-  BUNDLE_GENQ="$GHOSTTY_RESOURCES_DIR/genq"
+  # GHOSTTY_RESOURCES_DIR points to Contents/Resources/ghostty;
+  # genq files live one level up at Contents/Resources/genq.
+  BUNDLE_GENQ="$(dirname "$GHOSTTY_RESOURCES_DIR")/genq"
   MAIN_NU="$BUNDLE_GENQ/src/main.nu"
   NU="$BUNDLE_GENQ/nu"
   GENQ_HOME="$HOME/Documents/GenQuery"
