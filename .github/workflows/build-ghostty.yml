@@ -95,29 +95,15 @@ jobs:
             local app_path="$1"
             local nu_bin="$2"
             local genq_res="$app_path/Contents/Resources/genq"
-            mkdir -p "$genq_res/src/lib" "$genq_res/config"
+            mkdir -p "$genq_res/src/lib" "$genq_res/data" "$genq_res/scripts"
             cp "$nu_bin" "$genq_res/nu"
             chmod +x "$genq_res/nu"
-            cp "$GITHUB_WORKSPACE/src/main.nu"        "$genq_res/src/"
-            cp -R "$GITHUB_WORKSPACE/src/lib/common"  "$genq_res/src/lib/"
-            cp -R "$GITHUB_WORKSPACE/src/lib/ext"     "$genq_res/src/lib/"
-            cat > "$genq_res/config/default.toml" <<'TOML'
-          [database]
-          active = ""
-
-          [paths]
-          sql_dir = "sql"
-          lib_dir = "src/lib"
-          ext_dir = "src/lib/ext"
-          output_dir = "vault"
-
-          [display]
-          date_format = 1
-          table_mode = "rounded"
-
-          [extensions]
-          enabled = ["miams", "pres2020"]
-          TOML
+            cp "$GITHUB_WORKSPACE/src/main.nu"                "$genq_res/src/"
+            cp -R "$GITHUB_WORKSPACE/src/lib/common"          "$genq_res/src/lib/"
+            cp -R "$GITHUB_WORKSPACE/src/lib/ext"             "$genq_res/src/lib/"
+            cp "$GITHUB_WORKSPACE/data/pres2020.rmtree"       "$genq_res/data/"
+            cp "$GITHUB_WORKSPACE/scripts/genquery-start"     "$genq_res/scripts/"
+            chmod +x "$genq_res/scripts/genquery-start"
           }
           bundle_genq /tmp/Ghostty-arm64.app                                   "$NU_ARM64"
           bundle_genq "$GITHUB_WORKSPACE/genq-terminal/zig-out/Ghostty.app"    "$NU_X64"
