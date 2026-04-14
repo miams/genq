@@ -65,6 +65,7 @@ TOML
 ENVNU
 
   ENV_ARGS="--env-config $GENQ_HOME/config/env.nu"
+  cd "$GENQ_HOME"
 
 else
   # --- Dev mode ---

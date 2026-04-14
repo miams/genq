@@ -89,6 +89,24 @@ jobs:
         working-directory: genq-terminal
         run: zig build -Doptimize=ReleaseFast -Dtarget=x86_64-macos
 
+      - name: Fix Info.plist (branding + Sparkle)
+        working-directory: genq-terminal
+        run: |
+          fix_plist() {
+            local plist="$1"
+            local feed_url="$2"
+            # Force CFBundleName regardless of Xcode PRODUCT_NAME override
+            /usr/libexec/PlistBuddy -c "Add :CFBundleName string GenQuery" "$plist" 2>/dev/null || \
+              /usr/libexec/PlistBuddy -c "Set :CFBundleName GenQuery" "$plist"
+            # Sparkle feed URL (arch-specific)
+            /usr/libexec/PlistBuddy -c "Add :SUFeedURL string $feed_url" "$plist" 2>/dev/null || \
+              /usr/libexec/PlistBuddy -c "Set :SUFeedURL $feed_url" "$plist"
+          }
+          fix_plist "/tmp/Ghostty-arm64.app/Contents/Info.plist" \
+            "https://github.com/miams/genq/releases/latest/download/appcast-arm64.xml"
+          fix_plist "zig-out/Ghostty.app/Contents/Info.plist" \
+            "https://github.com/miams/genq/releases/latest/download/appcast-x86_64.xml"
+
       - name: Bundle genq into app bundles
         run: |
           bundle_genq() {
