@@ -107,4 +107,4 @@ fi
 # Launch
 # ---------------------------------------------------------------------------
 
-exec "$NU" --interactive $ENV_ARGS -e "source '$MAIN_NU'"
+exec "$NU" --interactive $ENV_ARGS -e "source '$MAIN_NU'; genq"
