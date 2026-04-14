@@ -7,6 +7,7 @@ use rmdate *
 @example "list people with alternate name spellings" {'genq list people --all-names | where AlternateNames != ""'}
 export def "main" [
     --all-names (-a)  # Include alternate names as an additional column
+    --mod-date (-d)   # Include LastUpdate column (PersonTable.UTCModDate)
 ] {
     if not ($env.rmdb? | default "" | path exists) {
         print $"(ansi red)Error:(ansi reset) Database not found or not accessible"
@@ -72,17 +73,23 @@ export def "main" [
             CASE WHEN p.Sex = 1 THEN 'F' ELSE 'M' END as Sex,
             COALESCE(b.BirthFullDate, '') as BirthFullDate,
             COALESCE(d.DeathFullDate, '') as DeathFullDate,
-            COALESCE(a.AlternateNames, '') as AlternateNames
+            COALESCE(a.AlternateNames, '') as AlternateNames,
+            COALESCE(STRFTIME(DATETIME(p.UTCModDate + 2415018.5)) || ' +0000', '') AS LastUpdateUTC
         FROM primary_names n
         INNER JOIN PersonTable p ON n.OwnerID = p.PersonID
         LEFT JOIN birth_events b ON p.PersonID = b.OwnerID
         LEFT JOIN death_events d ON p.PersonID = d.OwnerID
         LEFT JOIN alt_names a ON p.PersonID = a.OwnerID"
-        open $env.rmdb | query db $sqlquery
+        let result = open $env.rmdb | query db $sqlquery
         | upsert-rm-date BirthFullDate BirthDate
         | upsert-rm-date DeathFullDate DeathDate
-        | select RIN Given Surname Sex BirthDate DeathDate AlternateNames
-        | startat1
+        | insert LastUpdate {|row| if ($row.LastUpdateUTC | is-empty) { "" } else { $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S" } }
+        | reject LastUpdateUTC
+        if $mod_date {
+            $result | select RIN Given Surname Sex BirthDate DeathDate AlternateNames LastUpdate | startat1
+        } else {
+            $result | select RIN Given Surname Sex BirthDate DeathDate AlternateNames | startat1
+        }
     } else {
         print "List of individuals."
         # COLLATE NOCASE inside CTE overrides any RMNOCASE collation stored in the DB schema
@@ -120,15 +127,21 @@ export def "main" [
             n.Surname as Surname,
             CASE WHEN p.Sex = 1 THEN 'F' ELSE 'M' END as Sex,
             COALESCE(b.BirthFullDate, '') as BirthFullDate,
-            COALESCE(d.DeathFullDate, '') as DeathFullDate
+            COALESCE(d.DeathFullDate, '') as DeathFullDate,
+            COALESCE(STRFTIME(DATETIME(p.UTCModDate + 2415018.5)) || ' +0000', '') AS LastUpdateUTC
         FROM primary_names n
         INNER JOIN PersonTable p ON n.OwnerID = p.PersonID
         LEFT JOIN birth_events b ON p.PersonID = b.OwnerID
         LEFT JOIN death_events d ON p.PersonID = d.OwnerID"
-        open $env.rmdb | query db $sqlquery
+        let result = open $env.rmdb | query db $sqlquery
         | upsert-rm-date BirthFullDate BirthDate
         | upsert-rm-date DeathFullDate DeathDate
-        | select RIN Given Surname Sex BirthDate DeathDate
-        | startat1
+        | insert LastUpdate {|row| if ($row.LastUpdateUTC | is-empty) { "" } else { $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S" } }
+        | reject LastUpdateUTC
+        if $mod_date {
+            $result | select RIN Given Surname Sex BirthDate DeathDate LastUpdate | startat1
+        } else {
+            $result | select RIN Given Surname Sex BirthDate DeathDate | startat1
+        }
     }
 }

@@ -5,8 +5,9 @@
 @example "list associations for a person" {'genq list associations --rin 42'}
 @example "list neighbor associations" {'genq list associations | where AssocType == "Neighbors"'}
 export def "main" [
-    --rin (-r): int   # Filter: show associations where this RIN is either person
+    --rin (-r): int      # Filter: show associations where this RIN is either person
     --type (-t): string  # Filter by association type name (case-insensitive substring match)
+    --mod-date (-d)      # Include LastUpdate column (FANTable.UTCModDate)
 ] {
     if not ($env.rmdb? | default "" | path exists) {
         print $"(ansi red)Error:(ansi reset) Database not found or not accessible"
@@ -29,7 +30,8 @@ export def "main" [
         ft.Role2 COLLATE NOCASE as Role2,
         ft.Name COLLATE NOCASE as AssocType,
         f.Date COLLATE NOCASE as Date,
-        f.Description COLLATE NOCASE as Description
+        f.Description COLLATE NOCASE as Description,
+        COALESCE(STRFTIME(DATETIME(f.UTCModDate + 2415018.5)) || ' +0000', '') AS LastUpdateUTC
     FROM FANTable f
     JOIN FANTypeTable ft ON f.FanTypeID = ft.FANTypeID
     LEFT JOIN NameTable n1 ON f.ID1 = n1.OwnerID AND n1.IsPrimary = 1
@@ -37,6 +39,8 @@ export def "main" [
     ORDER BY ft.Name COLLATE NOCASE, n1.Surname COLLATE NOCASE, n1.Given COLLATE NOCASE"
 
     let result = open $env.rmdb | query db $sqlquery
+        | insert LastUpdate {|row| if ($row.LastUpdateUTC | is-empty) { "" } else { $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S" } }
+        | reject LastUpdateUTC
 
     # Apply post-query filters in Nu (simpler than injecting into SQL)
     let result = if not ($rin | is-empty) {
@@ -48,5 +52,5 @@ export def "main" [
         $result | where {|r| ($r.AssocType | str downcase) | str contains $t}
     } else { $result }
 
-    $result | startat1
+    if $mod_date { $result | startat1 } else { $result | reject LastUpdate | startat1 }
 }

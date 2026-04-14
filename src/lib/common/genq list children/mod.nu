@@ -7,6 +7,7 @@
 export def "main" [
     --rin (-r): int   # Filter by child RIN
     --mrin (-m): int  # Filter by family MRIN
+    --mod-date (-d)   # Include LastUpdate column (ChildTable.UTCModDate)
 ] {
     if not ($env.rmdb? | default "" | path exists) {
         print $"(ansi red)Error:(ansi reset) Database not found or not accessible"
@@ -54,7 +55,8 @@ export def "main" [
             WHEN 6 THEN 'Unknown'
             ELSE 'Unknown'
         END as RelToMother,
-        c.ChildOrder
+        c.ChildOrder,
+        COALESCE(STRFTIME(DATETIME(c.UTCModDate + 2415018.5)) || ' +0000', '') AS LastUpdateUTC
     FROM ChildTable c
     JOIN FamilyTable f ON c.FamilyID = f.FamilyID
     JOIN PersonTable cp ON c.ChildID = cp.PersonID
@@ -64,5 +66,8 @@ export def "main" [
 
     let sqlquery = [$base_sql " WHERE " $where_clause " ORDER BY c.FamilyID, c.ChildOrder"] | str join
 
-    open $env.rmdb | query db $sqlquery | startat1
+    let result = open $env.rmdb | query db $sqlquery
+        | insert LastUpdate {|row| if ($row.LastUpdateUTC | is-empty) { "" } else { $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S" } }
+        | reject LastUpdateUTC
+    if $mod_date { $result | startat1 } else { $result | reject LastUpdate | startat1 }
 }

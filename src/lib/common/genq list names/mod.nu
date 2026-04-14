@@ -8,6 +8,7 @@ export def "main" [
     --type (-t): string  # Filter by NameType: aka birth immigrant maiden married nickname other
     --alternate (-a)     # Show only alternate (non-primary) names
     --rin (-r): int      # Filter by person RIN
+    --mod-date (-d)      # Include LastUpdate column (NameTable.UTCModDate)
 ] {
     if not ($env.rmdb? | default "" | path exists) {
         print $"(ansi red)Error:(ansi reset) Database not found or not accessible"
@@ -64,11 +65,15 @@ export def "main" [
         END as NameType,
         n.IsPrimary,
         n.BirthYear,
-        n.DeathYear
+        n.DeathYear,
+        COALESCE(STRFTIME(DATETIME(n.UTCModDate + 2415018.5)) || ' +0000', '') AS LastUpdateUTC
     FROM NameTable n"
 
     let sqlquery = [$base_sql " WHERE " $where_clause " ORDER BY n.OwnerID, n.IsPrimary DESC, n.NameType"] | str join
 
     print "List of name records."
-    open $env.rmdb | query db $sqlquery | startat1
+    let result = open $env.rmdb | query db $sqlquery
+        | insert LastUpdate {|row| if ($row.LastUpdateUTC | is-empty) { "" } else { $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S" } }
+        | reject LastUpdateUTC
+    if $mod_date { $result | startat1 } else { $result | reject LastUpdate | startat1 }
 }

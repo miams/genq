@@ -1,6 +1,6 @@
 # GenQuery — RM10 Database Coverage Matrix & Roadmap
 
-**Date:** 2026-03-31
+**Date:** 2026-04-14
 **Reference:** `RM10DataDef-V10_0_5-20250205.xlsx` (347 rows, 31 tables)
 **Goal:** Every user-visible RM10 database field reachable via at least one `genq` command.
 
@@ -38,7 +38,7 @@ Primary record for every individual. RIN = PersonID.
 | Proof | ⚫ | — | ⚫ | Not implemented in RM10 |
 | Bookmark | Integer | — | ❌ | RM bookmark flag |
 | Note | Text | — | ❌ | Person-level note (not fact note) |
-| UTCModDate | Float | — | 🟡 | Could enable change-tracking queries |
+| UTCModDate | Float | `genq list people --mod-date` | 🟡 | Opt-in via `--mod-date`; shows as `LastUpdate` (local time) |
 
 **Gap summary:** Living status, color-coding, person notes, and UniqueID are all unreachable.
 
@@ -66,9 +66,9 @@ One row per name fact per person. Primary + alternate names.
 | BirthYear | Integer | `genq list people` | ✅ | Denormalized from EventTable |
 | DeathYear | Integer | `genq list people` | ✅ | Denormalized from EventTable |
 | SurnameMP / GivenMP / NicknameMP | Text | — | 🟡 | Metaphone variants; search-only |
-| UTCModDate | Float | — | 🟡 | |
+| UTCModDate | Float | `genq list names --mod-date` | 🟡 | Opt-in via `--mod-date` |
 
-**Gap summary:** Alternate names (AKA, maiden, married, etc.), prefix/suffix/nickname are completely unreachable. This is a significant gap for genealogical research.
+**Gap summary:** Alternate names fully covered by `genq list names`. Prefix/suffix/nickname columns not yet exposed.
 
 ---
 
@@ -89,7 +89,7 @@ One row per couple (husband + wife). Marriage and family facts live in EventTabl
 | FatherLabel / MotherLabel | Integer | — | 🟡 | Father/Husband/Partner/Other |
 | FatherLabelStr / MotherLabelStr | Text | — | 🟡 | Custom label when =Other |
 | Note | Text | — | ❌ | Spouse-fact note |
-| UTCModDate | Float | — | 🟡 | |
+| UTCModDate | Float | `genq list families` | ✅ | Always shown as `LastUpdate` (local time) |
 
 **Gap summary:** Family proof status, spouse-role labels, and family notes are not exposed.
 
@@ -102,16 +102,16 @@ Links children to families. One row per child-per-family.
 | Field | Type | genq Command | Status | Notes |
 |-------|------|-------------|--------|-------|
 | RecID | PK | — | — | |
-| ChildID | FK→PersonTable | — | 🟡 | Used internally in tree tabulation |
-| FamilyID | FK→FamilyTable | — | 🟡 | Used internally in tree tabulation |
-| RelFather | Integer | — | ❌ | Birth/Adopted/Step/Foster/Guardian/Sealed/Unknown |
-| RelMother | Integer | — | ❌ | Same values as RelFather |
-| ChildOrder | Integer | — | ❌ | Birth order |
+| ChildID | FK→PersonTable | `genq list children` | ✅ | With name lookup |
+| FamilyID | FK→FamilyTable | `genq list children` | ✅ | Shown as MRIN |
+| RelFather | Integer | `genq list children` | ✅ | Decoded to Birth/Adopted/Step/Foster/Guardian/Sealed/Unknown |
+| RelMother | Integer | `genq list children` | ✅ | Same |
+| ChildOrder | Integer | `genq list children` | ✅ | |
 | ProofFather / ProofMother | Integer | — | ❌ | Proven/Disproven/Disputed |
 | Note | ⚫ | — | ⚫ | Not implemented |
-| UTCModDate | Float | — | 🟡 | |
+| UTCModDate | Float | `genq list children --mod-date` | 🟡 | Opt-in via `--mod-date` |
 
-**Gap summary:** No command exposes child-parent relationship types (birth vs. adopted vs. step). Critical for adoptee research.
+**Gap summary:** Child relationship types fully covered by `genq list children`.
 
 ---
 
@@ -137,9 +137,9 @@ All facts/events for persons (OwnerType=0) and families (OwnerType=1).
 | Sentence | Text | — | ❌ | Custom sentence override |
 | Details | Text | `genq list events` | ✅ | Description field |
 | Note | Text | `genq list events` | 🟡 | Shown in raw output but not formatted |
-| UTCModDate | Float | — | 🟡 | |
+| UTCModDate | Float | `genq list events` | ✅ | Always shown as `LastUpdate` (local time) |
 
-**Gap summary:** Place details (SiteID), proof status, privacy flag, and sentence overrides not exposed. Place name resolution is incomplete (`genq list events` shows PlaceID but not always the name).
+**Gap summary:** Place details (SiteID), proof status, and privacy flag not exposed. Place name resolution available via `genq list events --place-name`.
 
 ---
 
@@ -157,9 +157,9 @@ Canonical place names. PlaceType: 0=Place, 1=LDS Temple, 2=Place Details.
 | Latitude / Longitude | Integer | — | ❌ | ×1e7 encoding; geo-mapping potential |
 | MasterID | FK→PlaceTable | — | ❌ | Parent place for place-details |
 | Note | Text | — | ❌ | |
-| UTCModDate | Float | — | 🟡 | |
+| UTCModDate | Float | `genq list places --mod-date` | 🟡 | Opt-in via `--mod-date` |
 
-**Gap summary:** No `genq list places` command exists. Coordinates (lat/lon) are completely unreachable — significant gap for mapping use cases.
+**Gap summary:** `genq list places` covers Name, Normalized, PlaceType, and optionally coordinates. Abbrev and Note fields still missing.
 
 ---
 
@@ -179,7 +179,7 @@ Lookup table for event/fact type names and configuration.
 | Flags | Integer | — | ❌ | Include settings |
 | UTCModDate | Float | — | 🟡 | |
 
-**Gap summary:** No `genq list fact-types` command. Useful for understanding what fact types are in use.
+**Gap summary:** No `genq list fact-types` command yet. Useful for understanding what fact types are in use.
 
 ---
 
@@ -189,16 +189,16 @@ Shared events / witnesses. One row per person sharing a fact.
 
 | Field | Type | genq Command | Status | Notes |
 |-------|------|-------------|--------|-------|
-| WitnessID | PK | `genq census` | 🟡 | |
-| EventID | FK→EventTable | `genq census` | ✅ | Census events only |
-| PersonID | FK→PersonTable | `genq census` | ✅ | |
-| Role | FK→RoleTable | `genq census` | 🟡 | Role name not always surfaced |
-| Given / Surname | Text | `genq census` | ✅ | External witness name |
+| WitnessID | PK | `genq list witnesses` | 🟡 | |
+| EventID | FK→EventTable | `genq list witnesses` | ✅ | All event types |
+| PersonID | FK→PersonTable | `genq list witnesses` | ✅ | |
+| Role | FK→RoleTable | `genq list witnesses` | ✅ | RoleName resolved |
+| Given / Surname | Text | `genq list witnesses` | ✅ | Both event owner and witness names shown |
 | Note | Text | — | ❌ | Witness-specific note |
 | Sentence | Text | — | ❌ | Custom sentence for this shared fact |
-| UTCModDate | Float | — | 🟡 | |
+| UTCModDate | Float | `genq list witnesses --mod-date` | 🟡 | Opt-in via `--mod-date` |
 
-**Gap summary:** Only census events (EventType=18) are covered. No general `genq list witnesses` or `genq list shared-events`. Witness notes and roles not fully surfaced.
+**Gap summary:** `genq list witnesses` covers all event types with roles. Witness notes and Sentence fields not yet exposed.
 
 ---
 
@@ -234,9 +234,9 @@ One row per citation. Links sources to specific claims.
 | Bibliography | Text | `genq list citations` | ✅ | |
 | Fields | Blob/XML | — | 🟡 | Template field values; not parsed |
 | CitationName | Text | — | 🟡 | Auto-generated citation name |
-| UTCModDate | Float | — | 🟡 | |
+| UTCModDate | Float | `genq list citations --mod-date` | 🟡 | Opt-in via `--mod-date` |
 
-**Gap summary:** `genq list citations` misses Comments, ActualText, RefNumber, and template field values.
+**Gap summary:** `genq list citations` exposes the main citation fields. Template field values (XML blob) not parsed.
 
 ---
 
@@ -312,7 +312,7 @@ Media items attached to the database.
 | RefNumber | Text | — | 🟡 | |
 | Date | Text | — | 🟡 | Media date |
 | Description | Text | `genq list media` | ✅ | |
-| UTCModDate | Float | — | 🟡 | |
+| UTCModDate | Float | `genq list media --mod-date` | 🟡 | Opt-in via `--mod-date` |
 
 **Gap summary:** Coverage is reasonable. RefNumber and Date missing. Known bug: fullpath wrapped in literal quotes.
 
@@ -362,16 +362,16 @@ Association facts between two persons.
 
 | Field | Type | genq Command | Status | Notes |
 |-------|------|-------------|--------|-------|
-| FanID | PK | — | ❌ | |
-| ID1 / ID2 | FK→PersonTable | — | ❌ | The two associated persons |
-| FanTypeID | FK→FANTypeTable | — | ❌ | Association type (neighbor, employer, godparent, etc.) |
+| FanID | PK | `genq list associations` | 🟡 | |
+| ID1 / ID2 | FK→PersonTable | `genq list associations` | ✅ | Both RINs with name lookup |
+| FanTypeID | FK→FANTypeTable | `genq list associations` | ✅ | Resolved to AssocType, Role1, Role2 |
 | PlaceID / SiteID | FK→PlaceTable | — | ❌ | |
-| Date | Text | — | ❌ | |
-| Description | Text | — | ❌ | |
+| Date | Text | `genq list associations` | ✅ | |
+| Description | Text | `genq list associations` | ✅ | |
 | Note | Text | — | ❌ | |
-| UTCModDate | Float | — | ❌ | |
+| UTCModDate | Float | `genq list associations --mod-date` | 🟡 | Opt-in via `--mod-date` |
 
-**Gap summary:** Entire table unreachable. Associations are critical for FAN club research methodology.
+**Gap summary:** Core association data fully covered. Place and Note fields not yet exposed.
 
 ---
 
@@ -381,9 +381,9 @@ Lookup for 15 built-in association types (Friends, Neighbors, Employment, Godpar
 
 | Field | Type | genq Command | Status | Notes |
 |-------|------|-------------|--------|-------|
-| FANTypeID | PK | — | ❌ | |
-| Name | Text | — | ❌ | |
-| Role1 / Role2 | Text | — | ❌ | e.g., "Employer" / "Employee" |
+| FANTypeID | PK | `genq list associations` | 🟡 | Used as FK |
+| Name | Text | `genq list associations` | ✅ | Shown as AssocType |
+| Role1 / Role2 | Text | `genq list associations` | ✅ | Shown per association |
 | Sentence1 / Sentence2 | Text | — | ❌ | |
 | UTCModDate | Float | — | 🟡 | |
 
@@ -546,23 +546,23 @@ These tables are internal to RM or support features with minimal genealogical re
 | Table | Coverage | Phase |
 |-------|----------|-------|
 | PersonTable | 🟡 Partial (6/15 fields) | Phase 2 |
-| NameTable | 🟡 Partial — primary only (7/16 fields) | Phase 1 |
+| NameTable | 🟡 Good — all names accessible (8/16 fields) | ✅ Phase 1 done |
 | FamilyTable | 🟡 Partial (5/14 fields) | Phase 2 |
-| ChildTable | 🟡 Partial — internal only (0/8 user fields) | Phase 1 |
+| ChildTable | 🟡 Good — relationship types covered (5/8 user fields) | ✅ Phase 1 done |
 | EventTable | 🟡 Partial (7/15 fields) | Phase 2 |
-| PlaceTable | ❌ None (0/9 fields) | Phase 1 |
+| PlaceTable | 🟡 Good — gazetteer with coords (4/9 fields) | ✅ Phase 1 done |
 | FactTypeTable | 🟡 Partial — name only (1/9 fields) | Phase 3 |
-| WitnessTable | 🟡 Partial — census only (3/7 fields) | Phase 1 |
-| RoleTable | 🟡 Partial — name only (1/5 fields) | Phase 3 |
+| WitnessTable | 🟡 Good — all event types (5/7 fields) | ✅ Phase 1 done |
+| RoleTable | 🟡 Partial — via witnesses (1/5 fields) | Phase 3 |
 | CitationTable | 🟡 Partial (5/10 fields) | Phase 2 |
-| CitationLinkTable | ❌ None | Phase 1 |
-| SourceTable | 🟡 Partial — free-form only (3/8 fields) | Phase 1 |
-| SourceTemplateTable | ❌ None | Phase 2 |
+| CitationLinkTable | ❌ None | Phase 2 |
+| SourceTable | 🟡 Good — free-form + template (4/8 fields) | ✅ Phase 1 done |
+| SourceTemplateTable | 🟡 Partial — name via join (1/7 fields) | Phase 2 |
 | MultimediaTable | ✅ Good (7/9 user fields) | Phase 3 (bug fix) |
 | MediaLinkTable | ❌ None | Phase 2 |
 | URLTable | 🟡 Partial — schema mismatch (1/6 fields) | Phase 2 |
-| FANTable | ❌ None | Phase 1 |
-| FANTypeTable | ❌ None | Phase 3 |
+| FANTable | 🟡 Good — core data accessible (6/8 fields) | ✅ Phase 1 done |
+| FANTypeTable | 🟡 Partial — via associations (2/5 fields) | Phase 3 |
 | DNATable | ❌ None | Phase 2 |
 | HealthTable | ❌ None | Phase 3 |
 | TaskTable | ❌ None | Phase 3 |
@@ -577,27 +577,43 @@ These tables are internal to RM or support features with minimal genealogical re
 | PayloadTable | ❌ None | Phase 4 |
 | TagTable | ❌ None | Phase 4 |
 
-**Current coverage: ~8 of 31 tables have any exposure; ~4 of 31 with meaningful coverage.**
+**Current coverage: ~15 of 31 tables have meaningful exposure (up from ~4 in March 2026). UTCModDate accessible via `--mod-date` on all major commands.**
 
 ---
 
 ## Roadmap
 
-### Phase 1 — Core Genealogical Data (High Research Value)
+### Phase 0 — UTCModDate Completeness ✅ Done (2026-04-14)
 
-These gaps block fundamental genealogical queries.
+Added `--mod-date` flag to all commands that were missing it. `genq list sources` normalized to local time.
 
-| # | Command | Fills Gap | Tables |
-|---|---------|-----------|--------|
-| 1.1 | `genq list people --all-names` | Alternate names, AKA, maiden names | NameTable |
-| 1.2 | `genq list names` | All names with NameType filter | NameTable |
-| 1.3 | `genq list places` | Place gazetteer with coordinates | PlaceTable |
-| 1.4 | `genq list events --place-name` | Resolve PlaceID → name in event output | PlaceTable + EventTable |
-| 1.5 | `genq list children` | Children with RelFather/RelMother types | ChildTable + PersonTable |
-| 1.6 | `genq list associations` | FAN club data | FANTable + FANTypeTable |
-| 1.7 | `genq list witnesses` | All shared events (not just census) | WitnessTable + EventTable |
-| 1.8 | `genq list sources --all` | Template-based sources (fix stub) | SourceTable + SourceTemplateTable |
-| 1.9 | `genq list citations --owner` | What cites what; citation quality | CitationLinkTable + CitationTable |
+| Command | Flag | Column |
+|---------|------|--------|
+| `genq list people` | `--mod-date` | `LastUpdate` (PersonTable) |
+| `genq list names` | `--mod-date` | `LastUpdate` (NameTable) |
+| `genq list places` | `--mod-date` | `LastUpdate` (PlaceTable) |
+| `genq list children` | `--mod-date` | `LastUpdate` (ChildTable) |
+| `genq list associations` | `--mod-date` | `LastUpdate` (FANTable) |
+| `genq list witnesses` | `--mod-date` | `LastUpdate` (WitnessTable) |
+| `genq list media` | `--mod-date` | `LastUpdate` (MultimediaTable) |
+| `genq list citations` | `--mod-date` | `LastUpdate` (CitationTable) |
+| `genq list sources` | always | `LastUpdate` (normalized from `SourceDate`) |
+| `genq list events` | always | `LastUpdate` (unchanged) |
+| `genq list families` | always | `LastUpdate` (unchanged) |
+
+### Phase 1 — Core Genealogical Data ✅ Mostly Done
+
+| # | Command | Status |
+|---|---------|--------|
+| 1.1 | `genq list people --all-names` | ✅ Done |
+| 1.2 | `genq list names` | ✅ Done |
+| 1.3 | `genq list places` | ✅ Done |
+| 1.4 | `genq list events --place-name` | ✅ Done |
+| 1.5 | `genq list children` | ✅ Done |
+| 1.6 | `genq list associations` | ✅ Done |
+| 1.7 | `genq list witnesses` | ✅ Done |
+| 1.8 | `genq list sources --all` | ✅ Done |
+| 1.9 | `genq list citations --owner` | ❌ Remaining — CitationLinkTable owner filter |
 
 ### Phase 2 — Enhanced Existing Commands + New Data Domains
 
@@ -605,7 +621,7 @@ Enrich existing outputs; add DNA, media, and external linkage.
 
 | # | Command | Fills Gap | Tables |
 |---|---------|-----------|--------|
-| 2.1 | `genq list people` add Living, Color, Note | Person notes, living status | PersonTable |
+| 2.1 | `genq list people` add `--living`, `--color`, `--note` | Person notes, living status | PersonTable |
 | 2.2 | `genq list events` add Proof, IsPrivate | Event proof/privacy status | EventTable |
 | 2.3 | `genq list families` add Proof, Labels, Note | Family proof/spouse labels | FamilyTable |
 | 2.4 | `genq list citations` add Comments, ActualText | Research notes in citations | CitationTable |

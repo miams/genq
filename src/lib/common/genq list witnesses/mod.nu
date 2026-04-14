@@ -5,9 +5,10 @@
 @example "list witnesses for a specific person" {'genq list witnesses --rin 42'}
 @example "list witnesses for census events only" {'genq list witnesses | where EventType == "Census"'}
 export def "main" [
-    --rin (-r): int          # Filter: show only records where this RIN is the witness
-    --event-rin (-e): int    # Filter: show only witnesses for events owned by this RIN
+    --rin (-r): int            # Filter: show only records where this RIN is the witness
+    --event-rin (-e): int      # Filter: show only witnesses for events owned by this RIN
     --event-type (-t): string  # Filter by event type name (case-insensitive substring match)
+    --mod-date (-d)            # Include LastUpdate column (WitnessTable.UTCModDate)
 ] {
     if not ($env.rmdb? | default "" | path exists) {
         print $"(ansi red)Error:(ansi reset) Database not found or not accessible"
@@ -29,7 +30,8 @@ export def "main" [
         w.PersonID as WitnessRIN,
         witness_name.Given COLLATE NOCASE as WitnessGiven,
         witness_name.Surname COLLATE NOCASE as WitnessSurname,
-        r.RoleName COLLATE NOCASE as Role
+        r.RoleName COLLATE NOCASE as Role,
+        COALESCE(STRFTIME(DATETIME(w.UTCModDate + 2415018.5)) || ' +0000', '') AS LastUpdateUTC
     FROM WitnessTable w
     JOIN EventTable e ON w.EventID = e.EventID
     JOIN FactTypeTable ft ON e.EventType = ft.FactTypeID
@@ -40,6 +42,8 @@ export def "main" [
     ORDER BY e.OwnerID, w.EventID"
 
     let result = open $env.rmdb | query db $sqlquery
+        | insert LastUpdate {|row| if ($row.LastUpdateUTC | is-empty) { "" } else { $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S" } }
+        | reject LastUpdateUTC
 
     let result = if not ($rin | is-empty) {
         $result | where WitnessRIN == $rin
@@ -54,5 +58,5 @@ export def "main" [
         $result | where {|r| ($r.EventType | str downcase) | str contains $t}
     } else { $result }
 
-    $result | startat1
+    if $mod_date { $result | startat1 } else { $result | reject LastUpdate | startat1 }
 }
