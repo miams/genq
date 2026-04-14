@@ -649,29 +649,79 @@ jobs:
         with:
           name: GenQuery-Terminal-Windows-ARM64
 
+      # -----------------------------------------------------------------------
+      # Sparkle: sign DMGs and generate arch-specific appcasts.
+      # Requires SPARKLE_PRIVATE_KEY secret (base64 EdDSA private key).
+      # To generate: download Sparkle release, run ./bin/generate_keys, store
+      # the private key as SPARKLE_PRIVATE_KEY and paste the public key into
+      # macos/Ghostty-Info.plist → SUPublicEDKey in genq-terminal.
+      # Skipped silently if the secret is not yet configured.
+      # -----------------------------------------------------------------------
+      - name: Set up Sparkle signing tools
+        if: ${{ env.SPARKLE_PRIVATE_KEY != '' }}
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          SPARKLE_VERSION="2.9.0"
+          curl -fsSL \
+            "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VERSION}/Sparkle-${SPARKLE_VERSION}.tar.xz" \
+            -o sparkle.tar.xz
+          mkdir -p sparkle_tools
+          tar -xf sparkle.tar.xz -C sparkle_tools
+          printf '%s' "$SPARKLE_PRIVATE_KEY" > signing.key
+
+      - name: Sign DMGs and generate appcasts
+        if: ${{ env.SPARKLE_PRIVATE_KEY != '' }}
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          GENQ_VERSION: ${{ github.ref_name }}
+          GENQ_BUILD: ${{ github.run_number }}
+          GENQ_COMMIT: ${{ github.sha }}
+        run: |
+          GENQ_COMMIT_LONG="${GENQ_COMMIT}"
+          GENQ_COMMIT="${GENQ_COMMIT:0:8}"
+
+          ./sparkle_tools/bin/sign_update \
+            -f signing.key GenQuery-Terminal-macOS-arm64.dmg > sign_update_arm64.txt
+          ./sparkle_tools/bin/sign_update \
+            -f signing.key GenQuery-Terminal-macOS-x86_64.dmg > sign_update_x86_64.txt
+
+          for ARCH in arm64 x86_64; do
+            GENQ_VERSION="$GENQ_VERSION" \
+            GENQ_BUILD="$GENQ_BUILD" \
+            GENQ_COMMIT="$GENQ_COMMIT" \
+            GENQ_COMMIT_LONG="$GENQ_COMMIT_LONG" \
+              python3 .github/scripts/update_appcast_tag.py "$ARCH"
+            mv "appcast_${ARCH}_new.xml" "appcast-${ARCH}.xml"
+          done
+          rm -f signing.key
+
       - name: Create or update GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: |
+          # Build the asset list; add appcasts only when Sparkle signing ran.
+          ASSETS=(
+            GenQuery-Terminal-macOS-arm64.dmg
+            GenQuery-Terminal-macOS-x86_64.dmg
+            GenQuery-Terminal-Linux.tar.gz
+            GenQuery-Terminal-Windows-x64.msix
+            GenQuery-Terminal-Windows-ARM64.msix
+          )
+          if [ -f appcast-arm64.xml ] && [ -f appcast-x86_64.xml ]; then
+            ASSETS+=(appcast-arm64.xml appcast-x86_64.xml)
+          fi
+
           if gh release view "$TAG" --repo ${{ github.repository }} > /dev/null 2>&1; then
             echo "Release $TAG exists — uploading assets"
-            gh release upload "$TAG" \
-              GenQuery-Terminal-macOS-arm64.dmg \
-              GenQuery-Terminal-macOS-x86_64.dmg \
-              GenQuery-Terminal-Linux.tar.gz \
-              GenQuery-Terminal-Windows-x64.msix \
-              GenQuery-Terminal-Windows-ARM64.msix \
+            gh release upload "$TAG" "${ASSETS[@]}" \
               --repo ${{ github.repository }} \
               --clobber
           else
-            gh release create "$TAG" \
-              GenQuery-Terminal-macOS-arm64.dmg \
-              GenQuery-Terminal-macOS-x86_64.dmg \
-              GenQuery-Terminal-Linux.tar.gz \
-              GenQuery-Terminal-Windows-x64.msix \
-              GenQuery-Terminal-Windows-ARM64.msix \
+            gh release create "$TAG" "${ASSETS[@]}" \
               --repo ${{ github.repository }} \
-              --title "GenQuery Terminal $TAG" \
+              --title "GenQuery $TAG" \
               --notes-file RELEASE_NOTES.md
           fi
