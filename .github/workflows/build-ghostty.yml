@@ -139,6 +139,27 @@ jobs:
             -ov -format UDZO \
             -o "$GITHUB_WORKSPACE/GenQuery-Terminal-macOS-x86_64.dmg"
 
+      # Sign DMGs here (macOS runner) so sign_update binary can execute.
+      # Skipped silently if SPARKLE_PRIVATE_KEY secret is not configured.
+      - name: Sign DMGs with Sparkle
+        if: ${{ env.SPARKLE_PRIVATE_KEY != '' }}
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          SPARKLE_VERSION="2.9.1"
+          curl -fsSL \
+            "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VERSION}/Sparkle-${SPARKLE_VERSION}.tar.xz" \
+            -o sparkle.tar.xz
+          mkdir -p sparkle_tools
+          tar -xf sparkle.tar.xz -C sparkle_tools
+          printf '%s' "$SPARKLE_PRIVATE_KEY" > signing.key
+          ./sparkle_tools/bin/sign_update -f signing.key \
+            GenQuery-Terminal-macOS-arm64.dmg > sign_update_arm64.txt
+          ./sparkle_tools/bin/sign_update -f signing.key \
+            GenQuery-Terminal-macOS-x86_64.dmg > sign_update_x86_64.txt
+          rm -f signing.key
+          echo "Sparkle signatures written."
+
       - name: Upload to S3
         if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
         env:
@@ -171,6 +192,18 @@ jobs:
         with:
           name: GenQuery-Terminal-macOS-x86_64
           path: GenQuery-Terminal-macOS-x86_64.dmg
+          retention-days: 14
+
+      - name: Upload Sparkle signatures
+        if: ${{ env.SPARKLE_PRIVATE_KEY != '' }}
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: sparkle-signatures
+          path: |
+            sign_update_arm64.txt
+            sign_update_x86_64.txt
           retention-days: 14
 
   # ---------------------------------------------------------------------------
@@ -650,42 +683,25 @@ jobs:
           name: GenQuery-Terminal-Windows-ARM64
 
       # -----------------------------------------------------------------------
-      # Sparkle: sign DMGs and generate arch-specific appcasts.
-      # Requires SPARKLE_PRIVATE_KEY secret (base64 EdDSA private key).
-      # To generate: download Sparkle release, run ./bin/generate_keys, store
-      # the private key as SPARKLE_PRIVATE_KEY and paste the public key into
-      # macos/Ghostty-Info.plist → SUPublicEDKey in genq-terminal.
-      # Skipped silently if the secret is not yet configured.
+      # Download Sparkle signatures produced by build-macos (macOS runner).
+      # Generate arch-specific appcasts. Skipped if signatures not present.
       # -----------------------------------------------------------------------
-      - name: Set up Sparkle signing tools
-        if: ${{ env.SPARKLE_PRIVATE_KEY != '' }}
-        env:
-          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
-        run: |
-          SPARKLE_VERSION="2.9.0"
-          curl -fsSL \
-            "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VERSION}/Sparkle-${SPARKLE_VERSION}.tar.xz" \
-            -o sparkle.tar.xz
-          mkdir -p sparkle_tools
-          tar -xf sparkle.tar.xz -C sparkle_tools
-          printf '%s' "$SPARKLE_PRIVATE_KEY" > signing.key
+      - name: Download Sparkle signatures
+        id: dl-sigs
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: sparkle-signatures
 
-      - name: Sign DMGs and generate appcasts
-        if: ${{ env.SPARKLE_PRIVATE_KEY != '' }}
+      - name: Generate appcasts
+        if: steps.dl-sigs.outcome == 'success'
         env:
-          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
           GENQ_VERSION: ${{ github.ref_name }}
           GENQ_BUILD: ${{ github.run_number }}
           GENQ_COMMIT: ${{ github.sha }}
         run: |
           GENQ_COMMIT_LONG="${GENQ_COMMIT}"
           GENQ_COMMIT="${GENQ_COMMIT:0:8}"
-
-          ./sparkle_tools/bin/sign_update \
-            -f signing.key GenQuery-Terminal-macOS-arm64.dmg > sign_update_arm64.txt
-          ./sparkle_tools/bin/sign_update \
-            -f signing.key GenQuery-Terminal-macOS-x86_64.dmg > sign_update_x86_64.txt
-
           for ARCH in arm64 x86_64; do
             GENQ_VERSION="$GENQ_VERSION" \
             GENQ_BUILD="$GENQ_BUILD" \
@@ -694,13 +710,11 @@ jobs:
               python3 .github/scripts/update_appcast_tag.py "$ARCH"
             mv "appcast_${ARCH}_new.xml" "appcast-${ARCH}.xml"
           done
-          rm -f signing.key
 
       - name: Create or update GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
-          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: |
           # Build the asset list; add appcasts only when Sparkle signing ran.
           ASSETS=(
