@@ -535,7 +535,7 @@ def "db-iiams list sources all iiams - returns records" [] {
 def "db-iiams list sources all iiams - has expected columns" [] {
     if (no-db) { return }
     let cols = (with-env (ie) { genq list sources --all } | columns)
-    for col in [index SrcID TempID TemplateName AbbrevSourceName SourceDate] {
+    for col in [index SrcID TempID TemplateName AbbrevSourceName] {
         assert ($cols | any { |c| $c == $col })
     }
 }

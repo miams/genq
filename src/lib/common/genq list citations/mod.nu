@@ -27,8 +27,7 @@ export def "main" [
     let sqlquery = (open $sql_script)
     let result = open $env.rmdb | query db $sqlquery
         | insert LastUpdate {|row|
-            if ($row.CitUTCModDate | is-empty) { "" }
-            else { $row.CitUTCModDate | date to-timezone local | format date "%Y-%m-%d %H:%M:%S" }
+            if ($row.CitUTCModDate | is-empty) { "" } else { $row.CitUTCModDate | date to-timezone local | format date "%Y-%m-%d %H:%M:%S" }
         }
         | reject CitUTCModDate
     if $mod_date { $result | startat1 } else { $result | reject LastUpdate | startat1 }
