@@ -230,6 +230,7 @@ jobs:
   build-linux:
     name: Build Linux (Ghostty)
     runs-on: ubuntu-latest
+    timeout-minutes: 90
 
     steps:
       - name: Checkout genq
@@ -256,6 +257,9 @@ jobs:
         uses: cachix/install-nix-action@v31
         with:
           nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Cache Nix store
+        uses: DeterminateSystems/magic-nix-cache-action@v9
 
       - name: Build
         working-directory: genq-terminal
