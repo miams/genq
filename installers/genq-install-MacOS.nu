@@ -14,13 +14,13 @@ echo "$env.config.history.isolation = true\n"         | save --append $"($nu.def
 # Create startup config file with values for demo 
 print "Configuring to use demo mode with fresh install."
 
-echo $"\n $env.genq-mode = 'demo' \n $env.rmdb = '($nu.home-path)/Apps/genq/data/pres2020.rmtree'" 
+echo $"\n $env.genq-mode = 'demo' \n $env.rmdb = '($nu.home-path)/Apps/genq/data/pres2025.rmtree'" 
    | save -f $"($nu.default-config-dir)/vendor/autoload/genq-config.nu"
 
 echo $"\n $env.genq_sql = '($nu.home-path)/Apps/genq/sql/'" 
    | save --append $"($nu.default-config-dir)/vendor/autoload/genq-config.nu"
 
-echo $"\n alias syncdb = cp ($nu.home-path)/Apps/genq/data/originaldb/pres2020.rmtree ($nu.home-path)/Apps/genq/data/pres2020.rmtree" 
+echo $"\n alias syncdb = cp ($nu.home-path)/Apps/genq/data/originaldb/pres2025.rmtree ($nu.home-path)/Apps/genq/data/pres2025.rmtree" 
    | save --append $"($nu.default-config-dir)/vendor/autoload/genq-config.nu" 
 
 echo $"\n source ($nu.home-path)/Apps/genq/src/source-commands.nu" 
@@ -46,11 +46,11 @@ curl -s -o  $"($nu.home-path)/Apps/genq/src/source-commands.nu" "https://raw.git
 
 # Load a sample RootsMagic database.
 print "Installing sample RootsMagic database." 
-curl -s -o  $"($nu.home-path)/Apps/genq/data/pres2020.rmtree" "https://raw.githubusercontent.com/miams/genq/8d3fab75dab83b157e510b352065f152126cf6fa/demo/pres2020.rmtree"
+curl -s -o  $"($nu.home-path)/Apps/genq/data/pres2025.rmtree" "https://raw.githubusercontent.com/miams/genq/8d3fab75dab83b157e510b352065f152126cf6fa/demo/pres2025.rmtree"
 
 # Create a copy of demo RM database so syncdb works end-to-end
 mkdir $"($nu.home-path)/Apps/genq/data/originaldb"
-cp $"($nu.home-path)/Apps/genq/data/pres2020.rmtree" $"($nu.home-path)/Apps/genq/data/originaldb/pres2020.rmtree"
+cp $"($nu.home-path)/Apps/genq/data/pres2025.rmtree" $"($nu.home-path)/Apps/genq/data/originaldb/pres2025.rmtree"
 
 print ""
 print ""

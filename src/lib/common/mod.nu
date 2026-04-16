@@ -1,7 +1,9 @@
 # common submodules
 export use rmdate *
+export use rm-template *
 
 export module 'rmdate'
+export module 'rm-template'
 export module 'genq list associations'
 export module 'genq list children'
 export module 'genq list citations'

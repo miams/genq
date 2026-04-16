@@ -5,7 +5,7 @@ use std *
 # Load common and custom modules
 use common *
 use ext/miams *
-use ext/pres2020 *
+use ext/pres2025 *
 
 # Initialize GenQuery configuration system
 # Set GenQuery home directory from environment or use current directory as fallback
@@ -19,10 +19,10 @@ let config = (if ($config_path | path exists) {
     open $config_path
 } else { 
     {
-        database: { active: "demo", connections: { demo: ($env.GENQ_HOME | path join "data" "pres2020.rmtree") } }
+        database: { active: "demo", connections: { demo: ($env.GENQ_HOME | path join "data" "pres2025.rmtree") } }
         paths: { sql_dir: ($env.GENQ_HOME | path join "sql"), lib_dir: ($env.GENQ_HOME | path join "src" "lib"), ext_dir: ($env.GENQ_HOME | path join "src" "lib" "ext"), output_dir: ($env.GENQ_HOME | path join "vault") }
         display: { date_format: 1, table_mode: "rounded" }
-        extensions: { enabled: ["miams", "pres2020"] }
+        extensions: { enabled: ["miams", "pres2025"] }
     }
 })
 

@@ -5,14 +5,14 @@
 #   nu --env-config ~/.config/nushell/env.nu tests/run-tests.nu
 #   nu --env-config ~/.config/nushell/env.nu tests/run-tests.nu --fail
 #   nu --env-config ~/.config/nushell/env.nu tests/run-tests.nu --fast
-#   nu --env-config ~/.config/nushell/env.nu tests/run-tests.nu --db pres2020
+#   nu --env-config ~/.config/nushell/env.nu tests/run-tests.nu --db pres2025
 #   nu --env-config ~/.config/nushell/env.nu tests/run-tests.nu --db iiams
 #   nu --env-config ~/.config/nushell/env.nu tests/run-tests.nu --db all
 #   nu tests/run-tests.nu --ci
 #
 # Test label conventions:
 #   fast <name>        — no DB required; run in parallel
-#   db-pres2020 <name> — pres2020 DB tests only; run serially
+#   db-pres2025 <name> — pres2025 DB tests only; run serially
 #   db-iiams <name>    — Iiams DB tests only; run serially
 #
 # Artifacts written to working directory:
@@ -29,7 +29,7 @@ def main [
     --fail       # Exit with code 1 if any tests fail
     --ci         # CI mode: JUnit report + test-summary.json + --fail
     --fast       # Run only [fast] tests (no database required)
-    --db: string # Run DB tests: pres2020 | iiams | all
+    --db: string # Run DB tests: pres2025 | iiams | all
 ] {
     if $ci {
         let sidecar = "test-timing-sidecar.ndjson"
@@ -55,14 +55,14 @@ def main [
         write-timing $t0 "fast"
 
     } else if ($db | is-not-empty) {
-        let pattern = if $db == "pres2020" {
-            "^db-pres2020 "
+        let pattern = if $db == "pres2025" {
+            "^db-pres2025 "
         } else if $db == "iiams" {
             "^db-iiams "
         } else if $db == "all" {
             "^db-"
         } else {
-            error make { msg: $"Unknown --db value: ($db). Use pres2020, iiams, or all." }
+            error make { msg: $"Unknown --db value: ($db). Use pres2025, iiams, or all." }
         }
         let sidecar = "test-timing-sidecar.ndjson"
         if ($sidecar | path exists) { rm $sidecar }

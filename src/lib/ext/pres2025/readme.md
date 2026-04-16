@@ -2,7 +2,7 @@
 
 Credit for the featured US Presidents genealogy database goes to Paul E. Stobbe. Thank you for this public resource.
 
-The pres2020.rmtree database is an import of a [public GEDCOM](https://github.com/arbre-app/public-gedcoms) originally published by Paul Stobbe. I'm unable to locate a website by Mr. Stobbe about the gedcom file he created. [Reportedly](https://uniquelyyourshosting.net/genealogy/getperson.php?personID=I2184&tree=demotree&sitever=standard), this gedcom has a history of updates by various people, dating as far back as 1994.
+The pres2025.rmtree database is an import of a [public GEDCOM](https://github.com/arbre-app/public-gedcoms) originally published by Paul Stobbe. I'm unable to locate a website by Mr. Stobbe about the gedcom file he created. [Reportedly](https://uniquelyyourshosting.net/genealogy/getperson.php?personID=I2184&tree=demotree&sitever=standard), this gedcom has a history of updates by various people, dating as far back as 1994.
 
 **Observations about the data structure.**
 

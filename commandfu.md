@@ -73,7 +73,7 @@ genq list citations | slice 100..100 | transpose
 Show the Rootsmagic database schema
 
 ```
-open .\Apps\genq\data\pres2020.rmtree | schema | get tables | table -e
+open .\Apps\genq\data\pres2025.rmtree | schema | get tables | table -e
 ```
 
 US Presidents

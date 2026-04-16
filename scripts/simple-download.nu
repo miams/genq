@@ -4,7 +4,7 @@
 # 
 # DESCRIPTION:
 # Downloads presidential and first lady portraits from Wikipedia Commons to populate
-# the pres2020 demonstration database with actual images. Processes all "Photo_" 
+# the pres2025 demonstration database with actual images. Processes all "Photo_" 
 # media files from the GenQuery database and downloads corresponding images.
 #
 # APPROACH:

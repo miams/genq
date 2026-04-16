@@ -212,7 +212,7 @@ export def "genq census" [year: int] {
 - Consider using indexes when querying large tables
 
 ### Compatibility
-- Test with the demo database (`demo/pres2020.ged`)
+- Test with the demo database (`demo/pres2025.ged`)
 - Use `COLLATE NOCASE` for text comparisons to ensure compatibility
 - Handle missing data gracefully
 
@@ -241,7 +241,7 @@ genq your-command test-parameter
 ### Integration Testing
 ```nu
 # Test with demo database
-$env.rmdb = "demo/pres2020.rmtree"
+$env.rmdb = "demo/pres2025.rmtree"
 $env.genq_sql = "sql/"
 
 # Run your commands
@@ -252,7 +252,7 @@ genq your-command | first 5
 
 See existing extensions for reference:
 - `miams/` - Personal genealogy research tools
-- `pres2020/` - US Presidents database utilities
+- `pres2025/` - US Presidents database utilities
 
 ## Contributing
 

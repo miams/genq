@@ -49,7 +49,7 @@ This document captures key architectural and development process decisions made 
 **Example Output**:
 ```
 GenQuery Validation Suite v1.0
-Testing with database: pres2020.rmtree
+Testing with database: pres2025.rmtree
 
 SYNTAX CHECKS:
 ✅ main.nu syntax valid

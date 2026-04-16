@@ -99,7 +99,7 @@ def "fast validate-extensions returns empty list unchanged" [] {
 
 @test
 def "fast validate-extensions returns valid extension list" [] {
-    assert equal (validate-extensions ["miams" "pres2020"]) ["miams" "pres2020"]
+    assert equal (validate-extensions ["miams" "pres2025"]) ["miams" "pres2025"]
 }
 
 # --- validate-file-path ---

@@ -28,8 +28,8 @@ if [ -n "${GHOSTTY_RESOURCES_DIR:-}" ] && [ -f "$(dirname "$GHOSTTY_RESOURCES_DI
   mkdir -p "$GENQ_HOME/data" "$GENQ_HOME/config" "$GENQ_HOME/vault" "$GENQ_HOME/sql"
 
   # Copy sample database if not already present
-  if [ ! -f "$GENQ_HOME/data/pres2020.rmtree" ] && [ -f "$BUNDLE_GENQ/data/pres2020.rmtree" ]; then
-    cp "$BUNDLE_GENQ/data/pres2020.rmtree" "$GENQ_HOME/data/pres2020.rmtree"
+  if [ ! -f "$GENQ_HOME/data/pres2025.rmtree" ] && [ -f "$BUNDLE_GENQ/data/pres2025.rmtree" ]; then
+    cp "$BUNDLE_GENQ/data/pres2025.rmtree" "$GENQ_HOME/data/pres2025.rmtree"
   fi
 
   # Write default genq config if not already present
@@ -39,7 +39,7 @@ if [ -n "${GHOSTTY_RESOURCES_DIR:-}" ] && [ -f "$(dirname "$GHOSTTY_RESOURCES_DI
 active = "demo"
 
 [database.connections]
-demo = "./data/pres2020.rmtree"
+demo = "./data/pres2025.rmtree"
 
 [paths]
 sql_dir = "./sql"
@@ -50,7 +50,7 @@ date_format = 1
 table_mode = "rounded"
 
 [extensions]
-enabled = ["miams", "pres2020"]
+enabled = ["miams", "pres2025"]
 TOML
   fi
 

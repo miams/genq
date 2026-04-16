@@ -46,8 +46,8 @@ export def test-extension-commands [] {
     test-list-command "List findagrave (miams ext)" "findagrave"
     test-list-command "List sources newspapers (miams ext)" "sources" "newspapers"
     
-    # pres2020 extension commands  
-    test-list-command "List presidents (pres2020 ext)" "presidents"
+    # pres2025 extension commands  
+    test-list-command "List presidents (pres2025 ext)" "presidents"
 }
 
 # Test input validation

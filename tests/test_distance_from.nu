@@ -1,6 +1,6 @@
 # Tests for genq distance-from
 # Fast tests use --lat/--lon and require no database.
-# db-pres2020 tests verify DB lookup paths.
+# db-pres2025 tests verify DB lookup paths.
 
 use std/testing *
 use std assert
@@ -91,12 +91,12 @@ def "fast distance-from multiple rows all get Distance" [] {
 }
 
 # =============================================================================
-# db-pres2020 tests — verify DB lookup paths
+# db-pres2025 tests — verify DB lookup paths
 # =============================================================================
 
 @before-each
 def setup [] {
-    let src = ($PROJ | path join "data" "pres2020.rmtree" | path expand)
+    let src = ($PROJ | path join "data" "pres2025.rmtree" | path expand)
     let tmp = (mktemp -t "genq-dist-XXXXXX")
     cp $src $tmp
     { db: $tmp, sql: ($PROJ | path join "sql" | path expand) }
@@ -115,7 +115,7 @@ def e [ctx: record] {
 }
 
 @test
-def "db-pres2020 distance-from place-id adds Distance column" [] {
+def "db-pres2025 distance-from place-id adds Distance column" [] {
     let ctx = $in
     let result = (with-env (e $ctx) {
         genq list places --coordinates
@@ -125,7 +125,7 @@ def "db-pres2020 distance-from place-id adds Distance column" [] {
 }
 
 @test
-def "db-pres2020 distance-from place-name adds Distance column" [] {
+def "db-pres2025 distance-from place-name adds Distance column" [] {
     let ctx = $in
     # Get the first place name to use as reference
     let first_place = (with-env (e $ctx) { genq list places | first | get Name })

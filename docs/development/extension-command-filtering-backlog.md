@@ -2,16 +2,16 @@
 
 ## Problem Statement
 
-Extensions are data format specific. When users have different extensions enabled (e.g., `["pres2020"]` vs `["miams"]`), they see commands in tab completion that won't work with their database and will show null results or errors.
+Extensions are data format specific. When users have different extensions enabled (e.g., `["pres2025"]` vs `["miams"]`), they see commands in tab completion that won't work with their database and will show null results or errors.
 
 **Current Config Example:**
 ```toml
 [extensions]
-enabled = ["pres2020"]  # User only has pres2020, but sees miams commands too
+enabled = ["pres2025"]  # User only has pres2025, but sees miams commands too
 ```
 
 **User Experience Issue:**
-- User types `genq list findagrave` (miams command) but has pres2020 database
+- User types `genq list findagrave` (miams command) but has pres2025 database
 - Command fails or shows empty results
 - Confusing experience - user doesn't know why command doesn't work
 
@@ -53,7 +53,7 @@ def list_action_completer [] {
 
 def validate-command-available [command: string] {
     let config = (load-config)
-    let cmd_to_ext = {findagrave: "miams", newspaper: "miams", presidents: "pres2020"}
+    let cmd_to_ext = {findagrave: "miams", newspaper: "miams", presidents: "pres2025"}
     
     if $command in ($cmd_to_ext | columns) {
         let required_ext = ($cmd_to_ext | get $command)
@@ -92,7 +92,7 @@ def list_action_completer [] { ["findagrave", "people", "citations", "events", "
 **Command-to-Extension Mapping:**
 - `common` extension: people, citations, events, families, sources, media
 - `miams` extension: findagrave, newspaper, obits
-- `pres2020` extension: presidents
+- `pres2025` extension: presidents
 
 **Nushell Completion Constraints:**
 - Completer functions expected to be pure/stateless

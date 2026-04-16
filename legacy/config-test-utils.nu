@@ -49,12 +49,12 @@ export def get-test-scenarios [] {
             database: {
                 active: "demo"
                 connections: {
-                    demo: "./data/pres2020.rmtree"
+                    demo: "./data/pres2025.rmtree"
                     production: "./data/Iiams.rmtree"
                 }
             }
             extensions: {
-                enabled: ["pres2020"]
+                enabled: ["pres2025"]
             }
             paths: {
                 sql_dir: "sql"
@@ -73,21 +73,21 @@ export def get-test-scenarios [] {
             database: {
                 active: "production"
                 connections: {
-                    demo: "./data/pres2020.rmtree"
+                    demo: "./data/pres2025.rmtree"
                     production: "./data/Iiams.rmtree"
                 }
             }
             extensions: {
-                enabled: ["miams", "pres2020"]
+                enabled: ["miams", "pres2025"]
             }
             sync: {
                 sources: {
                     production: "/test/path/TestFamily.rmtree"
-                    demo: "/test/path/pres2020.rmtree"
+                    demo: "/test/path/pres2025.rmtree"
                 }
                 targets: {
                     production: "./data/Iiams.rmtree"
-                    demo: "./data/pres2020.rmtree"
+                    demo: "./data/pres2025.rmtree"
                 }
                 options: {
                     backup_before_sync: true
@@ -111,7 +111,7 @@ export def get-test-scenarios [] {
             database: {
                 active: "demo"
                 connections: {
-                    demo: "./data/pres2020.rmtree"
+                    demo: "./data/pres2025.rmtree"
                 }
             }
             extensions: {

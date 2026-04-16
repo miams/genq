@@ -24,12 +24,12 @@ Every test `def` name **must** begin with exactly one label word followed by a s
 - Files: `test_config.nu`, `test_paths.nu`, `test_validation.nu`, `test_smoke.nu`
 - `--match-tests` regex: `"^fast "`
 
-### `db-pres2020`
-- Tests against the pres2020 demo database (committed to repo — always available)
+### `db-pres2025`
+- Tests against the pres2025 demo database (committed to repo — always available)
 - Never writes to the database; uses per-test temp copies
 - Run serially to avoid SQLite lock contention
-- File: `test_db_pres2020.nu`
-- `--match-tests` regex: `"^db-pres2020 "`
+- File: `test_db_pres2025.nu`
+- `--match-tests` regex: `"^db-pres2025 "`
 
 ### `db-iiams`
 - Tests against the Iiams personal genealogy database (11,692 people)
@@ -62,8 +62,8 @@ nu --env-config ~/.config/nushell/env.nu tests/run-tests.nu
 # Fast tests only (no DB, instant feedback):
 nu --env-config ~/.config/nushell/env.nu tests/run-tests.nu --fast
 
-# pres2020 DB tests only (always available):
-nu --env-config ~/.config/nushell/env.nu tests/run-tests.nu --db pres2020
+# pres2025 DB tests only (always available):
+nu --env-config ~/.config/nushell/env.nu tests/run-tests.nu --db pres2025
 
 # Iiams DB tests only (requires GENQ_TEST_DB):
 GENQ_TEST_DB=/Users/miams/Code/genq/data/Iiams.rmtree \
@@ -95,7 +95,7 @@ Two jobs run in parallel:
 
 ### `db` job
 - Runs `--ci` (all tests, JUnit report)
-- pres2020 DB always available (committed to repo)
+- pres2025 DB always available (committed to repo)
 - Iiams DB downloaded from S3 when `AWS_ACCESS_KEY_ID` + `GENQ_TEST_BUCKET` are configured
 - Tests skip gracefully when Iiams DB is unavailable (safe for forks)
 - JUnit results published via `EnricoMi/publish-unit-test-result-action`
@@ -180,10 +180,10 @@ Use `timed-test` on tests expected to be slow (large-table scans, tree computati
 
 ## Writing New Tests
 
-1. Choose the correct label (`fast`, `db-pres2020`, `db-iiams`, or `db-<newdb>`)
+1. Choose the correct label (`fast`, `db-pres2025`, `db-iiams`, or `db-<newdb>`)
 2. Place the `@test` in the appropriate file
 3. For Iiams tests, guard with `if (no-db) { return }`
-4. For pres2020 tests, use the `@before-each`/`@after-each` temp-copy pattern
+4. For pres2025 tests, use the `@before-each`/`@after-each` temp-copy pattern
 5. For slow DB tests, wrap the command call with `timed-test`
 6. Verify the label appears first in the def name:
    ```nushell

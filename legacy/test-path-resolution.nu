@@ -60,7 +60,7 @@ export def test-path-formats [] {
         database: {
             active: "production"
             connections: {
-                demo: "./data/pres2020.rmtree"                           # Relative
+                demo: "./data/pres2025.rmtree"                           # Relative
                 production: "/absolute/path/to/database.rmtree"          # Absolute
                 test: "~/home/user/database.rmtree"                     # Tilde
             }

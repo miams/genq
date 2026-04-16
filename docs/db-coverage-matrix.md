@@ -684,4 +684,3 @@ Group management, saved searches, bookmarks.
 | `genq list findagrave` OwnerType=0 | `genq list findagrave/mod.nu` | URLTable schema has no OwnerType=0 — investigate |
 | `genq list sources --all` stub | `genq list sources/mod.nu` | Silent no-op misleads users |
 | `genq list events --citations` dead flag | `genq list events/mod.nu` | Flag declared but never implemented |
-| `genq list people` writes tmpNames tables | `genq list people/mod.nu` | Mutates user DB; should use CTE or subquery |

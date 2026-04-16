@@ -12,11 +12,11 @@ export def test-fresh-install [] {
         database: {
             active: "demo"
             connections: {
-                demo: "./data/pres2020.rmtree"
+                demo: "./data/pres2025.rmtree"
             }
         }
         extensions: {
-            enabled: ["pres2020"]
+            enabled: ["pres2025"]
         }
         paths: {
             sql_dir: "sql"
@@ -56,11 +56,11 @@ export def test-fresh-to-production [] {
         database: {
             active: "demo"
             connections: {
-                demo: "./data/pres2020.rmtree"
+                demo: "./data/pres2025.rmtree"
             }
         }
         extensions: {
-            enabled: ["pres2020"]
+            enabled: ["pres2025"]
         }
         paths: {
             sql_dir: "sql"

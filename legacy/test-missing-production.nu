@@ -12,7 +12,7 @@ export def test-missing-production-source [] {
         database: {
             active: "production"
             connections: {
-                demo: "./data/pres2020.rmtree"
+                demo: "./data/pres2025.rmtree"
                 production: "./data/Iiams.rmtree"
             }
         }
@@ -25,7 +25,7 @@ export def test-missing-production-source [] {
         sync: {
             targets: {
                 production: "./data/Iiams.rmtree"
-                demo: "./data/pres2020.rmtree"
+                demo: "./data/pres2025.rmtree"
             }
             # Note: missing sync.sources section
         }
@@ -57,11 +57,11 @@ export def test-no-sync-section [] {
         database: {
             active: "demo"
             connections: {
-                demo: "./data/pres2020.rmtree"
+                demo: "./data/pres2025.rmtree"
             }
         }
         extensions: {
-            enabled: ["pres2020"]
+            enabled: ["pres2025"]
         }
         paths: {
             output_dir: "vault"

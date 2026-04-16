@@ -28,9 +28,9 @@ if ($config_filename | path exists) {
     let result = open $env.rmdb | query db $sqlquery
     | insert fullpath {|row|
         # Use path join for cross-platform path construction
-        let media_subpath = ($row.MediaPath | str substring 2..)
+        let media_subpath = ($row.MediaPath | str substring 2.. | str replace --all '\' '/')
         let full_media_path = ($filepath | path join $media_subpath $row.MediaFile)
-        $"\"($full_media_path)\""
+        $full_media_path
     }
     | insert LastUpdate {|row| if ($row.LastUpdateUTC | is-empty) { "" } else { $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S" } }
     | reject MediaPath MediaFile URL Date SortDate LastUpdateUTC

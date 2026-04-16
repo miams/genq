@@ -48,7 +48,7 @@ def "db-iiams list people iiams - returns records" [] {
 }
 
 @test
-def "db-iiams list people iiams - substantially larger than pres2020" [] {
+def "db-iiams list people iiams - substantially larger than pres2025" [] {
     if (no-db) { return }
     let result = (with-env (ie) { genq list people })
     assert (($result | length) > 100)

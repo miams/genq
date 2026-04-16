@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS test_runs (
 -- One row per test in a run
 CREATE TABLE IF NOT EXISTS test_results (
     run_id      TEXT NOT NULL REFERENCES test_runs(run_id),
-    suite       TEXT NOT NULL,  -- file stem: "test_db_iiams", "test_db_pres2020", etc.
+    suite       TEXT NOT NULL,  -- file stem: "test_db_iiams", "test_db_pres2025", etc.
     test_name   TEXT NOT NULL,  -- full def name: "db-read list people iiams - returns records"
     label       TEXT,           -- "fast" | "db-read" | null (unlabeled)
     status      TEXT NOT NULL,  -- "pass" | "fail" | "skip"

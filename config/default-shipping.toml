@@ -6,7 +6,7 @@
 active = "demo"
 
 [database.connections]
-demo = "./data/pres2020.rmtree"
+demo = "./data/pres2025.rmtree"
 
 [paths]
 sql_dir = "sql"
@@ -19,6 +19,6 @@ date_format = 1
 table_mode = "rounded"
 
 [extensions]
-enabled = ["pres2020"]
+enabled = ["pres2025"]
 
 # Note: sync section will be created automatically when user configures production database

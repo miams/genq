@@ -39,7 +39,7 @@ jobs:
         shell: nu {0}
         run: nu tests/run-tests.nu --fast --fail
 
-  # Job 2: DB tests — pres2020 always runs; Iiams downloaded from S3 when credentials exist
+  # Job 2: DB tests — pres2025 always runs; Iiams downloaded from S3 when credentials exist
   db:
     name: DB Tests (${{ matrix.platform }})
 

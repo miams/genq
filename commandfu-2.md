@@ -27,6 +27,7 @@ help commands
 | reject signatures
 | where category =~ genq
 | sort-by category name
+| explore
 ```
 
 ---
@@ -72,7 +73,7 @@ Example: show record **100**.
 
 ```nu
 genq list citations
-| range 100..100
+| slice 100..100
 | transpose
 ```
 
@@ -245,7 +246,7 @@ $env.SurnameGroup
 ### Show the Rootsmagic database schema
 
 ```nu
-open .\Apps\genq\data\pres2020.rmtree
+open .\Apps\genq\data\pres2025.rmtree
 | schema
 | get tables
 | table -e

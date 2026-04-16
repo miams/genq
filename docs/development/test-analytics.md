@@ -80,7 +80,7 @@ One row per test run (local or CI):
 | `nu_version` | TEXT | Nushell version |
 | `genq_version` | TEXT | Short SHA (used as version) |
 | `source` | TEXT | `"local"` \| `"ci-ubuntu-latest"` \| `"ci-macos-latest"` \| `"ci-windows-latest"` |
-| `label_filter` | TEXT | `"fast"` \| `"db-pres2020"` \| `"db-iiams"` \| `"db-all"` \| `"all"` (CI) |
+| `label_filter` | TEXT | `"fast"` \| `"db-pres2025"` \| `"db-iiams"` \| `"db-all"` \| `"all"` (CI) |
 | `run_at` | INTEGER | Unix epoch ms (start of run) |
 | `duration_ms` | INTEGER | Wall-clock ms for the full run |
 | `total` / `passed` / `failed` / `skipped` | INTEGER | Counts |
@@ -94,7 +94,7 @@ One row per test in a run:
 | `run_id` | TEXT FK | References `test_runs.run_id` |
 | `suite` | TEXT | File stem: `test_db_iiams`, `test_config`, etc. |
 | `test_name` | TEXT | Full def name: `"db-iiams list people iiams - returns records"` |
-| `label` | TEXT | `"fast"` \| `"db-pres2020"` \| `"db-iiams"` \| null |
+| `label` | TEXT | `"fast"` \| `"db-pres2025"` \| `"db-iiams"` \| null |
 | `status` | TEXT | `"pass"` \| `"fail"` \| `"skip"` |
 | `duration_ms` | INTEGER | null unless wrapped with `timed-test` |
 
@@ -118,7 +118,7 @@ GENQ_TEST_DB=/Users/miams/Code/genq/data/Iiams.rmtree \
 GENQ_SOURCE=local-macos nu tests/ingest-results.nu
 
 # After a single-DB run:
-nu tests/run-tests.nu --db pres2020
+nu tests/run-tests.nu --db pres2025
 GENQ_SOURCE=local-macos nu tests/ingest-results.nu
 ```
 
@@ -209,6 +209,6 @@ def "db-iiams tabulate trees - returns records" [] {
 | `db-iiams tabulate sources labels iiams - returns records` | Aggregation across sources |
 | `db-iiams tabulate trees - returns records` | Union-find label propagation (~900ms) |
 | `db-iiams tabulate trees --rin 1 - returns 10570 rows` | BFS/degree walk over full tree |
-| `db-pres2020 list people pres2020 - returns records` | Baseline pres2020 DB timing |
+| `db-pres2025 list people pres2025 - returns records` | Baseline pres2025 DB timing |
 
 To add timing to a new slow test, wrap the command call with `timed-test "exact test def name" { ... }`.

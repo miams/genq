@@ -12,21 +12,21 @@ export def test-path-consistency [] {
         database: {
             active: "production"
             connections: {
-                demo: "Code/genq/data/pres2020.rmtree"      # Wrong path
+                demo: "Code/genq/data/pres2025.rmtree"      # Wrong path
                 production: "Code/genq/data/data/Iiams.rmtree"  # Wrong path with doubled folder
             }
         }
         extensions: {
-            enabled: ["miams", "pres2020"]
+            enabled: ["miams", "pres2025"]
         }
         sync: {
             targets: {
                 production: "./data/Iiams.rmtree"     # Correct target path
-                demo: "./data/pres2020.rmtree"        # Correct target path
+                demo: "./data/pres2025.rmtree"        # Correct target path
             }
             sources: {
                 production: "/Users/miams/Genealogy/RootsMagic/Database/Iiams.rmtree"
-                demo: "~/Genealogy/RootsMagic/Database/pres2020.rmtree"
+                demo: "~/Genealogy/RootsMagic/Database/pres2025.rmtree"
             }
         }
         paths: {
@@ -41,7 +41,7 @@ export def test-path-consistency [] {
         
         # Save config - this should fix the inconsistent database.connections
         try {
-            let saved_config = (save-config $config_path "production" ["miams", "pres2020"] "/test/source/path.rmtree")
+            let saved_config = (save-config $config_path "production" ["miams", "pres2025"] "/test/source/path.rmtree")
             reload-genq-environment $saved_config
             
             # Verify the configuration was corrected
@@ -55,7 +55,7 @@ export def test-path-consistency [] {
                 return 1
             }
             
-            if $updated_config.database.connections.demo == "./data/pres2020.rmtree" {
+            if $updated_config.database.connections.demo == "./data/pres2025.rmtree" {
                 print "✓ Demo database.connections fixed to correct local target"
             } else {
                 print $"✗ Demo database.connections incorrect: ($updated_config.database.connections.demo)"
@@ -98,7 +98,7 @@ export def test-mode-switching [] {
         
         # Switch from production to demo
         try {
-            let saved_config = (save-config $config_path "demo" ["pres2020"])
+            let saved_config = (save-config $config_path "demo" ["pres2025"])
             reload-genq-environment $saved_config
             
             let updated_config = (open $config_path)
@@ -111,7 +111,7 @@ export def test-mode-switching [] {
             }
             
             # Verify database.connections still point to local targets
-            if $updated_config.database.connections.demo == "./data/pres2020.rmtree" {
+            if $updated_config.database.connections.demo == "./data/pres2025.rmtree" {
                 print "✓ Demo database.connections correct after mode switch"
             } else {
                 print $"✗ Demo database.connections incorrect after switch: ($updated_config.database.connections.demo)"

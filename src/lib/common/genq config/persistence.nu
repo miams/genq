@@ -36,13 +36,13 @@ export def save-config [
         let with_connections = if ("sync" in ($current_config | columns)) and ("targets" in ($current_config.sync | columns)) {
             ($updated_config 
                 | upsert database.connections.production ($current_config.sync.targets.production? | default "./data/Iiams.rmtree")
-                | upsert database.connections.demo ($current_config.sync.targets.demo? | default "./data/pres2020.rmtree")
+                | upsert database.connections.demo ($current_config.sync.targets.demo? | default "./data/pres2025.rmtree")
             )
         } else {
             # Fallback to standard paths if sync.targets not configured
             ($updated_config 
                 | upsert database.connections.production "./data/Iiams.rmtree"
-                | upsert database.connections.demo "./data/pres2020.rmtree"
+                | upsert database.connections.demo "./data/pres2025.rmtree"
             )
         }
         

@@ -90,7 +90,7 @@ def main [] {
             let label = ($name | str replace -r " .*" "")
             let label_clean = if ($label | str ends-with ":") {
                 null  # old colon format — ignore
-            } else if ($label == "fast" or $label == "db-pres2020" or $label == "db-iiams" or $label == "db-write") {
+            } else if ($label == "fast" or $label == "db-pres2025" or $label == "db-iiams" or $label == "db-write") {
                 $label
             } else {
                 null

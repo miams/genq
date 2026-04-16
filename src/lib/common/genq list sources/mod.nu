@@ -1,11 +1,13 @@
 # List sources.
+use rm-template *
+
 @category "genq-common"
 @search-terms "Evidence Explained, First Reference Note, Subsequent Note, Source List Entry"
 @example 'List free-form source names, footnotes, short footnotes and bibliographies' {'genq list sources'}
-@example 'List template-based sources with their template name' {'genq list sources --all'}
+@example 'List all sources (free-form and template-based) with rendered citation text' {'genq list sources --all'}
 export def "main" [
     --freeform (-f) # Show only free-form sources (default when no flag given)
-    --all (-a)      # Show all sources including template-based ones
+    --all (-a)      # Show all sources including template-based ones, with rendered citation text
 ] {
 
     if not ($env.rmdb? | default "" | path exists) {
@@ -36,13 +38,53 @@ export def "main" [
             s.Name COLLATE NOCASE as SourceName,
             s.TemplateID as TempID,
             CASE WHEN s.TemplateID = 0 THEN 'Free-form' ELSE COALESCE(t.Name, 'Unknown Template') END COLLATE NOCASE as TemplateName,
+            cast(s.Fields AS TEXT) as Fields,
+            COALESCE(t.Footnote,      '') AS TmplFootnote,
+            COALESCE(t.ShortFootnote, '') AS TmplShortFootnote,
+            COALESCE(t.Bibliography,  '') AS TmplBibliography,
             COALESCE(STRFTIME(DATETIME(s.UTCModDate + 2415018.5)) || ' +0000', '') AS LastUpdateUTC
         FROM SourceTable s
         LEFT JOIN SourceTemplateTable t ON s.TemplateID = t.TemplateID
         ORDER BY s.TemplateID = 0, t.Name COLLATE NOCASE, s.Name COLLATE NOCASE"
         open $env.rmdb | query db $sqlquery
         | insert AbbrevSourceName {|row| limit $row.SourceName ((term size).columns - 45)}
+        | insert Footnote {|row|
+            if $row.TempID == 0 {
+                extract-freeform-field $row.Fields "Footnote"
+            } else {
+                render-template $row.TmplFootnote $row.Fields --plain-text
+            }
+          }
+        | insert ShortFootnote {|row|
+            if $row.TempID == 0 {
+                extract-freeform-field $row.Fields "ShortFootnote"
+            } else {
+                render-template $row.TmplShortFootnote $row.Fields --plain-text
+            }
+          }
+        | insert Bibliography {|row|
+            if $row.TempID == 0 {
+                extract-freeform-field $row.Fields "Bibliography"
+            } else {
+                render-template $row.TmplBibliography $row.Fields --plain-text
+            }
+          }
         | insert LastUpdate {|row| if ($row.LastUpdateUTC | is-empty) { "" } else { $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S" } }
-        | reject SourceName LastUpdateUTC | startat1
+        | reject SourceName Fields TmplFootnote TmplShortFootnote TmplBibliography LastUpdateUTC
+        | startat1
     }
+}
+
+# Extract a named field from a free-form source's Fields XML blob.
+# Free-form sources store Footnote/ShortFootnote/Bibliography as named fields.
+def extract-freeform-field [fields_xml: string, field_name: string] {
+    if ($fields_xml | is-empty) { return "" }
+    try {
+        $fields_xml | from xml
+                    | get content.0.content
+                    | where {|f| ($f | get --optional content.0.content.0.content | default "") == $field_name }
+                    | first
+                    | get --optional content.1.content.0.content
+                    | default ""
+    } catch { "" }
 }

@@ -2,7 +2,7 @@
 active = "production"
 
 [database.connections]
-demo = "./data/pres2020.rmtree"
+demo = "./data/pres2025.rmtree"
 production = "./data/Iiams.rmtree"
 
 [paths]
@@ -18,16 +18,16 @@ table_mode = "rounded"
 [extensions]
 enabled = [
     "miams",
-    "pres2020",
+    "pres2025",
 ]
 
 [sync.sources]
 production = "/Users/miams/Genealogy/RootsMagic/Database/RM11/Iiams.rmtree"
-demo = "~/Genealogy/RootsMagic/Database/pres2020.rmtree"
+demo = "~/Genealogy/RootsMagic/Database/pres2025.rmtree"
 
 [sync.targets]
 production = "./data/Iiams.rmtree"
-demo = "./data/pres2020.rmtree"
+demo = "./data/pres2025.rmtree"
 
 [sync.options]
 backup_before_sync = true

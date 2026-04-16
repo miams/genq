@@ -47,7 +47,7 @@ export def test-genq-paths [] {
     let genq_test_cases = [
         {input: "config/default.toml", description: "Config file path"}
         {input: "src/lib/common", description: "Library directory"}
-        {input: "data/pres2020.rmtree", description: "Database file"}
+        {input: "data/pres2025.rmtree", description: "Database file"}
         {input: "./sql/queries", description: "SQL directory"}
         {input: "vault/reports", description: "Output directory"}
     ]

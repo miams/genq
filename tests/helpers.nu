@@ -8,12 +8,12 @@ export def get-test-scenarios [] {
             database: {
                 active: "demo"
                 connections: {
-                    demo: "./data/pres2020.rmtree"
+                    demo: "./data/pres2025.rmtree"
                     production: "./data/Iiams.rmtree"
                 }
             }
             extensions: {
-                enabled: ["pres2020"]
+                enabled: ["pres2025"]
             }
             paths: {
                 sql_dir: "sql"
@@ -31,12 +31,12 @@ export def get-test-scenarios [] {
             database: {
                 active: "production"
                 connections: {
-                    demo: "./data/pres2020.rmtree"
+                    demo: "./data/pres2025.rmtree"
                     production: "./data/Iiams.rmtree"
                 }
             }
             extensions: {
-                enabled: ["miams", "pres2020"]
+                enabled: ["miams", "pres2025"]
             }
             paths: {
                 sql_dir: "sql"
@@ -54,7 +54,7 @@ export def get-test-scenarios [] {
             database: {
                 active: "demo"
                 connections: {
-                    demo: "./data/pres2020.rmtree"
+                    demo: "./data/pres2025.rmtree"
                 }
             }
             extensions: {
