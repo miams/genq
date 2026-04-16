@@ -237,7 +237,9 @@ def "fast render-template cleanup removes double comma from suppressed block" []
 
 @test
 def "db-iiams render-template book source from live db returns non-empty footnote" [] {
-    let rows = (open $env.rmdb | query db "
+    let db_path = ($env.GENQ_TEST_DB? | default "")
+    if ($db_path == "" or not ($db_path | path exists)) { return }
+    let rows = (open $db_path | query db "
         SELECT cast(s.Fields AS TEXT) as Fields, t.Footnote as TmplFootnote
         FROM SourceTable s
         JOIN SourceTemplateTable t ON s.TemplateID = t.TemplateID
