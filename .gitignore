@@ -20,4 +20,4 @@ tests/fixtures/*.rmtree
 data/*.rmtree-wal
 data/*.rmtree-shm
 # Allow sample Presidents database
-# !pres2025.rmtree
+!data/pres2025.rmtree
