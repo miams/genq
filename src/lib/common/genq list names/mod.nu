@@ -1,13 +1,20 @@
 # List all name records — primary and alternate — from NameTable.
 @category "genq-common"
-@search-terms "AKA maiden married nickname alias spelling alternate"
+@search-terms "AKA maiden married nickname alias spelling alternate prefix suffix"
 @example "list only alternate (non-primary) names" {'genq list names --alternate'}
 @example "list all AKA names" {'genq list names --type aka'}
 @example "list all name records for RIN 42" {'genq list names --rin 42'}
+@example "list names with prefix and suffix" {'genq list names --prefix --suffix'}
 export def "main" [
     --type (-t): string  # Filter by NameType: aka birth immigrant maiden married nickname other
     --alternate (-a)     # Show only alternate (non-primary) names
     --rin (-r): int      # Filter by person RIN
+    --prefix             # Include Prefix column (Dr., Rev., Lord, etc.)
+    --suffix             # Include Suffix column (Jr., Sr., III, etc.)
+    --nickname           # Include Nickname column
+    --date               # Include Date column (date of alternate name fact)
+    --private            # Include IsPrivate column (Y/N)
+    --note               # Include Note column (name fact note)
     --mod-date (-d)      # Include LastUpdate column (NameTable.UTCModDate)
 ] {
     if not ($env.rmdb? | default "" | path exists) {
@@ -66,6 +73,12 @@ export def "main" [
         n.IsPrimary,
         n.BirthYear,
         n.DeathYear,
+        COALESCE(n.Prefix, '') AS Prefix,
+        COALESCE(n.Suffix, '') AS Suffix,
+        COALESCE(n.Nickname COLLATE NOCASE, '') AS Nickname,
+        COALESCE(n.Date, '') AS Date,
+        CASE WHEN n.IsPrivate = 1 THEN 'Y' ELSE 'N' END AS IsPrivate,
+        COALESCE(n.Note, '') AS Note,
         COALESCE(STRFTIME(DATETIME(n.UTCModDate + 2415018.5)) || ' +0000', '') AS LastUpdateUTC
     FROM NameTable n"
 
@@ -75,5 +88,14 @@ export def "main" [
     let result = open $env.rmdb | query db $sqlquery
         | insert LastUpdate {|row| if ($row.LastUpdateUTC | is-empty) { "" } else { $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S" } }
         | reject LastUpdateUTC
-    if $mod_date { $result | startat1 } else { $result | reject LastUpdate | startat1 }
+
+    let cols = ([NameID RIN Surname Given NameType IsPrimary BirthYear DeathYear]
+        | if $prefix   { append Prefix }    else { $in }
+        | if $suffix   { append Suffix }    else { $in }
+        | if $nickname { append Nickname }  else { $in }
+        | if $date     { append Date }      else { $in }
+        | if $private  { append IsPrivate } else { $in }
+        | if $note     { append Note }      else { $in }
+        | if $mod_date { append LastUpdate } else { $in })
+    $result | select ...$cols | startat1
 }

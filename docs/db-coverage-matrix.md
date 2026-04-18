@@ -1,6 +1,6 @@
 # GenQuery — RM10 Database Coverage Matrix & Roadmap
 
-**Date:** 2026-04-14
+**Date:** 2026-04-17
 **Reference:** `RM10DataDef-V10_0_5-20250205.xlsx` (347 rows, 31 tables)
 **Goal:** Every user-visible RM10 database field reachable via at least one `genq` command.
 
@@ -33,14 +33,14 @@ Primary record for every individual. RIN = PersonID.
 | Color … Color9 | Integer (0–27) | — | ❌ | 10 color-coding sets; useful for filtered views |
 | Relate1 / Relate2 | Integer | — | ❌ | Relationship distance to focus person |
 | Flags | Integer | — | ❌ | Half/spouse-of relationship qualifiers |
-| Living | Integer | — | ❌ | 0=Deceased, 1=Living; important for privacy |
+| Living | Integer | `genq list people --living` | ✅ | Decoded to Y/N; opt-in via `--living` |
 | IsPrivate | ⚫ | — | ⚫ | Not implemented in RM10 |
 | Proof | ⚫ | — | ⚫ | Not implemented in RM10 |
 | Bookmark | Integer | — | ❌ | RM bookmark flag |
-| Note | Text | — | ❌ | Person-level note (not fact note) |
-| UTCModDate | Float | `genq list people --mod-date` | 🟡 | Opt-in via `--mod-date`; shows as `LastUpdate` (local time) |
+| Note | Text | `genq list people --note` | ✅ | Opt-in via `--note`; person-level note |
+| UTCModDate | Float | `genq list people --mod-date` | ✅ | Opt-in via `--mod-date`; shows as `LastUpdate` (local time) |
 
-**Gap summary:** Living status, color-coding, person notes, and UniqueID are all unreachable.
+**Gap summary:** Living status exposed via `--living`; Note exposed via `--note`. Color-coding and UniqueID remain unreachable.
 
 ---
 
@@ -54,21 +54,21 @@ One row per name fact per person. Primary + alternate names.
 | OwnerID | FK→PersonTable | `genq list people` | ✅ | |
 | Surname | Text | `genq list people` | ✅ | Primary name only |
 | Given | Text | `genq list people` | ✅ | Primary name only |
-| Prefix | Text | — | ❌ | Dr., Rev., Lord, etc. |
-| Suffix | Text | — | ❌ | Jr., Sr., III, etc. |
-| Nickname | Text | — | ❌ | |
-| NameType | Integer | — | ❌ | AKA/Birth/Immigrant/Maiden/Married/Nickname/Other |
-| Date | Text | — | ❌ | Date of alternate name fact |
-| IsPrimary | Integer | `genq list people` | ✅ | Used to filter primary name |
-| IsPrivate | Integer | — | 🟡 | |
+| Prefix | Text | `genq list names --prefix` | ✅ | Opt-in via `--prefix`; Dr., Rev., Lord, etc. |
+| Suffix | Text | `genq list names --suffix` | ✅ | Opt-in via `--suffix`; Jr., Sr., III, etc. |
+| Nickname | Text | `genq list names --nickname` | ✅ | Opt-in via `--nickname` |
+| NameType | Integer | `genq list names` | ✅ | Always shown; AKA/Birth/Immigrant/Maiden/Married/Nickname/Other |
+| Date | Text | `genq list names --date` | ✅ | Opt-in via `--date`; date of alternate name fact |
+| IsPrimary | Integer | `genq list people`, `genq list names` | ✅ | Used as `WHERE` filter for primary name; always shown as column in `genq list names` |
+| IsPrivate | Integer | `genq list names --private` | ✅ | Opt-in via `--private`; decoded to Y/N |
 | Proof | Integer | — | 🟡 | |
-| Note | Text | — | ❌ | Name fact note |
+| Note | Text | `genq list names --note` | ✅ | Opt-in via `--note`; name fact note |
 | BirthYear | Integer | `genq list people` | ✅ | Denormalized from EventTable |
 | DeathYear | Integer | `genq list people` | ✅ | Denormalized from EventTable |
 | SurnameMP / GivenMP / NicknameMP | Text | — | 🟡 | Metaphone variants; search-only |
-| UTCModDate | Float | `genq list names --mod-date` | 🟡 | Opt-in via `--mod-date` |
+| UTCModDate | Float | `genq list names --mod-date` | ✅ | Opt-in via `--mod-date` |
 
-**Gap summary:** Alternate names fully covered by `genq list names`. Prefix/suffix/nickname columns not yet exposed.
+**Gap summary:** Alternate names fully covered by `genq list names`. Prefix, Suffix, Nickname, Date, IsPrivate, and Note all exposed via opt-in flags. Proof not yet exposed.
 
 ---
 
@@ -85,13 +85,13 @@ One row per couple (husband + wife). Marriage and family facts live in EventTabl
 | HusbOrder | Integer | `genq list families` | ✅ | Spouse ordering |
 | WifeOrder | Integer | `genq list families` | ✅ | |
 | IsPrivate | ⚫ | — | ⚫ | Not implemented |
-| Proof | Integer | — | 🟡 | Blank/Proven/Disproven/Disputed |
-| FatherLabel / MotherLabel | Integer | — | 🟡 | Father/Husband/Partner/Other |
-| FatherLabelStr / MotherLabelStr | Text | — | 🟡 | Custom label when =Other |
-| Note | Text | — | ❌ | Spouse-fact note |
+| Proof | Integer | `genq list families --proof` | ✅ | Decoded: Proven/Disproven/Disputed/blank; opt-in via `--proof` |
+| FatherLabel / MotherLabel | Integer | `genq list families --labels` | ✅ | Decoded to Father/Husband/Partner/Other; FatherRole and MotherRole columns |
+| FatherLabelStr / MotherLabelStr | Text | `genq list families --labels` | ✅ | Used when label=Other; merged into FatherRole/MotherRole |
+| Note | Text | `genq list families --note` | ✅ | Family-level note; opt-in via `--note` |
 | UTCModDate | Float | `genq list families` | ✅ | Always shown as `LastUpdate` (local time) |
 
-**Gap summary:** Family proof status, spouse-role labels, and family notes are not exposed.
+**Gap summary:** Proof, spouse-role labels (FatherRole/MotherRole), and Note now all exposed via opt-in flags.
 
 ---
 
@@ -107,11 +107,11 @@ Links children to families. One row per child-per-family.
 | RelFather | Integer | `genq list children` | ✅ | Decoded to Birth/Adopted/Step/Foster/Guardian/Sealed/Unknown |
 | RelMother | Integer | `genq list children` | ✅ | Same |
 | ChildOrder | Integer | `genq list children` | ✅ | |
-| ProofFather / ProofMother | Integer | — | ❌ | Proven/Disproven/Disputed |
+| ProofFather / ProofMother | Integer | `genq list children --proof` | ✅ | Opt-in via `--proof`; decoded Proven/Disproven/Disputed/blank |
 | Note | ⚫ | — | ⚫ | Not implemented |
-| UTCModDate | Float | `genq list children --mod-date` | 🟡 | Opt-in via `--mod-date` |
+| UTCModDate | Float | `genq list children --mod-date` | ✅ | Opt-in via `--mod-date` |
 
-**Gap summary:** Child relationship types fully covered by `genq list children`.
+**Gap summary:** Child relationship types and proof fully covered by `genq list children`.
 
 ---
 
@@ -121,7 +121,7 @@ All facts/events for persons (OwnerType=0) and families (OwnerType=1).
 
 | Field | Type | genq Command | Status | Notes |
 |-------|------|-------------|--------|-------|
-| EventID | PK | `genq list events` | ✅ | |
+| EventID | PK | `genq list events`; `genq list citations --event-id` | ✅ | Also exposed in citations output via `--event-id` for cross-command filtering |
 | EventType | FK→FactTypeTable | `genq list events` | ✅ | Resolved to name |
 | OwnerType | Integer | `genq list events` | 🟡 | Not shown (always 0 for person, 1 for family) |
 | OwnerID | FK | `genq list events` | ✅ | Shown as RIN (or MRIN for family events) |
@@ -131,15 +131,15 @@ All facts/events for persons (OwnerType=0) and families (OwnerType=1).
 | Date | Text | `genq list events` | ✅ | Raw RM-encoded date |
 | SortDate | BigInt | — | 🟡 | |
 | IsPrimary | Integer | — | 🟡 | |
-| IsPrivate | Integer | — | 🟡 | |
-| Proof | Integer | — | 🟡 | Blank/Proven/Proven False/Disputed |
+| IsPrivate | Integer | `genq list events --private` | ✅ | Y if private; opt-in via `--private` |
+| Proof | Integer | `genq list events --proof` | ✅ | Decoded: Proven/Disproven/Disputed/blank; opt-in via `--proof` |
 | Status | Integer | — | 🟡 | LDS ordinance status |
 | Sentence | Text | — | ❌ | Custom sentence override |
 | Details | Text | `genq list events` | ✅ | Description field |
 | Note | Text | `genq list events` | 🟡 | Shown in raw output but not formatted |
 | UTCModDate | Float | `genq list events` | ✅ | Always shown as `LastUpdate` (local time) |
 
-**Gap summary:** Place details (SiteID), proof status, and privacy flag not exposed. Place name resolution available via `genq list events --place-name`.
+**Gap summary:** Proof and IsPrivate now exposed via `--proof` and `--private`. Place name resolution available via `--place-name`. Unsourced events via `--unsourced`. SiteID (sub-place), IsPrimary, and Sentence still missing.
 
 ---
 
@@ -149,17 +149,17 @@ Canonical place names. PlaceType: 0=Place, 1=LDS Temple, 2=Place Details.
 
 | Field | Type | genq Command | Status | Notes |
 |-------|------|-------------|--------|-------|
-| PlaceID | PK | `genq list events` | 🟡 | Referenced but no dedicated place command |
-| PlaceType | Integer | — | ❌ | |
-| Name | Text | `genq list events` | 🟡 | Joined in some contexts |
+| PlaceID | PK | `genq list places` | ✅ | |
+| PlaceType | Integer | `genq list places` | ✅ | Decoded to Place / LDS Temple / Place Details |
+| Name | Text | `genq list places` | ✅ | |
 | Abbrev | Text | — | ❌ | |
-| Normalized | Text | — | ❌ | Standardized/geocoded name |
-| Latitude / Longitude | Integer | — | ❌ | ×1e7 encoding; geo-mapping potential |
+| Normalized | Text | `genq list places` | ✅ | Standardized/geocoded name |
+| Latitude / Longitude | Integer | `genq list places --coordinates` | ✅ | Decoded from ×1e7 to decimal degrees; used by `genq distance-from` |
 | MasterID | FK→PlaceTable | — | ❌ | Parent place for place-details |
 | Note | Text | — | ❌ | |
 | UTCModDate | Float | `genq list places --mod-date` | 🟡 | Opt-in via `--mod-date` |
 
-**Gap summary:** `genq list places` covers Name, Normalized, PlaceType, and optionally coordinates. Abbrev and Note fields still missing.
+**Gap summary:** Good coverage — PlaceID, Name, Normalized, PlaceType, and coordinates all exposed. Abbrev, MasterID, and Note still missing.
 
 ---
 
@@ -226,8 +226,8 @@ One row per citation. Links sources to specific claims.
 |-------|------|-------------|--------|-------|
 | CitationID | PK | `genq list citations` | ✅ | |
 | SourceID | FK→SourceTable | `genq list citations` | ✅ | |
-| Comments | Text | — | 🟡 | Detail Comment; not shown |
-| ActualText | Text | — | 🟡 | Research Note; not shown |
+| Comments | Text | `genq list citations --research-notes` | ✅ | Research annotation; opt-in via `--research-notes` |
+| ActualText | Text | `genq list citations --research-notes` | ✅ | Verbatim transcript; opt-in via `--research-notes` |
 | RefNumber | Text | — | 🟡 | Ref# field; not shown |
 | Footnote | Text | `genq list citations` | ✅ | |
 | ShortFootnote | Text | `genq list citations` | ✅ | |
@@ -236,7 +236,7 @@ One row per citation. Links sources to specific claims.
 | CitationName | Text | — | 🟡 | Auto-generated citation name |
 | UTCModDate | Float | `genq list citations --mod-date` | 🟡 | Opt-in via `--mod-date` |
 
-**Gap summary:** `genq list citations` exposes the main citation fields. Template field values (XML blob) not parsed.
+**Gap summary:** All major citation fields now exposed. Comments/ActualText via `--research-notes` (QUOTE() SQL bug also fixed). Template field values (XML blob) not parsed.
 
 ---
 
@@ -246,14 +246,14 @@ Maps citations to their owners (who cites what).
 
 | Field | Type | genq Command | Status | Notes |
 |-------|------|-------------|--------|-------|
-| LinkID | PK | — | ❌ | |
-| CitationID | FK→CitationTable | — | ❌ | |
-| OwnerType | Integer | — | ❌ | Person/Family/Event/Task/Name/Association |
-| OwnerID | FK | — | ❌ | |
-| Quality | Text | — | ❌ | 3-char: Primary/Secondary, Direct/Indirect, Original/Derivative |
+| LinkID | PK | `genq list citations` | 🟡 | Joined internally; not shown in output |
+| CitationID | FK→CitationTable | `genq list citations` | 🟡 | Joined to resolve citations |
+| OwnerType | Integer | — | 🟡 | Used in JOIN logic; not shown |
+| OwnerID | FK | — | 🟡 | Used in JOIN logic; not shown |
+| Quality | Text | `genq list citations --quality` | ✅ | 3-char decoded into Source (Primary/Secondary), Information (Direct/Indirect/Negative), Evidence (Original/Derivative); `SourceName` replaces `Source` column when flag set |
 | UTCModDate | Float | — | ❌ | |
 
-**Gap summary:** Entire table unreachable. Cannot answer "what events have citations?" or "what is the citation quality?". High research value.
+**Gap summary:** Quality exposed via `--quality`; EventID exposed via `--event-id` on citations. Unsourced-event detection via `genq list events --unsourced`. OwnerType/OwnerID not directly surfaced. UTCModDate not exposed.
 
 ---
 
@@ -263,17 +263,17 @@ Master source records (free-form and template-based).
 
 | Field | Type | genq Command | Status | Notes |
 |-------|------|-------------|--------|-------|
-| SourceID | PK | `genq list sources` | ✅ | Free-form only |
-| Name | Text | `genq list sources` | ✅ | |
+| SourceID | PK | `genq list sources` | ✅ | Shown as SrcID |
+| Name | Text | `genq list sources` | ✅ | Shown as AbbrevSourceName (truncated) |
 | RefNumber | Text | — | 🟡 | |
 | ActualText | Text | — | 🟡 | Source text/transcript |
 | Comments | Text | — | 🟡 | Source comment |
 | IsPrivate | ⚫ | — | ⚫ | Not implemented |
-| TemplateID | FK→SourceTemplateTable | `genq list sources` | 🟡 | Shown; filter works but --all is stub |
-| Fields | Blob/XML | `genq list citations` | 🟡 | Footnote/ShortFootnote/Bibliography extracted; other fields not |
-| UTCModDate | Float | — | 🟡 | |
+| TemplateID | FK→SourceTemplateTable | `genq list sources` | ✅ | Shown as TempID; `--all` renders template-based sources via `rm-template` |
+| Fields | Blob/XML | `genq list sources --all` | ✅ | Footnote/ShortFootnote/Bibliography rendered for all source types |
+| UTCModDate | Float | `genq list sources` | ✅ | Always shown as LastUpdate |
 
-**Gap summary:** Template-based sources (`TemplateID > 0`) are unreachable — `genq list sources --all` is a stub. These represent the majority of sources in well-maintained databases.
+**Gap summary:** Good coverage. `genq list sources --all` renders both free-form and template-based sources. RefNumber, ActualText, and Comments not yet exposed.
 
 ---
 
@@ -292,7 +292,7 @@ Defines the 439 built-in + user-defined citation templates.
 | FieldDefs | Blob/XML | — | ❌ | Field names, types, hints |
 | UTCModDate | Float | — | 🟡 | |
 
-**Gap summary:** No `genq list source-templates`. Needed for implementing `genq list sources --all`.
+**Gap summary:** No `genq list source-templates`. `genq list sources --all` now works via the `rm-template` engine without needing to expose this table directly; a list command would still be useful for discovery.
 
 ---
 
@@ -314,7 +314,7 @@ Media items attached to the database.
 | Description | Text | `genq list media` | ✅ | |
 | UTCModDate | Float | `genq list media --mod-date` | 🟡 | Opt-in via `--mod-date` |
 
-**Gap summary:** Coverage is reasonable. RefNumber and Date missing. Known bug: fullpath wrapped in literal quotes.
+**Gap summary:** Coverage is reasonable. RefNumber and Date missing. Fullpath construction uses `path join` with cross-platform slash normalization (fixed from earlier literal-quotes bug).
 
 ---
 
@@ -324,16 +324,16 @@ Maps media items to owners (person/family/event/source/citation/place/name/assoc
 
 | Field | Type | genq Command | Status | Notes |
 |-------|------|-------------|--------|-------|
-| LinkID | PK | — | ❌ | |
-| MediaID | FK→MultimediaTable | — | ❌ | |
-| OwnerType | Integer | — | ❌ | 9 owner types |
-| OwnerID | FK | — | ❌ | |
-| IsPrimary | Integer | — | ❌ | Primary photo flag |
-| SortOrder | Integer | — | ❌ | |
-| Comments | Text | — | ❌ | Tag comment |
+| LinkID | PK | — | 🟡 | Joined internally via `--for` |
+| MediaID | FK→MultimediaTable | `genq list media --for` | ✅ | Joined to get media details |
+| OwnerType | Integer | — | 🟡 | Used in JOIN (OwnerType=0 for persons); not shown |
+| OwnerID | FK | `genq list media --for` | ✅ | Supplied as `--for <RIN>` |
+| IsPrimary | Integer | `genq list media --for` | ✅ | Decoded to Y/N |
+| SortOrder | Integer | `genq list media --for` | ✅ | Shown |
+| Comments | Text | `genq list media --for` | ✅ | Shown as TagComment |
 | UTCModDate | Float | — | ❌ | |
 
-**Gap summary:** Cannot answer "what photos does person X have?" or "which media is tagged as primary?". High UX value.
+**Gap summary:** Person media now accessible via `genq list media --for <RIN>`. Returns fullpath, IsPrimary, SortOrder, TagComment. Other OwnerTypes (family, event, source, etc.) and UTCModDate not yet exposed.
 
 ---
 
@@ -343,16 +343,16 @@ Web tags attached to sources, citations, places, tasks, and place details.
 
 | Field | Type | genq Command | Status | Notes |
 |-------|------|-------------|--------|-------|
-| LinkID | PK | `genq list findagrave` | 🟡 | |
-| OwnerType | Integer | `genq list findagrave` | 🟡 | Schema: 3=Source, 4=Citation, 5=Place, 6=Task, 14=PlaceDetail (NOT Person) |
-| OwnerID | FK | `genq list findagrave` | 🟡 | Filtered by URL pattern only |
+| LinkID | PK | `genq list web-tags` | ✅ | |
+| OwnerType | Integer | `genq list web-tags` | ✅ | Decoded: Person/Source/Citation/Place/Task/PlaceDetail; filterable via `--type` |
+| OwnerID | FK | `genq list web-tags` | ✅ | Shown; OwnerName resolved via JOIN to appropriate table |
 | LinkType | ⚫ | — | ⚫ | Not implemented |
-| Name | Text | `genq list findagrave` | 🟡 | Web tag label |
-| URL | Text | `genq list findagrave` | ✅ | |
-| Note | Text | — | 🟡 | |
-| UTCModDate | Float | — | 🟡 | |
+| Name | Text | `genq list web-tags` | ✅ | Shown as TagName |
+| URL | Text | `genq list web-tags` | ✅ | |
+| Note | Text | `genq list web-tags` | ✅ | |
+| UTCModDate | Float | `genq list web-tags --mod-date` | 🟡 | Opt-in via `--mod-date` |
 
-**Gap summary:** `genq list findagrave` appears to have a schema discrepancy (code uses OwnerType=0 for person but schema says OwnerType doesn't include 0 for URLTable). Full web-tag browsing across all owner types is missing.
+**Gap summary:** All URLTable fields now accessible via `genq list web-tags`. Supports all owner types with name resolution; filterable via `--type person|source|citation|place|task|placedetail`. `genq list findagrave` (ext/miams) remains for backward compatibility.
 
 ---
 
@@ -395,21 +395,21 @@ DNA match records between persons in the database.
 
 | Field | Type | genq Command | Status | Notes |
 |-------|------|-------------|--------|-------|
-| RecID | PK | — | ❌ | |
-| ID1 / ID2 | FK→PersonTable | — | ❌ | The matched individuals |
-| Label1 / Label2 | Text | — | ❌ | Custom labels |
-| DNAProvider | Integer | — | ❌ | 23andMe/Ancestry/FTDNA/LivingDNA/MyHeritage/GEDmatch |
-| SharedCM / SharedPercent | Float | — | ❌ | cM and % shared |
-| LargeSeg | Float | — | ❌ | Largest segment (cM) |
-| SharedSegs | Integer | — | ❌ | Number of shared segments |
-| Date | Text | — | ❌ | Test date |
-| Relate1 / Relate2 | Integer | — | ❌ | Generations to MRCA |
-| CommonAnc | FK | — | ❌ | Most Recent Common Ancestor |
-| CommonAncType | Integer | — | ❌ | Single/couple MRCA |
-| Note | Text | — | ❌ | |
-| UTCModDate | Float | — | ❌ | |
+| RecID | PK | `genq list dna` | ✅ | |
+| ID1 / ID2 | FK→PersonTable | `genq list dna` | ✅ | Both resolved to full names (Given + Surname) |
+| Label1 / Label2 | Text | — | ❌ | Custom labels not yet shown |
+| DNAProvider | Integer | `genq list dna` | ✅ | Decoded: 23andMe/Ancestry/FTDNA/LivingDNA/MyHeritage/GEDmatch/Unknown |
+| SharedCM / SharedPercent | Float | `genq list dna` | ✅ | Rounded to 1 and 2 decimal places |
+| LargeSeg | Float | `genq list dna` | ✅ | Shown as LargestSeg |
+| SharedSegs | Integer | `genq list dna` | ✅ | |
+| Date | Text | `genq list dna` | ✅ | |
+| Relate1 / Relate2 | Integer | — | ❌ | Generations to MRCA; not in SELECT |
+| CommonAnc | FK | — | ❌ | MRCA PersonID not yet resolved to name |
+| CommonAncType | Integer | — | ❌ | |
+| Note | Text | `genq list dna` | ✅ | |
+| UTCModDate | Float | `genq list dna --mod-date` | 🟡 | Opt-in via `--mod-date` |
 
-**Gap summary:** Entire table unreachable. DNA data is a growing priority for genealogical research.
+**Gap summary:** Core match metrics exposed. Label1/Label2, Relate1/Relate2, and CommonAnc/CommonAncType not yet shown. Table is empty in the Iiams test DB — untested against live data.
 
 ---
 
@@ -498,15 +498,15 @@ FamilySearch Family Tree linkage.
 
 | Field | Type | genq Command | Status | Notes |
 |-------|------|-------------|--------|-------|
-| LinkID | PK | — | ❌ | |
-| rmID | FK→PersonTable | — | ❌ | |
-| fsID | Text | — | ❌ | FamilySearch person ID |
-| Modified | Integer | — | ❌ | Mismatch flag |
-| fsVersion | Text | — | ❌ | |
-| Status | Integer | — | ❌ | 0=Default, 4=Imported from FS |
-| UTCModDate | Float | — | ❌ | |
+| LinkID | PK | — | 🟡 | Joined internally |
+| rmID | FK→PersonTable | `genq list familysearch-links` | ✅ | Shown as RIN; person name resolved |
+| fsID | Text | `genq list familysearch-links` | ✅ | Shown as FamilySearchID |
+| Modified | Integer | `genq list familysearch-links` | ✅ | Decoded to Y/N |
+| fsVersion | Text | — | ❌ | Internal version string |
+| Status | Integer | `genq list familysearch-links` | ✅ | Decoded: Linked / Imported |
+| UTCModDate | Float | `genq list familysearch-links --mod-date` | 🟡 | Opt-in via `--mod-date` |
 
-**Gap summary:** FS linkage IDs are unreachable. Critical for Discoverer edition.
+**Gap summary:** Core linkage fields now exposed. fsVersion not shown. Table may be empty if FamilySearch sync has not been used.
 
 ---
 
@@ -516,14 +516,14 @@ Ancestry.com TreeShare linkage.
 
 | Field | Type | genq Command | Status | Notes |
 |-------|------|-------------|--------|-------|
-| LinkID | PK | — | ❌ | |
-| LinkType | Integer | — | ❌ | 0=Person, 4=Citation, 11=Media |
-| rmID | FK | — | ❌ | |
-| anID | Text | — | ❌ | Ancestry person/citation/media ID |
-| Modified | Integer | — | ❌ | Change flag |
-| anVersion / anDate | Text/Float | — | ❌ | |
-| Status | Integer | — | ❌ | |
-| UTCModDate | Float | — | 🟡 | |
+| LinkID | PK | — | 🟡 | Joined internally |
+| LinkType | Integer | `genq list ancestry-links` | ✅ | Decoded: Person/Citation/Media |
+| rmID | FK | `genq list ancestry-links` | ✅ | Shown; Name resolved from appropriate table |
+| anID | Text | `genq list ancestry-links` | ✅ | Shown as AncestryID |
+| Modified | Integer | `genq list ancestry-links` | ✅ | Decoded to Y/N |
+| anVersion / anDate | Text/Float | — | ❌ | Internal sync metadata |
+| Status | Integer | `genq list ancestry-links` | ✅ | Raw integer (decode unknown) |
+| UTCModDate | Float | `genq list ancestry-links --mod-date` | 🟡 | Opt-in via `--mod-date` |
 
 ---
 
@@ -545,39 +545,51 @@ These tables are internal to RM or support features with minimal genealogical re
 
 | Table | Coverage | Phase |
 |-------|----------|-------|
-| PersonTable | 🟡 Partial (6/15 fields) | Phase 2 |
+| PersonTable | 🟡 Good — Living field exposed via `--living` (7/15 fields) | Phase 2 |
 | NameTable | 🟡 Good — all names accessible (8/16 fields) | ✅ Phase 1 done |
-| FamilyTable | 🟡 Partial (5/14 fields) | Phase 2 |
+| FamilyTable | 🟡 Good — Proof/Labels/Note exposed via flags (8/14 fields) | ✅ Phase 2 done |
 | ChildTable | 🟡 Good — relationship types covered (5/8 user fields) | ✅ Phase 1 done |
-| EventTable | 🟡 Partial (7/15 fields) | Phase 2 |
-| PlaceTable | 🟡 Good — gazetteer with coords (4/9 fields) | ✅ Phase 1 done |
+| EventTable | 🟡 Good — Proof/IsPrivate exposed via flags (9/15 fields) | ✅ Phase 2 done |
+| PlaceTable | ✅ Good — PlaceID, Name, Normalized, PlaceType, Lat/Lon (5/9 fields) | ✅ Phase 1 done |
 | FactTypeTable | 🟡 Partial — name only (1/9 fields) | Phase 3 |
 | WitnessTable | 🟡 Good — all event types (5/7 fields) | ✅ Phase 1 done |
 | RoleTable | 🟡 Partial — via witnesses (1/5 fields) | Phase 3 |
-| CitationTable | 🟡 Partial (5/10 fields) | Phase 2 |
-| CitationLinkTable | ❌ None | Phase 2 |
-| SourceTable | 🟡 Good — free-form + template (4/8 fields) | ✅ Phase 1 done |
+| CitationTable | 🟡 Good — Comments/ActualText exposed via `--research-notes` (7/10 fields) | ✅ Phase 2 done |
+| CitationLinkTable | 🟡 Partial — Quality field exposed via `--quality` (4/6 fields joined) | Phase 2 |
+| SourceTable | ✅ Good — free-form + template rendered; UTCModDate always shown (6/8 fields) | ✅ Phase 1 done |
 | SourceTemplateTable | 🟡 Partial — name via join (1/7 fields) | Phase 2 |
 | MultimediaTable | ✅ Good (7/9 user fields) | Phase 3 (bug fix) |
-| MediaLinkTable | ❌ None | Phase 2 |
-| URLTable | 🟡 Partial — schema mismatch (1/6 fields) | Phase 2 |
+| MediaLinkTable | 🟡 Partial — IsPrimary, SortOrder, TagComment via `--for` (4/8 fields) | ✅ Phase 2 done |
+| URLTable | 🟡 Good — all fields via `genq list web-tags` (5/6 fields) | ✅ Phase 2 done |
 | FANTable | 🟡 Good — core data accessible (6/8 fields) | ✅ Phase 1 done |
 | FANTypeTable | 🟡 Partial — via associations (2/5 fields) | Phase 3 |
-| DNATable | ❌ None | Phase 2 |
+| DNATable | 🟡 Good — core match metrics exposed (10/17 fields) | ✅ Phase 2 done |
 | HealthTable | ❌ None | Phase 3 |
 | TaskTable | ❌ None | Phase 3 |
 | TaskLinkTable | ❌ None | Phase 3 |
 | AddressTable | ❌ None | Phase 3 |
 | AddressLinkTable | ❌ None | Phase 3 |
-| FamilySearchTable | ❌ None | Phase 2 |
-| AncestryTable | ❌ None | Phase 2 |
+| FamilySearchTable | 🟡 Good — RIN, Name, FamilySearchID, Modified, Status (5/7 fields) | ✅ Phase 2 done |
+| AncestryTable | 🟡 Good — LinkType, Name, AncestryID, Modified, Status (5/8 fields) | ✅ Phase 2 done |
 | ConfigTable | ⚫ Skip | — |
 | ExclusionTable | ⚫ Skip | — |
 | GroupTable | ❌ None | Phase 4 |
 | PayloadTable | ❌ None | Phase 4 |
 | TagTable | ❌ None | Phase 4 |
 
-**Current coverage: ~15 of 31 tables have meaningful exposure (up from ~4 in March 2026). UTCModDate accessible via `--mod-date` on all major commands.**
+**Current coverage: ~22 of 31 tables have meaningful exposure (up from ~4 in March 2026). Phase 2 complete. Remaining gaps: research management (tasks, health), reference lookup tables (fact-types, roles, source-templates), and admin tables (groups, bookmarks).**
+
+---
+
+## Non-Table Commands (cross-cutting / derived output)
+
+These commands don't map to a single RM table but add significant reporting capability:
+
+| Command | What it does | Tables touched |
+|---------|-------------|----------------|
+| `genq tabulate trees` | Count distinct family trees; list all members of a tree with generational distance from anchor | PersonTable, ChildTable, FamilyTable (via union-find) |
+| `genq distance-from` | Pipe filter: adds Haversine `Distance` column to any table with Latitude/Longitude columns | PlaceTable (indirectly) |
+| `genq md people` | Export Obsidian-compatible markdown files with YAML frontmatter for persons | PersonTable, EventTable, NameTable, ChildTable |
 
 ---
 
@@ -612,8 +624,8 @@ Added `--mod-date` flag to all commands that were missing it. `genq list sources
 | 1.5 | `genq list children` | ✅ Done |
 | 1.6 | `genq list associations` | ✅ Done |
 | 1.7 | `genq list witnesses` | ✅ Done |
-| 1.8 | `genq list sources --all` | ✅ Done |
-| 1.9 | `genq list citations --owner` | ❌ Remaining — CitationLinkTable owner filter |
+| 1.8 | `genq list sources --all` | ✅ Done — template rendering via `rm-template` |
+| 1.9 | `genq list citations --owner` | ✅ N/A — RIN already in output; use `\| where RIN == X` |
 
 ### Phase 2 — Enhanced Existing Commands + New Data Domains
 
@@ -621,16 +633,19 @@ Enrich existing outputs; add DNA, media, and external linkage.
 
 | # | Command | Fills Gap | Tables |
 |---|---------|-----------|--------|
-| 2.1 | `genq list people` add `--living`, `--color`, `--note` | Person notes, living status | PersonTable |
-| 2.2 | `genq list events` add Proof, IsPrivate | Event proof/privacy status | EventTable |
-| 2.3 | `genq list families` add Proof, Labels, Note | Family proof/spouse labels | FamilyTable |
-| 2.4 | `genq list citations` add Comments, ActualText | Research notes in citations | CitationTable |
-| 2.5 | `genq list media --for <RIN>` | Media for a person via link table | MediaLinkTable + MultimediaTable |
-| 2.6 | `genq list media` (fix fullpath bug) | Bug: literal quotes in fullpath | MultimediaTable |
-| 2.7 | `genq list dna` | DNA matches with cM, %, provider | DNATable |
-| 2.8 | `genq list web-tags` | All web tags (all owner types) | URLTable |
-| 2.9 | `genq list familysearch-links` | RM↔FS person ID mapping | FamilySearchTable |
-| 2.10 | `genq list ancestry-links` | RM↔Ancestry ID mapping | AncestryTable |
+| ✅ | `genq list citations --quality` | GPS quality decoded: Source/Information/Evidence | CitationLinkTable |
+| ✅ | `genq list citations --event-id` | EventID column for event-level citation lookup | CitationLinkTable + EventTable |
+| ✅ | `genq list events --unsourced` | LEFT JOIN CitationLinkTable; events with no citations | EventTable + CitationLinkTable |
+| ✅ | `genq list media` fullpath bug fixed | Cross-platform `path join`; no literal quotes | MultimediaTable |
+| ✅ | `genq list people --living` | Living status decoded to Y/N | PersonTable |
+| ✅ | `genq list events --proof --private` | Proof/IsPrivate decoded from EventTable | EventTable |
+| ✅ | `genq list families --proof --labels --note` | Proof, FatherRole/MotherRole, Note | FamilyTable |
+| ✅ | `genq list citations --research-notes` | ActualText + Comments; QUOTE() SQL bug fixed | CitationTable |
+| ✅ | `genq list media --for <RIN>` | Media for a person via link table | MediaLinkTable + MultimediaTable |
+| ✅ | `genq list dna` | DNA matches with cM, %, provider, cM/segments | DNATable |
+| ✅ | `genq list web-tags` | All web tags; all owner types with name resolution; `--type` filter | URLTable |
+| ✅ | `genq list familysearch-links` | RIN, FamilySearchID, Modified, Status | FamilySearchTable |
+| ✅ | `genq list ancestry-links` | LinkType, Name, AncestryID, Modified, Status | AncestryTable |
 
 ### Phase 3 — Supporting Tables & Quality / Admin
 
@@ -665,7 +680,7 @@ Group management, saved searches, bookmarks.
 - Places with coordinates enable mapping — a core genealogy visualization
 - Child relationship types (birth vs. adopted) are fundamental to lineage research
 - FAN club associations support the FAN club research methodology
-- The `genq list sources --all` stub blocks access to the majority of sources
+- `genq list sources --all` now renders template-based sources (✅ fixed)
 
 **Phase 2** items expand depth of existing data:
 - DNA data is increasingly central to modern genealogical proof
@@ -676,11 +691,43 @@ Group management, saved searches, bookmarks.
 
 ---
 
-## Known Bugs to Fix Alongside Roadmap
+## Next Steps (as of 2026-04-16)
 
-| Bug | Location | Impact |
-|-----|---------|--------|
-| `fullpath` literal quotes | `genq list media/mod.nu` | Broken paths on macOS |
-| `genq list findagrave` OwnerType=0 | `genq list findagrave/mod.nu` | URLTable schema has no OwnerType=0 — investigate |
-| `genq list sources --all` stub | `genq list sources/mod.nu` | Silent no-op misleads users |
-| `genq list events --citations` dead flag | `genq list events/mod.nu` | Flag declared but never implemented |
+### Phase 1 — Complete ✅
+
+All Phase 1 items done. Item 1.9 (`--owner` filter on citations) resolved as not needed — the output already includes RIN and supports `| where RIN == X`. CitationLinkTable now meaningfully covered via `--quality` and `--event-id`.
+
+### Phase 2 — In Progress
+
+**Recently completed:**
+
+| Item | Command | What it adds |
+|------|---------|-------------|
+| ✅ | `genq list citations --quality` | GPS Source/Information/Evidence columns decoded from 3-char code |
+| ✅ | `genq list citations --event-id` | EventID exposed for event-level citation cross-reference |
+| ✅ | `genq list events --unsourced` | Find facts with no citations — core research gap tool |
+| ✅ | `genq list media` fullpath fix | Cross-platform path construction via `path join` |
+| ✅ | `genq list people --living` | Living status decoded to Y/N; privacy-aware reporting |
+| ✅ | `genq list media --for <RIN>` | Person media via MediaLinkTable; fullpath, IsPrimary, SortOrder, TagComment |
+| ✅ | `genq list dna` | DNA matches: cM, %, segments, provider decoded, both persons named |
+| ✅ | `genq list events --proof --private` | Proof/IsPrivate decoded; evidence-quality filtering |
+| ✅ | `genq list families --proof --labels --note` | Proof, FatherRole/MotherRole, family Note |
+| ✅ | `genq list citations --research-notes` | ActualText + Comments; SQL QUOTE() bug fixed |
+| ✅ | `genq list web-tags` | All URLTable owner types; OwnerName resolved; `--type` filter |
+| ✅ | `genq list familysearch-links` | RIN↔FamilySearch ID; Modified/Status decoded |
+| ✅ | `genq list ancestry-links` | rmID↔Ancestry ID; Person/Citation/Media link types |
+
+### Phase 2 — Complete ✅
+
+All Phase 2 items are done. Proceeding to Phase 3.
+
+---
+
+## Known Bugs
+
+| Bug | Location | Impact | Status |
+|-----|---------|--------|--------|
+| `genq list findagrave` OwnerType=0 | `ext/miams/genq list findagrave/mod.nu:23` | Previously flagged as suspect; confirmed correct — OwnerType=0 IS the person type in URLTable (5,454 rows in Iiams) | ✅ Not a bug |
+| `fullpath` literal quotes | `genq list media/mod.nu` | Broken paths on macOS | ✅ Fixed — uses `path join` with slash normalization |
+| `genq list sources --all` stub | `genq list sources/mod.nu` | Silent no-op misleads users | ✅ Fixed — renders templates via `rm-template` |
+| `genq list events --citations` dead flag | `genq list events/mod.nu` | Flag declared but never implemented | ✅ Fixed — flag removed |

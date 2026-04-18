@@ -7,6 +7,7 @@
 export def "main" [
     --rin (-r): int   # Filter by child RIN
     --mrin (-m): int  # Filter by family MRIN
+    --proof           # Include ProofFather and ProofMother columns (Proven/Disproven/Disputed/blank)
     --mod-date (-d)   # Include LastUpdate column (ChildTable.UTCModDate)
 ] {
     if not ($env.rmdb? | default "" | path exists) {
@@ -56,6 +57,8 @@ export def "main" [
             ELSE 'Unknown'
         END as RelToMother,
         c.ChildOrder,
+        CASE c.ProofFather WHEN 1 THEN 'Proven' WHEN 2 THEN 'Disproven' WHEN 3 THEN 'Disputed' ELSE '' END AS ProofFather,
+        CASE c.ProofMother WHEN 1 THEN 'Proven' WHEN 2 THEN 'Disproven' WHEN 3 THEN 'Disputed' ELSE '' END AS ProofMother,
         COALESCE(STRFTIME(DATETIME(c.UTCModDate + 2415018.5)) || ' +0000', '') AS LastUpdateUTC
     FROM ChildTable c
     JOIN FamilyTable f ON c.FamilyID = f.FamilyID
@@ -69,5 +72,8 @@ export def "main" [
     let result = open $env.rmdb | query db $sqlquery
         | insert LastUpdate {|row| if ($row.LastUpdateUTC | is-empty) { "" } else { $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S" } }
         | reject LastUpdateUTC
-    if $mod_date { $result | startat1 } else { $result | reject LastUpdate | startat1 }
+    let cols = ([RIN Given Surname Sex MRIN FatherRIN FatherGiven FatherSurname MotherRIN MotherGiven MotherSurname RelToFather RelToMother ChildOrder]
+        | if $proof    { append [ProofFather ProofMother] } else { $in }
+        | if $mod_date { append LastUpdate } else { $in })
+    $result | select ...$cols | startat1
 }

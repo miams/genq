@@ -23,7 +23,7 @@ USING (CitationID)) --20220427 was ON c.CitationID = cl.CitationID) but no appar
 SELECT  c.LinkiD, c.CITATIONID AS CitID, c.sourceid AS SrcID, n.ownerid AS RIN, n.IsPrimary AS Uniq, n.surname COLLATE NOCASE AS Surname,
 n.suffix COLLATE NOCASE AS Sfx, n.prefix COLLATE NOCASE AS Pfx, n.given COLLATE NOCASE AS Givens, n.birthyear AS Born,
   n.deathyear AS Died, 'Personal' AS Citer, s.NAME COLLATE NOCASE AS Source, s.refnumber AS SrcREFN, s.actualtext AS SrcTxt, s.comments AS SrcComment, c.refnumber AS CitREFN,
-  QUOTE(c.actualtext) AS CitTxt, QUOTE(c.comments) AS CitComment, c.CitUTCModDate
+  COALESCE(c.actualtext, '') AS CitTxt, COALESCE(c.comments, '') AS CitComment, c.CitUTCModDate, c.Quality, NULL AS EventID
 FROM  Cit8 c
   LEFT OUTER JOIN sourcetable s ON c.sourceid=s.sourceid
   LEFT OUTER JOIN persontable p ON c.ownerid=p.personid
@@ -34,7 +34,7 @@ UNION ALL
 -- all Fact citations for Individual
 SELECT  c.LinkiD, c.CITATIONID, c.sourceid AS SrcID, n.ownerid AS RIN, n.IsPrimary, n.surname COLLATE NOCASE, n.suffix COLLATE NOCASE, n.prefix COLLATE NOCASE, n.given COLLATE NOCASE, n.birthyear,
   n.deathyear, f.NAME COLLATE NOCASE AS Citer, s.NAME COLLATE NOCASE , s.refnumber, s.actualtext, s.comments, c.refnumber,
-  c.actualtext, c.comments, c.CitUTCModDate
+  COALESCE(c.actualtext, ''), COALESCE(c.comments, ''), c.CitUTCModDate, c.Quality, e.EventID AS EventID
 FROM  Cit8 c
   LEFT OUTER JOIN sourcetable s ON c.sourceid=s.sourceid
   LEFT OUTER JOIN eventtable e ON c.ownerid=e.eventid
@@ -48,7 +48,7 @@ UNION ALL
 -- all Spouse citations for Father|Husband|Partner 1
 SELECT  c.LinkiD, c.CITATIONID, c.sourceid AS SrcID, n.ownerid AS RIN, n.IsPrimary, n.surname COLLATE NOCASE, n.suffix COLLATE NOCASE, n.prefix COLLATE NOCASE, n.given COLLATE NOCASE, n.birthyear,
   n.deathyear, 'Spouse' as 'Citer', s.NAME COLLATE NOCASE, s.refnumber, s.actualtext, s.comments, c.refnumber,
-  c.actualtext, c.comments, c.CitUTCModDate
+  COALESCE(c.actualtext, ''), COALESCE(c.comments, ''), c.CitUTCModDate, c.Quality, NULL AS EventID
 FROM  Cit8 c
   LEFT OUTER JOIN sourcetable s ON c.sourceid=s.sourceid
   LEFT OUTER JOIN familytable fm ON c.ownerid=fm.FamilyID
@@ -64,7 +64,7 @@ UNION ALL
 -- all Couple Event citations for Father|Husband|Partner 1
 SELECT  c.LinkiD, c.CITATIONID, c.sourceid AS SrcID, n.ownerid AS RIN, n.IsPrimary, n.surname, n.suffix COLLATE NOCASE, n.prefix COLLATE NOCASE, n.given COLLATE NOCASE, n.birthyear,
   n.deathyear, f.NAME COLLATE NOCASE, s.NAME COLLATE NOCASE, s.refnumber, s.actualtext, s.comments, c.refnumber,
-  c.actualtext, c.comments, c.CitUTCModDate
+  COALESCE(c.actualtext, ''), COALESCE(c.comments, ''), c.CitUTCModDate, c.Quality, e.EventID AS EventID
 FROM  Cit8 c
   LEFT OUTER JOIN sourcetable s ON c.sourceid=s.sourceid
   LEFT OUTER JOIN eventtable e ON e.eventid=c.ownerid
@@ -79,7 +79,7 @@ UNION ALL
 -- Citations for Alternate Names
 SELECT  c.LinkiD, c.CITATIONID, c.sourceid AS SrcID, n.ownerid AS RIN, NOT n.IsPrimary, n.surname, n.suffix COLLATE NOCASE, n.prefix COLLATE NOCASE, n.given COLLATE NOCASE, n.birthyear,
   n.deathyear, 'Alternate Name' AS Citer, s.NAME AS Source, s.refnumber, s.actualtext, s.comments, c.refnumber,
-  c.actualtext, c.comments, c.CitUTCModDate
+  COALESCE(c.actualtext, ''), COALESCE(c.comments, ''), c.CitUTCModDate, c.Quality, NULL AS EventID
 FROM  Cit8 c
   LEFT OUTER JOIN sourcetable s ON c.sourceid=s.sourceid
   LEFT OUTER JOIN  nametable n ON n.nameid=c.ownerid
@@ -90,7 +90,7 @@ WHERE  c.ownertype=7  AND +n.IsPrimary=0
 -- Now filter the results to get rid of duplicate citation IDs due Alt Names
 SELECT LinkID, CitID, SrcID, RIN, Uniq, Surname, Sfx, Pfx, Givens, Born,
   Died, Citer, Source, SrcREFN, SrcTxt, SrcComment, CitREFN,
-  CitTxt, CitComment, CitUTCModDate --, MM.MediaID, MM.MediaPath, MM.MediaFile, MM.Caption, MM.RefNumber
+  CitTxt, CitComment, CitUTCModDate, Quality, EventID --, MM.MediaID, MM.MediaPath, MM.MediaFile, MM.Caption, MM.RefNumber
 FROM tmpcitations t
    --LEFT JOIN  MediaLinkTable AS ML 
 	-- ON t.CITID = ML.OWNERID AND ML.OWNERTYPE = 4

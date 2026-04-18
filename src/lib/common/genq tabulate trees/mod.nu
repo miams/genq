@@ -1,13 +1,19 @@
-# Identify connected components (family trees) in the genealogy database.
-# Replicates RootsMagic's "Count Trees" report.
-# --rin mode adds Ga, Gb, CoR columns per Gramps/RootsMagic convention:
-#   Ga  = generations from anchor UP to least common ancestor
-#   Gb  = generations from LCA DOWN to the person
-#   CoR = coefficient of relationship (Wright, assuming full non-inbred pedigree)
+# Count or explore family trees in your database.
+# Without --rin: lists every distinct family tree with a people count and the
+# name of the most-connected person (the anchor). Replicates RootsMagic's
+# "Count Trees" report.
+#
+# With --rin: lists every person in the same tree as the given PersonID,
+# showing how they are related to that anchor:
+#   Ga     = generations from the anchor UP to the nearest shared ancestor
+#   Gb     = generations from that shared ancestor DOWN to the person
+#   Degree = Ga + Gb (total generational distance between anchor and person)
+#
+# Spouses connected only by marriage (no blood link) show null Ga, Gb, Degree.
 @category "genq-common"
-@search-terms "trees components connected subgraph disconnected"
+@search-terms "trees family count disconnected related relationship"
 export def "main" [
-    --rin(-r): int  # List all people in the tree containing this PersonID
+    --rin(-r): int  # List everyone in the same family tree as this PersonID, with relationship distances
 ] {
     # Validate database connectivity before proceeding
     if not ($env.rmdb? | default "" | path exists) {

@@ -5,9 +5,12 @@ use rmdate *
 @search-terms "people persons individuals names RIN"
 @example "list the first 10 people" {'genq list people | first 10'}
 @example "list people with alternate name spellings" {'genq list people --all-names | where AlternateNames != ""'}
+@example "list only living people" {'genq list people --living | where Living == "Y"'}
 export def "main" [
     --all-names (-a)  # Include alternate names as an additional column
     --mod-date (-d)   # Include LastUpdate column (PersonTable.UTCModDate)
+    --living (-l)     # Include Living column (Y=Living, N=Deceased; from PersonTable.Living)
+    --note (-n)       # Include Note column (PersonTable.Note)
 ] {
     if not ($env.rmdb? | default "" | path exists) {
         print $"(ansi red)Error:(ansi reset) Database not found or not accessible"
@@ -74,6 +77,8 @@ export def "main" [
             COALESCE(b.BirthFullDate, '') as BirthFullDate,
             COALESCE(d.DeathFullDate, '') as DeathFullDate,
             COALESCE(a.AlternateNames, '') as AlternateNames,
+            CASE WHEN p.Living = 1 THEN 'Y' ELSE 'N' END AS Living,
+            COALESCE(p.Note, '') AS Note,
             COALESCE(STRFTIME(DATETIME(p.UTCModDate + 2415018.5)) || ' +0000', '') AS LastUpdateUTC
         FROM primary_names n
         INNER JOIN PersonTable p ON n.OwnerID = p.PersonID
@@ -85,11 +90,11 @@ export def "main" [
         | upsert-rm-date DeathFullDate DeathDate
         | insert LastUpdate {|row| if ($row.LastUpdateUTC | is-empty) { "" } else { $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S" } }
         | reject LastUpdateUTC
-        if $mod_date {
-            $result | select RIN Given Surname Sex BirthDate DeathDate AlternateNames LastUpdate | startat1
-        } else {
-            $result | select RIN Given Surname Sex BirthDate DeathDate AlternateNames | startat1
-        }
+        let cols = ([RIN Given Surname Sex BirthDate DeathDate AlternateNames]
+            | if $living { append Living } else { $in }
+            | if $note { append Note } else { $in }
+            | if $mod_date { append LastUpdate } else { $in })
+        $result | select ...$cols | startat1
     } else {
         print "List of individuals."
         # COLLATE NOCASE inside CTE overrides any RMNOCASE collation stored in the DB schema
@@ -128,6 +133,8 @@ export def "main" [
             CASE WHEN p.Sex = 1 THEN 'F' ELSE 'M' END as Sex,
             COALESCE(b.BirthFullDate, '') as BirthFullDate,
             COALESCE(d.DeathFullDate, '') as DeathFullDate,
+            CASE WHEN p.Living = 1 THEN 'Y' ELSE 'N' END AS Living,
+            COALESCE(p.Note, '') AS Note,
             COALESCE(STRFTIME(DATETIME(p.UTCModDate + 2415018.5)) || ' +0000', '') AS LastUpdateUTC
         FROM primary_names n
         INNER JOIN PersonTable p ON n.OwnerID = p.PersonID
@@ -138,10 +145,10 @@ export def "main" [
         | upsert-rm-date DeathFullDate DeathDate
         | insert LastUpdate {|row| if ($row.LastUpdateUTC | is-empty) { "" } else { $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S" } }
         | reject LastUpdateUTC
-        if $mod_date {
-            $result | select RIN Given Surname Sex BirthDate DeathDate LastUpdate | startat1
-        } else {
-            $result | select RIN Given Surname Sex BirthDate DeathDate | startat1
-        }
+        let cols = ([RIN Given Surname Sex BirthDate DeathDate]
+            | if $living { append Living } else { $in }
+            | if $note { append Note } else { $in }
+            | if $mod_date { append LastUpdate } else { $in })
+        $result | select ...$cols | startat1
     }
 }
