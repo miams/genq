@@ -1,6 +1,4 @@
 # List events/facts.
-use rmdate *
-
 @category "genq-common"
 @search-terms "MRIN"
 @example "list the 10 most recent facts/events added to the database" {'genq list events | sort-by LastUpdate | last 10'}
@@ -15,6 +13,7 @@ export def "main" [
     --proof          # Include Proof column (decoded: Proven / Disproven / Disputed / blank)
     --private        # Include IsPrivate column (Y if marked private, blank otherwise)
 ] {
+    use rmdate *
     # Note: Marriage events show here, but they are reporting MRIx, not RIN.
     print "List of events/facts."
     print "Marriages list MRIN in RIN column"

@@ -1,6 +1,4 @@
 # List sources.
-use rm-template *
-
 @category "genq-common"
 @search-terms "Evidence Explained, First Reference Note, Subsequent Note, Source List Entry"
 @example 'List free-form source names, footnotes, short footnotes and bibliographies' {'genq list sources'}
@@ -9,6 +7,7 @@ export def "main" [
     --freeform (-f) # Show only free-form sources (default when no flag given)
     --all (-a)      # Show all sources including template-based ones, with rendered citation text
 ] {
+    use rm-template *
 
     if not ($env.rmdb? | default "" | path exists) {
         print $"(ansi red)Error:(ansi reset) Database not found or not accessible"

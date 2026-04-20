@@ -1,6 +1,4 @@
 # List all individuals.
-use rmdate *
-
 @category "genq-common"
 @search-terms "people persons individuals names RIN"
 @example "list the first 10 people" {'genq list people | first 10'}
