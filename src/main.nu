@@ -43,7 +43,14 @@ $env.RDMF = $config.display.date_format
 let FedCensus = [1790 1800 1810 1820 1830 1840 1850 1860 1870 1880 1900 1910 1920 1930 1940 1950]
 $env.SurnameGroup = [Iams, Iames, Iiams, Iiames, Ijams, Ijames, Imes, Eimes]
 
-def genq-actions [] { ["list", "tabulate", "config", "help"] }
+def genq-actions [] { ["list", "tabulate", "config", "version", "help"] }
+
+# Report the current GenQuery version from git tags.
+@category "genq-common"
+export def "genq version" [] {
+    let version = (try { ^git -C $env.GENQ_HOME describe --tags --always } catch { "unknown" } | str trim)
+    print $version
+}
 
 # GenQuery generates tabular reports from the RootsMagic database.
 @category "genq-common"
@@ -59,6 +66,9 @@ let $action = if ($action | is-empty) {
     } 
     
     match $action {
+    "version" => {
+        genq version
+    },
     "review-updates" => {
         print $"(ansi red)Error:(ansi reset) The 'review-updates' command has been removed from GenQuery"
         print "This command was never fully implemented and has been cleaned up."

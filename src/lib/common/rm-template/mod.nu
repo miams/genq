@@ -29,11 +29,44 @@ export def render-template [
     }
 }
 
+# Render a template format string against an already-parsed fields record.
+# Use this when you need to merge fields from multiple sources (e.g. source-level
+# fields overlaid with citation-level fields) before rendering.
+export def render-template-fields [
+    format_string: string
+    fields: record
+    --plain-text
+] {
+    if ($format_string | is-empty) { return "" }
+    let tokens = (tokenize-template $format_string)
+    let rendered = (eval-tokens $tokens $fields)
+    let cleaned = (cleanup-punct $rendered)
+    if $plain_text {
+        $cleaned | str replace --all --regex '</?(?:i|sc)>' ''
+    } else {
+        $cleaned
+    }
+}
+
+# Extract a named field from a free-form source's Fields XML blob.
+# Free-form sources store Footnote/ShortFootnote/Bibliography as named fields.
+export def extract-freeform-field [fields_xml: string, field_name: string] {
+    if ($fields_xml | is-empty) { return "" }
+    try {
+        $fields_xml | from xml
+                    | get content.0.content
+                    | where {|f| ($f | get --optional content.0.content.0.content | default "") == $field_name }
+                    | first
+                    | get --optional content.1.content.0.content
+                    | default ""
+    } catch { "" }
+}
+
 # ── Field XML parser ────────────────────────────────────────────────────────
 
 # Parse a SourceTable.Fields XML blob into a flat record {FieldName: value, ...}.
 # Handles empty values and malformed XML gracefully.
-def parse-rm-fields [xml: string] {
+export def parse-rm-fields [xml: string] {
     if ($xml | is-empty) { return {} }
     try {
         let field_nodes = ($xml | from xml | get content.0.content)

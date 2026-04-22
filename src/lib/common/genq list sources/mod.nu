@@ -74,16 +74,3 @@ export def "main" [
     }
 }
 
-# Extract a named field from a free-form source's Fields XML blob.
-# Free-form sources store Footnote/ShortFootnote/Bibliography as named fields.
-def extract-freeform-field [fields_xml: string, field_name: string] {
-    if ($fields_xml | is-empty) { return "" }
-    try {
-        $fields_xml | from xml
-                    | get content.0.content
-                    | where {|f| ($f | get --optional content.0.content.0.content | default "") == $field_name }
-                    | first
-                    | get --optional content.1.content.0.content
-                    | default ""
-    } catch { "" }
-}
