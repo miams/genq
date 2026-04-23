@@ -27,6 +27,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Inject version into config
+        run: |
+          VERSION=$(git describe --tags --always)
+          sed -i "s/^version = .*/version = \"$VERSION\"/" config/default.toml
+          echo "Injected version: $VERSION"
 
       - name: Install Nushell
         uses: hustcer/setup-nu@v3
@@ -56,6 +64,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Inject version into config
+        shell: bash
+        run: |
+          VERSION=$(git describe --tags --always)
+          sed -i "s/^version = .*/version = \"$VERSION\"/" config/default.toml
+          echo "Injected version: $VERSION"
 
       - name: Install Nushell
         uses: hustcer/setup-nu@v3

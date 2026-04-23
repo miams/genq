@@ -37,7 +37,7 @@ $env.rmdb = if ($db_path | str starts-with "./") {
     $db_path | path expand
 }
 
-$env.genq_sql = $config.paths.sql_dir  
+$env.genq_sql = ($env.GENQ_HOME | path join $config.paths.sql_dir)
 $env.RDMF = $config.display.date_format
 
 let FedCensus = [1790 1800 1810 1820 1830 1840 1850 1860 1870 1880 1900 1910 1920 1930 1940 1950]
@@ -48,11 +48,13 @@ def genq-actions [] { ["list", "tabulate", "config", "version", "help"] }
 # Report the current GenQuery version.
 @category "genq-common"
 export def "genq version" [] {
-    let version_file = ($env.GENQ_HOME | path join "VERSION")
-    let version = if ($version_file | path exists) {
-        open $version_file | str trim
+    # Config is always present on any installation (dev or DMG).
+    # Git describe is a richer fallback for dev environments (shows commits-since-tag).
+    let config_version = ($env.GENQ_CONFIG? | get --optional metadata.version | default "")
+    let version = if ($config_version | is-not-empty) {
+        $config_version
     } else {
-        try { ^git -C $env.GENQ_HOME describe --tags --always } catch { "unknown" } | str trim
+        try { ^git -C $env.GENQ_HOME describe --tags --always | str trim } catch { "unknown" }
     }
     print $version
 }

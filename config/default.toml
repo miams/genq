@@ -1,3 +1,6 @@
+[metadata]
+version = "v0.1.8"
+
 [database]
 active = "production"
 
