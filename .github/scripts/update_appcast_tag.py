@@ -65,9 +65,14 @@ with open(f"sign_update_{arch}.txt", "r") as f:
         attrs[key] = value
 
 # --- Register namespaces before any parse/write ---------------------------- #
-namespaces = {"sparkle": "http://www.andymatuschak.org/xml-namespaces/sparkle"}
+SPARKLE_NS = "http://www.andymatuschak.org/xml-namespaces/sparkle"
+namespaces = {"sparkle": SPARKLE_NS}
 for prefix, uri in namespaces.items():
     ET.register_namespace(prefix, uri)
+
+def sparkle(tag):
+    """Return Clark-notation tag for a sparkle: element, e.g. sparkle('version')."""
+    return f"{{{SPARKLE_NS}}}{tag}"
 
 # --- Load or create the existing appcast ----------------------------------- #
 appcast_file = f"appcast_{arch}.xml"
@@ -80,7 +85,7 @@ channel = et.find("channel")
 
 # Remove duplicate build entries and items without pubDate.
 for item in list(channel.findall("item")):
-    sv = item.find("sparkle:version", namespaces)
+    sv = item.find(sparkle("version"))
     if sv is not None and sv.text == build:
         channel.remove(item)
     elif item.find("pubDate") is None:
@@ -103,16 +108,16 @@ item = ET.SubElement(channel, "item")
 ET.SubElement(item, "title").text           = f"GenQuery {version_display}"
 ET.SubElement(item, "pubDate").text         = now.strftime(PUBDATE_FORMAT)
 
-sv = ET.SubElement(item, "sparkle:version")
+sv = ET.SubElement(item, sparkle("version"))
 sv.text = build
 
-svs = ET.SubElement(item, "sparkle:shortVersionString")
+svs = ET.SubElement(item, sparkle("shortVersionString"))
 svs.text = version_display
 
-msv = ET.SubElement(item, "sparkle:minimumSystemVersion")
+msv = ET.SubElement(item, sparkle("minimumSystemVersion"))
 msv.text = "13.0.0"
 
-rnl = ET.SubElement(item, "sparkle:fullReleaseNotesLink")
+rnl = ET.SubElement(item, sparkle("fullReleaseNotesLink"))
 rnl.text = f"{GH_RELEASES}/tag/{version}"
 
 desc = ET.SubElement(item, "description")
