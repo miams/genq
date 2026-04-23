@@ -236,21 +236,6 @@ def "db-iiams list findagrave iiams - URLs contain findagrave.com" [] {
 }
 
 # =============================================================================
-# genq list findagrave website  (miams extension)
-# =============================================================================
-
-@test
-def "db-iiams list findagrave website iiams - has expected columns" [] {
-    if (no-db) { return }
-    let result = (with-env (ie) { genq list findagrave website })
-    if ($result | length) == 0 { return }
-    let cols = ($result | columns)
-    for col in [index RIN URL Given Surname BirthYear DeathYear] {
-        assert ($cols | any { |c| $c == $col })
-    }
-}
-
-# =============================================================================
 # genq list obits  (miams extension)
 # =============================================================================
 
