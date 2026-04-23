@@ -45,10 +45,15 @@ $env.SurnameGroup = [Iams, Iames, Iiams, Iiames, Ijams, Ijames, Imes, Eimes]
 
 def genq-actions [] { ["list", "tabulate", "config", "version", "help"] }
 
-# Report the current GenQuery version from git tags.
+# Report the current GenQuery version.
 @category "genq-common"
 export def "genq version" [] {
-    let version = (try { ^git -C $env.GENQ_HOME describe --tags --always } catch { "unknown" } | str trim)
+    let version_file = ($env.GENQ_HOME | path join "VERSION")
+    let version = if ($version_file | path exists) {
+        open $version_file | str trim
+    } else {
+        try { ^git -C $env.GENQ_HOME describe --tags --always } catch { "unknown" } | str trim
+    }
     print $version
 }
 

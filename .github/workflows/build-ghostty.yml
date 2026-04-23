@@ -121,6 +121,7 @@ jobs:
             cp -R "$GITHUB_WORKSPACE/src/lib/ext"             "$genq_res/src/lib/"
             cp "$GITHUB_WORKSPACE/data/pres2025.rmtree"       "$genq_res/data/"
             cp "$GITHUB_WORKSPACE/scripts/genquery-start"     "$genq_res/scripts/"
+            echo "$BUILD_VERSION" > "$genq_res/VERSION"
             chmod +x "$genq_res/scripts/genquery-start"
           }
           bundle_genq /tmp/Ghostty-arm64.app                                   "$NU_ARM64"
