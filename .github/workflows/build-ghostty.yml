@@ -113,7 +113,7 @@ jobs:
             local app_path="$1"
             local nu_bin="$2"
             local genq_res="$app_path/Contents/Resources/genq"
-            mkdir -p "$genq_res/src/lib" "$genq_res/data" "$genq_res/scripts"
+            mkdir -p "$genq_res/src/lib" "$genq_res/data" "$genq_res/scripts" "$genq_res/sql"
             cp "$nu_bin" "$genq_res/nu"
             chmod +x "$genq_res/nu"
             cp "$GITHUB_WORKSPACE/src/main.nu"                "$genq_res/src/"
@@ -121,6 +121,7 @@ jobs:
             cp -R "$GITHUB_WORKSPACE/src/lib/ext"             "$genq_res/src/lib/"
             cp "$GITHUB_WORKSPACE/data/pres2025.rmtree"       "$genq_res/data/"
             cp "$GITHUB_WORKSPACE/scripts/genquery-start"     "$genq_res/scripts/"
+            cp "$GITHUB_WORKSPACE/sql/"*.sql                  "$genq_res/sql/"
             echo "$BUILD_VERSION" > "$genq_res/VERSION"
             chmod +x "$genq_res/scripts/genquery-start"
           }
@@ -393,9 +394,11 @@ jobs:
           New-Item -ItemType Directory -Force -Path "$pkgDir\src\lib" | Out-Null
           New-Item -ItemType Directory -Force -Path "$pkgDir\config"  | Out-Null
           New-Item -ItemType Directory -Force -Path "$pkgDir\scripts" | Out-Null
+          New-Item -ItemType Directory -Force -Path "$pkgDir\sql"     | Out-Null
           Copy-Item -Force          "src\main.nu"       "$pkgDir\src\"
           Copy-Item -Recurse -Force "src\lib\common"    "$pkgDir\src\lib\"
           Copy-Item -Recurse -Force "src\lib\ext"       "$pkgDir\src\lib\"
+          Copy-Item -Force          "sql\*.sql"         "$pkgDir\sql\"
           $scriptsDir = "genq-terminal-windows\genq\scripts"
           if (Test-Path $scriptsDir) {
             Copy-Item -Recurse -Force "$scriptsDir\*" "$pkgDir\scripts\"
@@ -573,9 +576,11 @@ jobs:
           New-Item -ItemType Directory -Force -Path "$pkgDir\src\lib" | Out-Null
           New-Item -ItemType Directory -Force -Path "$pkgDir\config"  | Out-Null
           New-Item -ItemType Directory -Force -Path "$pkgDir\scripts" | Out-Null
+          New-Item -ItemType Directory -Force -Path "$pkgDir\sql"     | Out-Null
           Copy-Item -Force          "src\main.nu"       "$pkgDir\src\"
           Copy-Item -Recurse -Force "src\lib\common"    "$pkgDir\src\lib\"
           Copy-Item -Recurse -Force "src\lib\ext"       "$pkgDir\src\lib\"
+          Copy-Item -Force          "sql\*.sql"         "$pkgDir\sql\"
           $scriptsDir = "genq-terminal-windows\genq\scripts"
           if (Test-Path $scriptsDir) {
             Copy-Item -Recurse -Force "$scriptsDir\*" "$pkgDir\scripts\"
