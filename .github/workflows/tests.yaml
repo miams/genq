@@ -33,7 +33,7 @@ jobs:
       - name: Inject version into config
         run: |
           VERSION=$(git describe --tags --always)
-          sed -i "s/^version = .*/version = \"$VERSION\"/" config/default.toml
+          sed -i '' "s/^version = .*/version = \"$VERSION\"/" config/default.toml
           echo "Injected version: $VERSION"
 
       - name: Install Nushell
