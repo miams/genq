@@ -21,3 +21,10 @@ data/*.rmtree-wal
 data/*.rmtree-shm
 # Allow sample Presidents database
 !data/pres2025.rmtree
+
+# Terraform state and build artifacts
+infra/**/.terraform/
+infra/**/.terraform.lock.hcl
+infra/**/terraform.tfstate
+infra/**/terraform.tfstate.backup
+infra/**/.build/

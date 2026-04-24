@@ -40,6 +40,10 @@ jobs:
 
       - name: Compute build version
         run: |
+          # Marketing version from config/default.toml (e.g. "v0.2.0")
+          GENQ_VERSION=$(grep 'version' config/default.toml | head -1 | sed 's/.*= *"//;s/".*//')
+          echo "GENQ_VERSION=$GENQ_VERSION" >> $GITHUB_ENV
+
           if [[ "${{ github.ref_type }}" == "tag" ]]; then
             echo "BUILD_VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
           else
@@ -98,6 +102,10 @@ jobs:
             # Force CFBundleName regardless of Xcode PRODUCT_NAME override
             /usr/libexec/PlistBuddy -c "Add :CFBundleName string GenQuery" "$plist" 2>/dev/null || \
               /usr/libexec/PlistBuddy -c "Set :CFBundleName GenQuery" "$plist"
+            # Version: marketing version from genq config (e.g. "v0.2.0")
+            /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $GENQ_VERSION" "$plist"
+            # Build number: commit SHA or tag
+            /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_VERSION" "$plist"
             # Sparkle feed URL (arch-specific)
             /usr/libexec/PlistBuddy -c "Add :SUFeedURL string $feed_url" "$plist" 2>/dev/null || \
               /usr/libexec/PlistBuddy -c "Set :SUFeedURL $feed_url" "$plist"
@@ -113,16 +121,17 @@ jobs:
             local app_path="$1"
             local nu_bin="$2"
             local genq_res="$app_path/Contents/Resources/genq"
-            mkdir -p "$genq_res/src/lib" "$genq_res/data" "$genq_res/scripts" "$genq_res/sql"
+            mkdir -p "$genq_res/src/lib" "$genq_res/data" "$genq_res/config" "$genq_res/scripts" "$genq_res/sql"
             cp "$nu_bin" "$genq_res/nu"
             chmod +x "$genq_res/nu"
             cp "$GITHUB_WORKSPACE/src/main.nu"                "$genq_res/src/"
             cp -R "$GITHUB_WORKSPACE/src/lib/common"          "$genq_res/src/lib/"
             cp -R "$GITHUB_WORKSPACE/src/lib/ext"             "$genq_res/src/lib/"
             cp "$GITHUB_WORKSPACE/data/pres2025.rmtree"       "$genq_res/data/"
+            cp "$GITHUB_WORKSPACE/config/default.toml"        "$genq_res/config/"
             cp "$GITHUB_WORKSPACE/scripts/genquery-start"     "$genq_res/scripts/"
             cp "$GITHUB_WORKSPACE/sql/"*.sql                  "$genq_res/sql/"
-            echo "$BUILD_VERSION" > "$genq_res/VERSION"
+            echo "$GENQ_VERSION" > "$genq_res/VERSION"
             chmod +x "$genq_res/scripts/genquery-start"
           }
           bundle_genq /tmp/Ghostty-arm64.app                                   "$NU_ARM64"

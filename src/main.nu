@@ -40,6 +40,108 @@ $env.rmdb = if ($db_path | str starts-with "./") {
 $env.genq_sql = ($env.GENQ_HOME | path join $config.paths.sql_dir)
 $env.RDMF = $config.display.date_format
 
+# Telemetry: initialize session (fire-and-forget, no-op if disabled)
+# All telemetry errors are silently caught — telemetry must never break genq.
+try {
+    telemetry-init
+} catch { }
+
+def telemetry-init [] {
+    # Check if telemetry section exists; if not, skip (first-run prompt is interactive only)
+    let enabled = ($env.GENQ_CONFIG?.telemetry?.enabled? | default false)
+    if not $enabled { return }
+
+    # Session start: collect resource attributes, generate trace_id, write initial span
+    let ver = (version)
+    let host = (sys host)
+    let trace_id = (random uuid | str replace -a '-' '')
+    let span_id = (random uuid | str replace -a '-' '' | str substring 0..16)
+    let start = (date now)
+    let start_nano = ($start | into int | into string)
+
+    # Resource attributes (static for session lifetime)
+    let resource = { attributes: [
+        { key: "service.name",            value: { stringValue: "genq" } }
+        { key: "service.version",         value: { stringValue: ($env.GENQ_CONFIG?.metadata?.version? | default "unknown") } }
+        { key: "telemetry.sdk.language",   value: { stringValue: "nushell" } }
+        { key: "host.os.type",            value: { stringValue: $ver.build_os } }
+        { key: "host.arch",               value: { stringValue: $ver.build_target } }
+        { key: "host.os.version",         value: { stringValue: ($host.os_version? | default "") } }
+        { key: "host.os.kernel_version",  value: { stringValue: ($host.kernel_version? | default "") } }
+        { key: "process.runtime.version", value: { stringValue: $ver.version } }
+        { key: "genq.terminal",           value: { stringValue: ($env.TERM_PROGRAM? | default "unknown") } }
+        { key: "genq.locale",             value: { stringValue: ($env.LANG? | default "unknown") } }
+    ] }
+
+    # Gather DB metadata (read-only PRAGMAs)
+    let db_meta = (try {
+        if ($env.rmdb? | default "" | path exists) {
+            let person_count = (open $env.rmdb | query db "SELECT COUNT(*) as c FROM PersonTable" | get 0.c)
+            let page_info = (open $env.rmdb | query db "PRAGMA page_count" | get 0.page_count)
+            let page_size = (open $env.rmdb | query db "PRAGMA page_size" | get 0.page_size)
+            let size_kb = (($page_info * $page_size) / 1024 | into int)
+            { person_count: $person_count, size_kb: $size_kb, filename: ($env.rmdb | path basename), db_name: ($env.GENQ_CONFIG?.database?.active? | default "unknown") }
+        } else {
+            { person_count: 0, size_kb: 0, filename: "", db_name: "none" }
+        }
+    } catch {
+        { person_count: 0, size_kb: 0, filename: "", db_name: "error" }
+    })
+
+    let cold_start_ms = ((date now) - $start) / 1ms | into int
+
+    let span = {
+        traceId: $trace_id
+        spanId: $span_id
+        parentSpanId: null
+        name: "genq.session"
+        kind: 1
+        startTimeUnixNano: $start_nano
+        endTimeUnixNano: $start_nano
+        attributes: [
+            { key: "genq.session.cold_start_ms",  value: { intValue: ($cold_start_ms | into string) } }
+            { key: "genq.db.name",                value: { stringValue: $db_meta.db_name } }
+            { key: "genq.db.filename",            value: { stringValue: $db_meta.filename } }
+            { key: "genq.db.person_count",        value: { intValue: ($db_meta.person_count | into string) } }
+            { key: "genq.db.size_kb",             value: { intValue: ($db_meta.size_kb | into string) } }
+            { key: "genq.config.table_mode",      value: { stringValue: ($env.GENQ_CONFIG?.display?.table_mode? | default "rounded") } }
+            { key: "genq.config.date_format",     value: { intValue: ($env.GENQ_CONFIG?.display?.date_format? | default 1 | into string) } }
+            { key: "genq.session.commands_run",   value: { intValue: "0" } }
+            { key: "genq.session.error_count",    value: { intValue: "0" } }
+        ]
+        status: { code: 1 }
+        _resource: $resource
+    }
+
+    # Store session in env for command-level instrumentation
+    $env.GENQ_TELEMETRY_SESSION = {
+        trace_id: $trace_id
+        span_id: $span_id
+        start_time: $start
+        resource: $resource
+    }
+
+    # Write initial session span to local NDJSON buffer
+    let data_home = ($env.XDG_DATA_HOME? | default ($env.HOME | path join ".local" "share"))
+    let dir = ($data_home | path join "genq" "telemetry")
+    if not ($dir | path exists) { mkdir $dir }
+    let today = (date now | format date "%Y-%m-%d")
+    let file = ($dir | path join $"($today).ndjson")
+    $span | to json --raw | $in + "\n" | save --append --raw $file
+
+    # Rotate old buffer files
+    let retention = ($env.GENQ_CONFIG?.telemetry?.retention_days? | default 30)
+    let cutoff = (date now) - ($retention | into duration --unit day)
+    let files = (glob ($dir | path join "*.ndjson"))
+    $files | each {|f|
+        let basename = ($f | path basename | str replace ".ndjson" "")
+        try {
+            let file_date = ($basename | into datetime)
+            if $file_date < $cutoff { rm $f }
+        } catch { }
+    }
+}
+
 let FedCensus = [1790 1800 1810 1820 1830 1840 1850 1860 1870 1880 1900 1910 1920 1930 1940 1950]
 $env.SurnameGroup = [Iams, Iames, Iiams, Iiames, Ijams, Ijames, Imes, Eimes]
 
@@ -48,15 +150,33 @@ def genq-actions [] { ["list", "tabulate", "config", "version", "help"] }
 # Report the current GenQuery version.
 @category "genq-common"
 export def "genq version" [] {
-    # Config is always present on any installation (dev or DMG).
-    # Git describe is a richer fallback for dev environments (shows commits-since-tag).
+    # 1. Config metadata.version (set by genquery-start from bundle VERSION file)
     let config_version = ($env.GENQ_CONFIG? | get --optional metadata.version | default "")
-    let version = if ($config_version | is-not-empty) {
-        $config_version
-    } else {
-        try { ^git -C $env.GENQ_HOME describe --tags --always | str trim } catch { "unknown" }
+    if ($config_version | is-not-empty) {
+        print $config_version
+        return
     }
-    print $version
+
+    # 2. VERSION file in GENQ_HOME (written by CI into app bundle)
+    let version_file = ($env.GENQ_HOME | path join "VERSION")
+    if ($version_file | path exists) {
+        let file_version = (open $version_file | str trim)
+        if ($file_version | is-not-empty) {
+            print $file_version
+            return
+        }
+    }
+
+    # 3. Git describe (dev environments only — no git on end-user machines)
+    let git_version = (try {
+        ^git -C $env.GENQ_HOME describe --tags --always 2>/dev/null | str trim
+    } catch { "" })
+    if ($git_version | is-not-empty) {
+        print $git_version
+        return
+    }
+
+    print "unknown"
 }
 
 # GenQuery generates tabular reports from the RootsMagic database.

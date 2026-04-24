@@ -71,3 +71,45 @@ SELECT
     duration_ms
 FROM test_runs
 ORDER BY run_at DESC;
+
+-- ============================================================
+-- Usage Telemetry Tables (genq user sessions + commands)
+-- ============================================================
+
+-- One row per genq user session
+CREATE TABLE IF NOT EXISTS usage_sessions (
+    trace_id            TEXT PRIMARY KEY,  -- 128-bit hex, random per session
+    genq_version        TEXT NOT NULL,
+    nu_version          TEXT NOT NULL,
+    platform            TEXT NOT NULL,     -- "macos-aarch64" | "linux-x86_64" | "windows-x86_64"
+    os_version          TEXT,
+    terminal            TEXT,              -- "genquery-terminal" | "iTerm2" | etc.
+    db_name             TEXT,              -- "production" | "demo" | null
+    db_filename         TEXT,              -- filename only, no path
+    db_person_count     INTEGER,
+    db_size_kb          INTEGER,
+    db_last_modified    INTEGER,           -- epoch int
+    cold_start_ms       INTEGER,
+    session_at          INTEGER NOT NULL,  -- unix epoch ms
+    duration_ms         INTEGER,
+    commands_run        INTEGER,
+    error_count         INTEGER,
+    locale              TEXT,
+    table_mode          TEXT,
+    date_format         INTEGER,
+    extensions          TEXT               -- JSON array: '["miams","pres2025"]'
+);
+
+-- One row per command invocation
+CREATE TABLE IF NOT EXISTS usage_commands (
+    span_id             TEXT PRIMARY KEY,  -- 64-bit hex, random per command
+    trace_id            TEXT NOT NULL REFERENCES usage_sessions(trace_id),
+    command             TEXT NOT NULL,     -- top-level: "list" | "tabulate" | "config" | etc.
+    subcommand          TEXT NOT NULL,     -- full: "list people" | "tabulate trees" | etc.
+    db_name             TEXT,
+    result_rows         INTEGER,
+    duration_ms         INTEGER NOT NULL,
+    status              TEXT NOT NULL,     -- "ok" | "error"
+    error_class         TEXT,              -- controlled vocab; null if status="ok"
+    commanded_at        INTEGER NOT NULL   -- unix epoch ms
+);

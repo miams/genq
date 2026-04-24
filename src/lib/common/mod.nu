@@ -25,6 +25,7 @@ export module 'genq list witnesses'
 export module 'genq md people'
 export module 'genq config'
 export module 'genq tabulate trees'
+export module 'genq telemetry'
 
 # Path utilities
 export module 'paths.nu'
