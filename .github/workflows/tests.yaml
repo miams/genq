@@ -31,9 +31,11 @@ jobs:
           fetch-depth: 0
 
       - name: Inject version into config
+        shell: bash
         run: |
           VERSION=$(git describe --tags --always)
-          sed -i '' "s/^version = .*/version = \"$VERSION\"/" config/default.toml
+          sed -i.bak "s/^version = .*/version = \"$VERSION\"/" config/default.toml
+          rm -f config/default.toml.bak
           echo "Injected version: $VERSION"
 
       - name: Install Nushell
@@ -71,7 +73,8 @@ jobs:
         shell: bash
         run: |
           VERSION=$(git describe --tags --always)
-          sed -i "s/^version = .*/version = \"$VERSION\"/" config/default.toml
+          sed -i.bak "s/^version = .*/version = \"$VERSION\"/" config/default.toml
+          rm -f config/default.toml.bak
           echo "Injected version: $VERSION"
 
       - name: Install Nushell
