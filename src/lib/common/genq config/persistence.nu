@@ -64,6 +64,26 @@ export def save-config [
     }
 }
 
+# Switch the active database connection by name
+@category "genq-common"
+export def switch-active-db [
+    config_path: string    # Path to config file
+    connection: string     # Connection name to activate
+] {
+    try {
+        let config = (load-config $config_path)
+        let connections = ($config.database.connections | columns)
+        if not ($connection in $connections) {
+            error make {msg: $"Unknown connection '($connection)'. Available: ($connections | str join ', ')"}
+        }
+        let updated = ($config | upsert database.active $connection)
+        $updated | to toml | save --force $config_path
+        $updated
+    } catch { |error|
+        error make {msg: $"Failed to switch database: ($error.msg)"}
+    }
+}
+
 # Check if configuration file exists and is readable
 @category "genq-common"
 export def config-exists [

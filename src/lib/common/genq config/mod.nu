@@ -63,16 +63,37 @@ def genq-config-impl [
             # Handle invalid subcommands with helpful error message
             print $"(ansi red)Error:(ansi reset) Unknown config command '($subcommand)'"
             print "Valid commands:"
-            print "  genq config      - Interactive setup wizard"
-            print "  genq config list - Show current settings"
+            print "  genq config          - Interactive setup wizard"
+            print "  genq config list     - Show current settings"
+            print "  genq config db <name> - Switch active database (e.g. demo, production)"
         }
     }
 }
 
 # Show current GenQuery configuration settings.
-@category "genq-common" 
+@category "genq-common"
 export def list [] {
     genq-config-impl list
+}
+
+# Switch the active database connection (e.g. demo or production).
+@category "genq-common"
+export def db [
+    connection: string   # Connection name defined in config (e.g. demo, production)
+] {
+    let genq_home = ($env.GENQ_HOME? | default $env.PWD)
+    let config_path = ($genq_home | path join "config" "default.toml")
+    let cfg = (open $config_path)
+    let connections = ($cfg.database.connections | columns)
+    if not ($connection in $connections) {
+        print $"(ansi red)Error:(ansi reset) Unknown connection '($connection)'. Available: ($connections | str join ', ')"
+        return
+    }
+    let updated = ($cfg | upsert database.active $connection)
+    $updated | to toml | save --force $config_path
+    let db_file = ($updated.database.connections | get $connection)
+    print $"(ansi green)✓ Switched to '($connection)' \(($db_file)\)(ansi reset)"
+    print $"(ansi yellow)Note: restart your shell session or re-source main.nu for the change to take effect.(ansi reset)"
 }
 
 # Interactive configuration wizard for GenQuery settings.
