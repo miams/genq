@@ -210,7 +210,6 @@ export def test-paths [] {
 ### Fixed Modules
 - **`genq list media`**: Replaced platform-specific string concatenation with unified `path join` approach
 - **`genq list citations`**: Fixed SQL script path construction using `path join`
-- **`genq md people`**: Fixed output path construction using `path join`
 
 ### Enhanced `paths.nu` Module
 - Simplified `resolve-path` to use `path expand` instead of manual processing

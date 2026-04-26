@@ -589,7 +589,6 @@ These commands don't map to a single RM table but add significant reporting capa
 |---------|-------------|----------------|
 | `genq tabulate trees` | Count distinct family trees; list all members of a tree with generational distance from anchor | PersonTable, ChildTable, FamilyTable (via union-find) |
 | `genq distance-from` | Pipe filter: adds Haversine `Distance` column to any table with Latitude/Longitude columns | PlaceTable (indirectly) |
-| `genq md people` | Export Obsidian-compatible markdown files with YAML frontmatter for persons | PersonTable, EventTable, NameTable, ChildTable |
 
 ---
 

@@ -68,21 +68,6 @@ One `open $env.rmdb | query db $sql` call, zero writes.
 
 ---
 
-## 6. `genq md people` — Add Bulk/Batch Export Capability
-
-**Files:** `src/lib/common/genq md people/mod.nu`
-
-**Problem:** The command exports exactly one person's markdown file per invocation. The `--gens` flag only follows ancestors/descendants of that one person. For a genealogy tool, the primary use case is exporting a surname group, all ancestors of a starting person, or the entire database to Obsidian.
-
-**Fix:** Add flags and argument modes:
-- `genq md people --surname Iams` — export all people with that surname
-- `genq md people --all` — export everyone in the database
-- `genq md people 1575 --gens 3` already works for one person; extend to generate files for all people encountered during the traversal, not just the focal person.
-
-Also: the WikiLink format is inconsistent — `[[$fname|Given Surname]]` in one place vs `[[Person - Given Surname (RINxxx)]]` in another. This should be standardized.
-
----
-
 ## 7. `genq list media` — Fix Literal Quotes Embedded in `fullpath` Values
 
 **Files:** `src/lib/common/genq list media/mod.nu:22`

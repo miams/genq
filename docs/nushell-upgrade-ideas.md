@@ -33,11 +33,6 @@ genq's SQL chains use the old `let result = (open $env.rmdb | query db "...")` p
 Before: `let result = (open $env.rmdb | query db $sql)`
 After: `open $env.rmdb | query db $sql | let result`
 
-### 5. `to md` with Proper Markdown Escaping (v0.108)
-**Impact: Medium-High**
-
-genq has a dedicated `genq md people` module. Genealogy data is full of special characters — apostrophes in surnames (O'Brien), brackets, pipes in source citations — that break raw markdown tables. The new `--escape-md` and `--escape-html` flags would make that output reliable without manual escaping.
-
 ### 6. `join --prefix` / `--suffix` for Overlapping Column Names (v0.111)
 **Impact: Medium**
 

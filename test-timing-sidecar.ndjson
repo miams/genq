@@ -1,5 +1,0 @@
-{"type":"test_timing","test":"db-iiams tabulate trees - returns records","duration_ms":823}
-{"type":"test_timing","test":"db-iiams tabulate trees --rin 1 - returns 10570 rows","duration_ms":981}
-{"type":"test_timing","test":"db-iiams census year 1910 iiams - returns records","duration_ms":15}
-{"type":"test_timing","test":"db-iiams list people iiams - returns records","duration_ms":861}
-{"type":"test_timing","test":"db-iiams tabulate sources labels iiams - returns records","duration_ms":156}
