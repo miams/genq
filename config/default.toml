@@ -37,8 +37,6 @@ backup_before_sync = true
 verify_after_sync = true
 
 [telemetry]
-enabled = true
 auto_send = false
-endpoint_mode = "otlp"
 endpoint_url = "https://n53fa2v117.execute-api.us-east-1.amazonaws.com"
 retention_days = 30

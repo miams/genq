@@ -2,34 +2,7 @@
 
 Comprehensive test cases for the telemetry system. Tests are organized by module and labeled per the project convention (`fast` for no-DB, `db-pres2025`/`db-iiams` for DB-dependent).
 
----
-
-## 1. Consent Module (`consent.nu`)
-
-### 1.1 `is-enabled` — default state
-
-| # | Test | Steps | Expected Result |
-|---|------|-------|-----------------|
-| 1.1.1 | Returns false when telemetry section missing | Set `$env.GENQ_CONFIG` to `{}` (no telemetry key). Call `is-enabled`. | Returns `false` |
-| 1.1.2 | Returns false when explicitly disabled | Set `$env.GENQ_CONFIG.telemetry.enabled = false`. Call `is-enabled`. | Returns `false` |
-| 1.1.3 | Returns true when enabled | Set `$env.GENQ_CONFIG.telemetry.enabled = true`. Call `is-enabled`. | Returns `true` |
-| 1.1.4 | Returns false when telemetry key is null | Set `$env.GENQ_CONFIG.telemetry = null`. Call `is-enabled`. | Returns `false` |
-
-### 1.2 `set-enabled` — config persistence
-
-| # | Test | Steps | Expected Result |
-|---|------|-------|-----------------|
-| 1.2.1 | Enables telemetry in config file | Create temp config with `enabled = false`. Call `set-enabled true`. Re-read file. | File has `enabled = true`; `$env.GENQ_CONFIG.telemetry.enabled` is `true` |
-| 1.2.2 | Disables telemetry in config file | Create temp config with `enabled = true`. Call `set-enabled false`. Re-read file. | File has `enabled = false`; `$env.GENQ_CONFIG.telemetry.enabled` is `false` |
-| 1.2.3 | Handles missing config file | Set `$env.GENQ_HOME` to nonexistent path. Call `set-enabled true`. | Prints error message; no crash |
-| 1.2.4 | Preserves other config sections | Create temp config with `[database]`, `[display]`, `[telemetry]`. Call `set-enabled true`. | All non-telemetry sections unchanged |
-
-### 1.3 `first-run-check` — first-run behavior
-
-| # | Test | Steps | Expected Result |
-|---|------|-------|-----------------|
-| 1.3.1 | No-op when telemetry section exists | Set `$env.GENQ_CONFIG.telemetry.enabled = false`. Call `first-run-check`. | Returns immediately; no prompt; no config change |
-| 1.3.2 | Defaults to disabled in non-interactive mode | Remove `TERM_PROGRAM` from env. Remove telemetry from config. Call `first-run-check`. | `is-enabled` returns `false`; config updated silently |
+Telemetry is mandatory and always-on; there is no consent module and no enable/disable subcommands.
 
 ---
 
@@ -147,6 +120,17 @@ Comprehensive test cases for the telemetry system. Tests are organized by module
 | 3.4.9 | result_rows defaults to 0 | Record command without specifying result_rows. | `genq.result_rows` intValue is `"0"` |
 | 3.4.10 | spanId is unique per command | Record two commands. Read both spans. | Two different `spanId` values |
 
+### 3.5 `record-session-end` — session-end summary span
+
+| # | Test | Steps | Expected Result |
+|---|------|-------|-----------------|
+| 3.5.1 | Writes span with name "genq.session.end" | Create session, sleep 50ms, call `record-session-end`. Read buffer. | Last span has `name == "genq.session.end"` |
+| 3.5.2 | parentSpanId links to session.span_id | Call `record-session-end`. | Span's `parentSpanId == session.span_id` |
+| 3.5.3 | Duration is non-negative | Sleep 100ms between session creation and end. | `genq.session.duration_ms` intValue is >= 100 |
+| 3.5.4 | commands_run reflects session field | Set `session.commands_run = 5`. Call `record-session-end`. | `genq.session.commands_run` intValue is `"5"` |
+| 3.5.5 | Defaults missing counters to 0 | Pass session record without `commands_run` / `error_count` keys. | Both attributes have intValue `"0"` |
+| 3.5.6 | Multiple emits produce distinct spanIds | Call `record-session-end` twice. Read buffer. | Two distinct end spans with different `spanId` values |
+
 ---
 
 ## 4. Transport Module (`transport.nu`)
@@ -169,13 +153,17 @@ Comprehensive test cases for the telemetry system. Tests are organized by module
 | 4.2.3 | Clears buffer on success | Buffer has spans. Send to a reachable endpoint (or mock). | Buffer is empty after success |
 | 4.2.4 | Preserves buffer on failure | Buffer has spans. Send to unreachable endpoint. | Buffer still has spans; error message printed |
 
-### 4.3 `send-turso` — Turso upload
+### 4.3 `record-upload` + history (`history.nu`)
 
 | # | Test | Steps | Expected Result |
 |---|------|-------|-----------------|
-| 4.3.1 | Prints notice when env vars missing | Unset `TURSO_DB_URL` and `TURSO_AUTH_TOKEN`. Call `send-turso`. | Prints notice about missing env vars |
-| 4.3.2 | Prints notice on empty buffer | Set env vars. Clear buffer. Call `send-turso`. | Prints "No buffered telemetry data to send." |
-| 4.3.3 | Separates sessions from commands | Buffer 1 session span + 2 command spans. Call `send-turso`. | Prints "Sending 1 sessions + 2 commands to Turso..." |
+| 4.3.1 | Records success entry | Call `record-upload "https://x" 5 1024 "success" ""`. Call `read-history`. | One entry with status `success`, span_count 5, bytes 1024 |
+| 4.3.2 | Records deferred entry | Call `record-upload "https://x" 5 0 "deferred" "could not resolve"`. | One entry with status `deferred` and the error message preserved |
+| 4.3.3 | Appends across multiple calls | Call `record-upload` 3 times. Call `read-history`. | Returns 3 entries |
+| 4.3.4 | Files in `uploads/` subdirectory | Call `record-upload`. | File exists at `<buffer-dir>/uploads/YYYY-MM-DD.ndjson`; main buffer dir glob does NOT pick it up |
+| 4.3.5 | `classify-error` detects offline signals | Call with each of: `"Could not resolve"`, `"connection refused"`, `"network is unreachable"`, `"operation timed out"`. | All return `"deferred"` |
+| 4.3.6 | `classify-error` falls through to failed | Call with `"HTTP 500 internal error"`. | Returns `"failed"` |
+| 4.3.7 | `rotate-history` deletes old files | Create `uploads/` file dated 60 days ago. Call `rotate-history 30`. | Old file deleted; recent files remain |
 
 ---
 
@@ -185,25 +173,17 @@ Comprehensive test cases for the telemetry system. Tests are organized by module
 
 | # | Test | Steps | Expected Result |
 |---|------|-------|-----------------|
-| 5.1.1 | Prints help text | Run `genq telemetry`. | Output contains "Commands:" and lists status, enable, disable, send, clear, view |
+| 5.1.1 | Prints help text | Run `genq telemetry`. | Output contains "Commands:" and lists status, send, clear, view, history. Does NOT mention enable/disable. |
 
 ### 5.2 `genq telemetry status`
 
 | # | Test | Steps | Expected Result |
 |---|------|-------|-----------------|
-| 5.2.1 | Shows disabled state | With telemetry disabled. Run `genq telemetry status`. | Output contains "Enabled:" followed by "no" |
-| 5.2.2 | Shows enabled state | Enable telemetry. Run `genq telemetry status`. | Output contains "Enabled:" followed by "yes" |
-| 5.2.3 | Shows endpoint mode | Run `genq telemetry status`. | Output contains "Endpoint mode:" followed by "otlp" or "turso" |
-| 5.2.4 | Shows buffer stats | Buffer some spans. Run `genq telemetry status`. | Output shows `Files:`, `Total size:`, `Spans:` with nonzero values |
-| 5.2.5 | Shows date range when data exists | Buffer spans. Run `genq telemetry status`. | Output contains "Date range:" with today's date |
-
-### 5.3 `genq telemetry enable` / `disable`
-
-| # | Test | Steps | Expected Result |
-|---|------|-------|-----------------|
-| 5.3.1 | Enable sets config to true | Run `genq telemetry enable`. Check config file. | `telemetry.enabled = true` in config; prints "Telemetry enabled." |
-| 5.3.2 | Disable sets config to false | Run `genq telemetry disable`. Check config file. | `telemetry.enabled = false` in config |
-| 5.3.3 | Disable clears buffer | Buffer spans. Run `genq telemetry disable`. | Buffer directory has 0 NDJSON files |
+| 5.2.1 | Shows endpoint URL | Run `genq telemetry status`. | Output contains "Endpoint URL:" with configured value |
+| 5.2.2 | Shows retention | Run `genq telemetry status`. | Output contains "Retention:" followed by "30 days" |
+| 5.2.3 | Shows buffer stats | Buffer some spans. Run `genq telemetry status`. | Output shows `Files:`, `Total size:`, `Spans:` with nonzero values |
+| 5.2.4 | Shows date range when data exists | Buffer spans. Run `genq telemetry status`. | Output contains "Date range:" with today's date |
+| 5.2.5 | No "Enabled:" line | Run `genq telemetry status`. | Output does NOT contain "Enabled:" — telemetry is mandatory |
 
 ### 5.4 `genq telemetry view`
 
@@ -213,14 +193,15 @@ Comprehensive test cases for the telemetry system. Tests are organized by module
 | 5.4.2 | Shows session details | Buffer a session span. Run `genq telemetry view`. | Output contains "Session:", trace ID prefix, DB name, cold start ms |
 | 5.4.3 | Shows command details | Buffer a command span. Run `genq telemetry view`. | Output contains the command name, duration, and status (ok/err) |
 | 5.4.4 | Shows counts | Buffer 2 sessions + 3 commands. Run `genq telemetry view`. | Header shows "2 session(s), 3 command(s)" |
+| 5.4.5 | Uses latest session.end summary | Buffer session + 2 session.end spans for the same trace. Run `genq telemetry view`. | Duration / Commands / Errors reflect the LATEST session.end |
 
 ### 5.5 `genq telemetry send`
 
 | # | Test | Steps | Expected Result |
 |---|------|-------|-----------------|
-| 5.5.1 | Refuses when disabled | Disable telemetry. Run `genq telemetry send`. | Prints "Telemetry is disabled. Enable it first..." |
-| 5.5.2 | Error on missing OTLP endpoint | Enable telemetry. Set `endpoint_url = ""`. Run `genq telemetry send`. | Prints "No endpoint URL configured." |
-| 5.5.3 | Error on unknown endpoint_mode | Set `endpoint_mode = "invalid"`. Run `genq telemetry send`. | Prints "Unknown endpoint_mode: invalid" |
+| 5.5.1 | Error on missing OTLP endpoint | Set `endpoint_url = ""`. Run `genq telemetry send`. | Prints "No endpoint URL configured." |
+| 5.5.2 | Records success in upload history | Send to reachable mock endpoint. Run `genq telemetry history`. | History shows one entry with `Status: success` |
+| 5.5.3 | Records deferred when offline | Send to unresolvable host (e.g. `endpoint_url = "https://does-not-exist.invalid"`). | History shows entry with `Status: deferred`; buffer preserved |
 
 ### 5.6 `genq telemetry clear`
 
@@ -229,32 +210,46 @@ Comprehensive test cases for the telemetry system. Tests are organized by module
 | 5.6.1 | Clears all files | Buffer 5 spans. Run `genq telemetry clear`. | `buffer-stats` shows `files: 0, span_count: 0` |
 | 5.6.2 | Prints confirmation | Run `genq telemetry clear`. | Prints "Local telemetry buffer cleared." |
 
+### 5.7 `genq telemetry history`
+
+| # | Test | Steps | Expected Result |
+|---|------|-------|-----------------|
+| 5.7.1 | Empty history message | Clear uploads/ subdir. Run `genq telemetry history`. | Prints "No upload history yet." |
+| 5.7.2 | Shows columns | Append a record. Run `genq telemetry history`. | Output table has columns: When, KB, Spans, Status |
+| 5.7.3 | Sorts newest first | Record three uploads in sequence. Run `genq telemetry history`. | First row is the most recent timestamp |
+| 5.7.4 | KB rounded to 1 decimal | Append entry with `bytes = 4521`. Run `genq telemetry history`. | KB column shows `4.4` |
+| 5.7.5 | Status reflects classification | Append entries with status `success`/`deferred`/`failed`. Run `genq telemetry history`. | Each row shows the corresponding status string |
+
 ---
 
 ## 6. Session Init (`main.nu` — `telemetry-init`)
 
-### 6.1 Telemetry disabled
+### 6.1 Always-on initialization
 
 | # | Test | Steps | Expected Result |
 |---|------|-------|-----------------|
-| 6.1.1 | No-op when disabled | Set `telemetry.enabled = false`. Load main.nu. | No NDJSON file created; `$env.GENQ_TELEMETRY_SESSION` not set |
+| 6.1.1 | Creates session span on load | Load main.nu. | NDJSON file created with 1 span; `name == "genq.session"` |
+| 6.1.2 | Sets GENQ_TELEMETRY_SESSION env | Load main.nu. | `$env.GENQ_TELEMETRY_SESSION` contains `trace_id`, `span_id`, `start_time`, `start_time_unix_nano`, `commands_run`, `error_count`, `resource` |
+| 6.1.3 | Initializes counters at 0 | Load main.nu. | `$env.GENQ_TELEMETRY_SESSION.commands_run == 0` and `error_count == 0` |
+| 6.1.4 | cold_start_ms is reasonable | Load main.nu. Read session span. | `genq.session.cold_start_ms` is between 0 and 5000 |
+| 6.1.5 | DB metadata populated | Load main.nu with valid `$env.rmdb`. Read span. | `genq.db.person_count > 0` |
+| 6.1.6 | Rotates old buffer files | Create a file dated 60 days ago. Load main.nu with retention_days=30. | Old file deleted; today's file exists |
+| 6.1.7 | Rotates old upload-history files | Create `uploads/` file dated 60 days ago. Load main.nu. | Old upload-history file deleted; today's preserved |
 
-### 6.2 Telemetry enabled
+### 6.2 Hook installation
 
 | # | Test | Steps | Expected Result |
 |---|------|-------|-----------------|
-| 6.2.1 | Creates session span on load | Set `telemetry.enabled = true`. Load main.nu. | NDJSON file created with 1 span; `name == "genq.session"` |
-| 6.2.2 | Sets GENQ_TELEMETRY_SESSION env | Load main.nu with telemetry enabled. | `$env.GENQ_TELEMETRY_SESSION` contains `trace_id`, `span_id`, `start_time`, `resource` |
-| 6.2.3 | cold_start_ms is reasonable | Load main.nu. Read session span. | `genq.session.cold_start_ms` is between 0 and 5000 |
-| 6.2.4 | DB metadata populated | Load main.nu with valid `$env.rmdb`. Read span. | `genq.db.person_count > 0` |
-| 6.2.5 | Rotates old buffer files | Create a file dated 60 days ago. Load main.nu with retention_days=30. | Old file deleted; today's file exists |
+| 6.2.1 | Appends to existing pre_execution hooks | Set `$env.config.hooks.pre_execution = [{|| print "user"}]`. Load main.nu. | Hook list now has 2 entries (user's + telemetry's) |
+| 6.2.2 | Appends to existing pre_prompt hooks | Set `$env.config.hooks.pre_prompt = [{|| print "user"}]`. Load main.nu. | Hook list now has 2 entries |
+| 6.2.3 | Preserves display_output hook | Load main.nu. Inspect `$env.config.hooks.display_output`. | display_output hook unchanged from main.nu's table-numbering closure |
 
 ### 6.3 Error resilience
 
 | # | Test | Steps | Expected Result |
 |---|------|-------|-----------------|
 | 6.3.1 | Telemetry failure never breaks genq | Corrupt the buffer directory (e.g., set to a file instead of dir). Load main.nu. | genq loads successfully; try/catch absorbs error |
-| 6.3.2 | DB unavailable doesn't block init | Set `$env.rmdb` to nonexistent file. Load main.nu with telemetry enabled. | Session span written with `person_count: 0`, `db_name: "none"` |
+| 6.3.2 | DB unavailable doesn't block init | Set `$env.rmdb` to nonexistent file. Load main.nu. | Session span written with `person_count: 0`, `db_name: "none"` |
 
 ---
 
@@ -343,16 +338,53 @@ Comprehensive test cases for the telemetry system. Tests are organized by module
 
 ---
 
+## 11. Hooks + Subcommand Parser (`mod.nu` / `main.nu`)
+
+### 11.1 `parse-genq-subcommand` — privacy-safe parsing
+
+| # | Test | Steps | Expected Result |
+|---|------|-------|-----------------|
+| 11.1.1 | Returns null for non-genq command | Call with `"ls -la"`. | Returns `null` |
+| 11.1.2 | Parses simple genq command | Call with `"genq list people"`. | Returns `{ command: "list", subcommand: "list people" }` |
+| 11.1.3 | Strips flags | Call with `"genq list people --rin 1234"`. | Returns `{ command: "list", subcommand: "list people" }` (no `--rin`, no `1234`) |
+| 11.1.4 | Strips RINs and arg values | Call with `"genq census rin 1575"`. | Returns `{ command: "census", subcommand: "census rin" }` (no `1575`) |
+| 11.1.5 | Stops at pipe | Call with `"genq list people \| first 5"`. | Returns `{ command: "list", subcommand: "list people" }` |
+| 11.1.6 | Caps at 3 alphabetic tokens | Call with `"genq one two three four five"`. | Subcommand has at most 3 words after `"genq"` (i.e., `"one two three"`) |
+| 11.1.7 | Returns null when only "genq" present | Call with `"genq"`. | Returns `null` (no subcommand to record) |
+| 11.1.8 | Lowercases command tokens | Call with `"genq LIST people"`. | Subcommand contains `"list people"` (lowercased) |
+
+### 11.2 `record-from-hook` — hook entry point
+
+| # | Test | Steps | Expected Result |
+|---|------|-------|-----------------|
+| 11.2.1 | No-op when session env unset | Unset `$env.GENQ_TELEMETRY_SESSION`. Call `record-from-hook`. | No buffer write; no error |
+| 11.2.2 | Skips non-genq commandlines | Set session. Call `record-from-hook ... "ls -la"`. | No command span written; counters unchanged |
+| 11.2.3 | Records command span for genq | Set session. Call `record-from-hook` with `"genq list people"`. | Buffer has a command span with `name == "genq list people"` |
+| 11.2.4 | Increments commands_run | Set session with `commands_run = 0`. Call `record-from-hook` once. | `$env.GENQ_TELEMETRY_SESSION.commands_run == 1` |
+| 11.2.5 | Emits session.end after each command | Call `record-from-hook` once. Read buffer. | One `genq.session.end` span exists for this trace |
+| 11.2.6 | Multiple calls accumulate counters | Call `record-from-hook` 3 times. | `commands_run == 3`; 3 command spans + 3 session.end spans buffered |
+
+### 11.3 Hook integration with main.nu
+
+| # | Test | Steps | Expected Result |
+|---|------|-------|-----------------|
+| 11.3.1 | pre_execution captures pending state | Load main.nu. Manually invoke `$env.config.hooks.pre_execution.0` (the appended one). Inspect `$env.GENQ_TELEMETRY_PENDING`. | `pending.commandline` and `pending.start_time` are set |
+| 11.3.2 | pre_prompt clears pending state | After 11.3.1, manually invoke the appended pre_prompt closure. | `$env.GENQ_TELEMETRY_PENDING == null` |
+| 11.3.3 | Existing user pre_execution preserved | Set `$env.config.hooks.pre_execution = [{|| print "user-1"}]`. Source main.nu. | Hook list has 2 entries; first is user's, second is telemetry's |
+| 11.3.4 | Existing user pre_prompt preserved | Same pattern as 11.3.3 for pre_prompt. | Both closures present, in append order |
+
+---
+
 ## 10. End-to-End Integration
 
 | # | Test | Steps | Expected Result |
 |---|------|-------|-----------------|
-| 10.1 | Full cycle: enable, use, view, send | `genq telemetry enable` -> run `genq list people \| first 5` -> `genq telemetry view` -> `genq telemetry send` | Session span appears in view; send succeeds; buffer cleared; data in S3 |
+| 10.1 | Full cycle: use, view, send | Launch genq -> run `genq list people \| first 5` -> `genq telemetry view` -> `genq telemetry send` | Session span appears in view; send succeeds; buffer cleared; data in S3 |
 | 10.2 | Data appears in Grafana Tempo | After 10.1, query Grafana Explore with Tempo: `{ resource.service.name = "genq" }` | Trace visible with `genq.session` root span |
-| 10.3 | Multiple sessions aggregate | Enable telemetry. Launch genq 3 times. Run `genq telemetry view`. | Shows 3 session spans |
-| 10.4 | Disable clears everything | After 10.3, run `genq telemetry disable`. Check buffer and config. | Buffer empty; config has `enabled = false` |
-| 10.5 | Cold start includes telemetry overhead | Enable telemetry. Time genq startup. Disable telemetry. Time again. | Difference is < 500ms (telemetry adds minimal overhead) |
-| 10.6 | Telemetry survives app bundle update | Install v0.2.0 DMG. Enable telemetry. Install v0.3.0 DMG. Launch. | Telemetry still enabled; version updated to v0.3.0; buffer preserved |
+| 10.3 | Multiple sessions aggregate | Launch genq 3 times. Run `genq telemetry view`. | Shows 3 session spans |
+| 10.4 | Clear deletes local buffer | After 10.3, run `genq telemetry clear`. Check buffer dir. | NDJSON files removed; uploads/ history preserved |
+| 10.5 | Cold start telemetry overhead is minimal | Time genq cold start with main.nu. | telemetry-init adds < 500ms to startup |
+| 10.6 | Telemetry survives app bundle update | Install v0.2.0 DMG. Run a session. Install v0.3.0 DMG. Launch. | Buffer preserved; new session uses updated `service.version` |
 
 ---
 
@@ -367,11 +399,10 @@ nu --env-config ~/.config/nushell/env.nu tests/run-tests.nu --db pres2025
 
 # Manual end-to-end test
 nu --env-config ~/.config/nushell/env.nu src/main.nu
-genq telemetry enable
 genq telemetry status
 genq telemetry view
 genq telemetry send
-genq telemetry disable
+genq telemetry history
 
 # Verify S3 storage
 aws s3 ls s3://genq-telemetry-20260424200504803600000001/traces/ --recursive

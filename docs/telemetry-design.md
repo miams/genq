@@ -39,10 +39,15 @@ Telemetry is **purely technical and diagnostic**. It is explicitly not for marke
 | No PII | No names, paths (contain usernames), hostnames, or machine IDs |
 | No cross-session identity | `session_id` is random per session, never persisted to disk |
 | Data minimization | Each field is justified by one of the four questions above |
-| Opt-in | No data collected or transmitted before explicit user consent |
-| Transparent | `genq telemetry status` shows the exact payload that would be sent |
-| Revocable | `genq telemetry disable` stops all collection permanently |
+| Local first | Spans buffer to disk; transmission is a separate, observable step |
+| Bounded retention | Local buffer files older than 30 days are deleted automatically |
+| Transparent | `genq telemetry view` prints the exact buffered payload; `genq telemetry history` shows every upload attempt |
 | Apple-compliant | `PrivacyInfo.xcprivacy` declared in genq-terminal app bundle |
+
+Telemetry is **mandatory and always-on** for every GenQuery session. There is no
+opt-in/opt-out switch — privacy is enforced by what is *not* collected (no PII,
+no command arguments, no path content) rather than by user permission gating.
+This is consistent with diagnostic telemetry in similar developer CLIs.
 
 ### Fields explicitly excluded
 
@@ -76,7 +81,6 @@ This gives us:
 - Free parent/child relationship between session and commands
 - Standard attribute semantics (OTel semantic conventions where applicable)
 - Compatibility with any OTel-capable backend (Honeycomb, Grafana Tempo, Jaeger, self-hosted Collector)
-- Consistent with the existing Turso test analytics infrastructure
 
 ### Why traces over logs or metrics
 
@@ -264,7 +268,7 @@ A typical genq session generates 3–15 spans totaling 2–8 KB of NDJSON. At th
 - gzip reduces payload to ~600 bytes–2 KB — saving ~75%, but on tiny absolute sizes
 - Nushell's `http post` does not natively support `Content-Encoding: gzip`
 - Adding a `gzip` shell-out introduces platform-specific complexity and a dependency
-- Turso's HTTPS transport already compresses at the TLS layer for text content
+- The HTTPS transport already compresses at the TLS layer for text content
 
 Revisit compression if telemetry volume grows significantly (many users, high-frequency use). At that point, batch gzip before the upload HTTP call is straightforward to add.
 
@@ -272,13 +276,11 @@ Revisit compression if telemetry volume grows significantly (many users, high-fr
 
 ## Transport
 
-Two modes, selectable in config:
-
-### Mode A: Turso (default)
-Consistent with the existing test analytics infrastructure. Spans are converted from NDJSON to Turso Hrana v2 `INSERT` statements and POSTed in a pipeline request. Reuses `TURSO_DB_URL` and `TURSO_AUTH_TOKEN`.
-
-### Mode B: OTel Collector endpoint
-For users who operate their own OTel Collector. Set `telemetry.endpoint` in `config/default.toml` to any OTLP/HTTP receiver. The collected NDJSON is formatted as a valid `POST /v1/traces` OTLP/JSON request.
+Buffered NDJSON spans are uploaded to an **OTLP/HTTP receiver** at
+`POST /v1/traces` with `Content-Type: application/json`. The configured
+endpoint (`telemetry.endpoint_url`) terminates at an AWS Lambda OTLP
+collector that forwards traces to S3 (raw archive) and Grafana Cloud Tempo
+(query layer). Operators may point this at any OTLP-capable receiver.
 
 Transmission is triggered by:
 1. `genq telemetry send` — explicit user-initiated upload
@@ -288,92 +290,51 @@ Transmission is never on the critical command path.
 
 ---
 
-## Turso Schema Extension
-
-Extends the existing `tests/analytics/schema.sql` with two new tables:
-
-```sql
--- One row per genq user session
-CREATE TABLE IF NOT EXISTS usage_sessions (
-    trace_id            TEXT PRIMARY KEY,  -- 128-bit hex, random per session
-    genq_version        TEXT NOT NULL,
-    nu_version          TEXT NOT NULL,
-    platform            TEXT NOT NULL,     -- "macos-aarch64" | "linux-x86_64" | "windows-x86_64"
-    os_version          TEXT,
-    terminal            TEXT,              -- "genquery-terminal" | "iTerm2" | etc.
-    db_name             TEXT,              -- "production" | "demo" | null
-    db_filename         TEXT,             -- filename only, no path
-    db_person_count     INTEGER,
-    db_size_kb          INTEGER,
-    db_last_modified    INTEGER,           -- epoch int
-    cold_start_ms       INTEGER,
-    session_at          INTEGER NOT NULL,  -- unix epoch ms
-    duration_ms         INTEGER,
-    commands_run        INTEGER,
-    error_count         INTEGER,
-    locale              TEXT,
-    table_mode          TEXT,
-    date_format         INTEGER,
-    extensions          TEXT               -- JSON array: '["miams","pres2025"]'
-);
-
--- One row per command invocation
-CREATE TABLE IF NOT EXISTS usage_commands (
-    span_id             TEXT PRIMARY KEY,  -- 64-bit hex, random per command
-    trace_id            TEXT NOT NULL REFERENCES usage_sessions(trace_id),
-    command             TEXT NOT NULL,     -- top-level: "list" | "tabulate" | "config" | etc.
-    subcommand          TEXT NOT NULL,     -- full: "list people" | "tabulate trees" | etc.
-    db_name             TEXT,
-    result_rows         INTEGER,
-    duration_ms         INTEGER NOT NULL,
-    status              TEXT NOT NULL,     -- "ok" | "error"
-    error_class         TEXT,             -- controlled vocab (see above); null if status="ok"
-    commanded_at        INTEGER NOT NULL   -- unix epoch ms
-);
-```
-
----
-
-## Opt-In Consent Model
-
-### First-run prompt
-
-On first launch after install, before any telemetry is written:
-
-```
-GenQuery can share anonymous usage data to help improve the tool.
-No personal information, database content, or file paths are collected.
-Data is used only for: identifying unused features, diagnosing errors,
-and measuring command performance.
-
-Enable telemetry? [y/N]:
-```
-
-- Default is **N** (opt-in, not opt-out)
-- Choice is stored in `config/default.toml` under `[telemetry]`
-- If the terminal is non-interactive (piped, scripted), the default is no telemetry
+## Configuration
 
 ### Config block
 
 ```toml
 [telemetry]
-enabled = false          # changed to true on explicit opt-in
 auto_send = false        # if true, upload on session end; if false, manual only
-endpoint_mode = "turso"  # "turso" | "otlp"
-# endpoint_url =         # set for otlp mode: "https://collector.example.com:4318"
-retention_days = 30      # local NDJSON files older than this are deleted
+endpoint_url = "..."     # OTLP/HTTP receiver (POST /v1/traces)
+retention_days = 30      # local NDJSON buffer + upload-history files older than this are deleted
 ```
+
+There is no `enabled` field. Telemetry runs unconditionally for every session.
+Operators with strict outbound-network policies can leave `auto_send = false`
+and never run `genq telemetry send` — local buffering remains, but no data
+leaves the host.
 
 ### `genq telemetry` subcommands
 
 | Command | Description |
 |---|---|
-| `genq telemetry status` | Show current opt-in state and what would be sent (last session preview) |
-| `genq telemetry enable` | Opt in; writes `enabled = true` to config |
-| `genq telemetry disable` | Opt out; writes `enabled = false` to config; deletes buffered files |
+| `genq telemetry status` | Show endpoint configuration and buffer statistics |
 | `genq telemetry send` | Upload buffered NDJSON to configured backend |
 | `genq telemetry clear` | Delete local buffer files without uploading |
 | `genq telemetry view` | Print buffered events to stdout in readable form |
+| `genq telemetry history` | Show transmission log: when, KB, span count, status |
+
+Upload status in `genq telemetry history` is one of:
+- `success` — endpoint accepted the payload
+- `deferred` — host appears offline (DNS failure, connection refused, network unreachable, timeout); buffer preserved for retry
+- `failed` — endpoint reachable but rejected the payload (HTTP error, malformed); buffer preserved for retry
+
+### Hooks
+
+Telemetry is wired in via Nushell's `pre_execution` and `pre_prompt` hooks,
+appended to any user-configured hooks (existing hooks are preserved):
+
+- `pre_execution` — captures the commandline + start time at command dispatch
+- `pre_prompt` — finalizes the previous command: parses commandline, records a
+  command span, increments session counters, and emits a fresh
+  `genq.session.end` summary span
+
+Only commands beginning with `genq` are recorded. Subcommand parsing extracts
+up to three lowercase-alphabetic tokens (e.g. `genq list people --rin 1234`
+records `command="list", subcommand="list people"`); flag values, RINs, paths,
+and any non-alphabetic argument are stripped at parse time.
 
 ---
 
@@ -445,34 +406,30 @@ A privacy manifest must be added to `genq-terminal/macos/Sources/Resources/Priva
 ## Implementation Plan
 
 ### Phase 0 — Infrastructure (no user impact)
-- [ ] Extend `tests/analytics/schema.sql` with `usage_sessions` and `usage_commands` tables
-- [ ] Run `setup-db.nu` to apply schema to Turso
 - [ ] Create `PrivacyInfo.xcprivacy` and add to genq-terminal Xcode project
-- [ ] Create `src/lib/common/genq telemetry/mod.nu` stub module
+- [x] Create `src/lib/common/genq telemetry/mod.nu` module
 
 ### Phase 1 — Local buffering (no network)
-- [ ] Implement `telemetry-session-start` — collects resource + session attributes, generates `trace_id`, writes to local NDJSON buffer
-- [ ] Implement `telemetry-command-record` — wraps command dispatch; records `span_id`, timing, status
-- [ ] Implement `telemetry-session-end` — writes session span with summary attributes
-- [ ] Wire `use std/formats *` at session start for NDJSON support
-- [ ] Implement buffer file rotation (daily files, 30-day retention)
-- [ ] Implement `genq telemetry view` — readable print of buffer
+- [x] Implement session-start span emission — resource + session attributes, generates `trace_id`, writes to local NDJSON buffer
+- [x] Implement `record-command` — pre_execution/pre_prompt hooks record command spans with timing + status
+- [x] Implement `record-session-end` — emits `genq.session.end` summary span per pre_prompt with cumulative counters
+- [x] Implement buffer file rotation (daily files, 30-day retention)
+- [x] Implement `genq telemetry view` — readable print of buffer
 
-### Phase 2 — Consent and config
-- [ ] Implement first-run prompt logic (interactive only, default N)
-- [ ] Add `[telemetry]` block to `config/default.toml`
-- [ ] Implement `genq telemetry status/enable/disable/clear`
-- [ ] Gate all collection behind `enabled = true` check
+### Phase 2 — Configuration
+- [x] Add `[telemetry]` block to `config/default.toml`
+- [x] Implement `genq telemetry status/clear/view`
+- [x] Telemetry is mandatory — no enable/disable subcommands
 
 ### Phase 3 — Transmission
-- [ ] Implement Turso upload (convert NDJSON spans → Hrana INSERT pipeline)
-- [ ] Implement OTLP/HTTP upload (format spans → `POST /v1/traces` JSON)
-- [ ] Implement `genq telemetry send`
+- [x] Implement OTLP/HTTP upload (format spans → `POST /v1/traces` JSON)
+- [x] Implement `genq telemetry send`
+- [x] Implement `genq telemetry history` — transmission log with success/deferred/failed status
 - [ ] Optional: implement `auto_send` on session end
 
 ### Phase 4 — Analysis
-- [ ] Add views to Turso: `command_frequency`, `slow_commands`, `error_rate_by_version`, `platform_matrix`
-- [ ] Document useful queries (parallel to `test-analytics.md`)
+- [ ] Define Grafana Cloud Tempo dashboards: `command_frequency`, `slow_commands`, `error_rate_by_version`, `platform_matrix`
+- [ ] Document useful TraceQL queries
 
 ---
 

@@ -35,12 +35,13 @@ genq CLI (Nushell)
 
 ```toml
 [telemetry]
-enabled = false                          # opt-in only
-auto_send = false                        # reserved for future use
-endpoint_mode = "otlp"                   # "otlp" or "turso"
+auto_send = false                        # if true, upload on session end
 endpoint_url = "https://n53fa2v117.execute-api.us-east-1.amazonaws.com"
-retention_days = 30                      # local buffer rotation
+retention_days = 30                      # local buffer + upload-history rotation
 ```
+
+Telemetry is mandatory and always-on. There is no `enabled` field — privacy is
+enforced by what is *not* collected, not by user permission gating.
 
 ### AWS — Terraform variables
 
@@ -65,18 +66,10 @@ retention_days = 30                      # local buffer rotation
 
 ## Nushell Client Commands
 
-### Enable / disable
-
-```bash
-nu --env-config ~/.config/nushell/env.nu src/main.nu
-genq telemetry enable     # opt in, writes enabled=true to config
-genq telemetry disable    # opt out, deletes all buffered data
-```
-
 ### Check status
 
 ```bash
-genq telemetry status     # shows enabled state, endpoint, buffer stats
+genq telemetry status     # shows endpoint, retention, buffer stats
 ```
 
 ### View buffered data
@@ -88,7 +81,7 @@ genq telemetry view       # prints buffered spans in human-readable format
 ### Send data
 
 ```bash
-genq telemetry send       # uploads buffered NDJSON to configured endpoint
+genq telemetry send       # uploads buffered NDJSON to OTLP /v1/traces
 ```
 
 ### Clear buffer
@@ -97,9 +90,15 @@ genq telemetry send       # uploads buffered NDJSON to configured endpoint
 genq telemetry clear      # deletes local buffer files without uploading
 ```
 
+### Show upload history
+
+```bash
+genq telemetry history    # prints transmission log: when, KB, spans, status
+```
+
 ### How session-start works
 
-When genq loads with `telemetry.enabled = true`:
+When genq loads:
 
 1. Generates a random 128-bit `trace_id` (no cross-session identity)
 2. Collects OTel resource attributes: Nu version, OS, genq version, terminal, locale
@@ -193,8 +192,7 @@ terraform destroy
 
 ```bash
 nu --env-config ~/.config/nushell/env.nu src/main.nu
-genq telemetry enable
-# exit and re-enter to trigger a session span
+# exit and re-enter to trigger a fresh session span
 genq telemetry view
 # Should show a session with DB name, cold start ms, etc.
 ```
@@ -238,19 +236,19 @@ aws logs tail /aws/lambda/genq-telemetry-collector --follow
 
 ```bash
 nu --env-config ~/.config/nushell/env.nu tests/run-tests.nu --fast
-# All tests should pass (telemetry is disabled by default)
+# All tests should pass
 ```
 
 ---
 
 ## Privacy
 
-- **Opt-in only** — no data collected until `genq telemetry enable`
+- **Mandatory and always-on** — privacy is enforced by what is *not* collected
 - **No PII** — no usernames, paths, hostnames, or machine IDs
 - **No cross-session identity** — `trace_id` is random per session, never persisted
 - **No database content** — only metadata (person count, DB size, filename)
 - **Controlled error vocabulary** — error types are enum values, not free-form messages
-- **Transparent** — `genq telemetry view` shows exactly what would be sent
+- **Transparent** — `genq telemetry view` shows the buffer; `genq telemetry history` shows every upload attempt
 
 See `docs/telemetry-design.md` for the full privacy specification.
 
@@ -262,13 +260,12 @@ See `docs/telemetry-design.md` for the full privacy specification.
 
 | File | Purpose |
 |---|---|
-| `src/lib/common/genq telemetry/mod.nu` | Public API (status, enable, disable, send, clear, view) |
+| `src/lib/common/genq telemetry/mod.nu` | Public API (status, send, clear, view, history) |
 | `src/lib/common/genq telemetry/collector.nu` | OTel resource/span builders |
-| `src/lib/common/genq telemetry/buffer.nu` | NDJSON file I/O and rotation |
-| `src/lib/common/genq telemetry/transport.nu` | HTTP upload (OTLP + Turso) |
-| `src/lib/common/genq telemetry/consent.nu` | Opt-in state management |
+| `src/lib/common/genq telemetry/buffer.nu` | NDJSON span buffer I/O and rotation |
+| `src/lib/common/genq telemetry/history.nu` | Upload history I/O and rotation |
+| `src/lib/common/genq telemetry/transport.nu` | OTLP/HTTP upload |
 | `config/default.toml` | `[telemetry]` configuration section |
-| `tests/analytics/schema.sql` | `usage_sessions` + `usage_commands` table definitions |
 
 ### Infrastructure (Terraform)
 

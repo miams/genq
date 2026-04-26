@@ -40,18 +40,28 @@ $env.rmdb = if ($db_path | str starts-with "./") {
 $env.genq_sql = ($env.GENQ_HOME | path join $config.paths.sql_dir)
 $env.RDMF = $config.display.date_format
 
+# Auto-renumber displayed tables 1-based at the REPL prompt.
+# Producers do not add an explicit `index` column; this hook applies one
+# only on final REPL output. Pipeline filters between producer and display
+# see plain lists, so auto-renumbering after `where`/`first`/etc. just works.
+$env.config.hooks.display_output = {||
+    let val = $in
+    if (($val | describe) | str starts-with "table") and (not ('index' in ($val | columns))) {
+        $val | enumerate | each {|r| $r.item | upsert index ($r.index + 1) } | table
+    } else {
+        $val | table
+    }
+}
+
 # Telemetry: initialize session (fire-and-forget, no-op if disabled)
 # All telemetry errors are silently caught — telemetry must never break genq.
 try {
     telemetry-init
 } catch { }
 
-def telemetry-init [] {
-    # Check if telemetry section exists; if not, skip (first-run prompt is interactive only)
-    let enabled = ($env.GENQ_CONFIG?.telemetry?.enabled? | default false)
-    if not $enabled { return }
-
-    # Session start: collect resource attributes, generate trace_id, write initial span
+def --env telemetry-init [] {
+    # Telemetry is mandatory and always-on. Session start: collect resource
+    # attributes, generate trace_id, write initial span.
     let ver = (version)
     let host = (sys host)
     let trace_id = (random uuid | str replace -a '-' '')
@@ -113,11 +123,15 @@ def telemetry-init [] {
         _resource: $resource
     }
 
-    # Store session in env for command-level instrumentation
+    # Store session in env for command-level instrumentation. commands_run /
+    # error_count accumulate across hook invocations during this session.
     $env.GENQ_TELEMETRY_SESSION = {
         trace_id: $trace_id
         span_id: $span_id
         start_time: $start
+        start_time_unix_nano: $start_nano
+        commands_run: 0
+        error_count: 0
         resource: $resource
     }
 
@@ -129,7 +143,7 @@ def telemetry-init [] {
     let file = ($dir | path join $"($today).ndjson")
     $span | to json --raw | $in + "\n" | save --append --raw $file
 
-    # Rotate old buffer files
+    # Rotate old buffer files (date-named only, so upload-history subdir is safe)
     let retention = ($env.GENQ_CONFIG?.telemetry?.retention_days? | default 30)
     let cutoff = (date now) - ($retention | into duration --unit day)
     let files = (glob ($dir | path join "*.ndjson"))
@@ -140,12 +154,46 @@ def telemetry-init [] {
             if $file_date < $cutoff { rm $f }
         } catch { }
     }
+
+    # Rotate upload-history files (same retention)
+    let uploads_dir = ($dir | path join "uploads")
+    if ($uploads_dir | path exists) {
+        let upload_files = (glob ($uploads_dir | path join "*.ndjson"))
+        $upload_files | each {|f|
+            let basename = ($f | path basename | str replace ".ndjson" "")
+            try {
+                let file_date = ($basename | into datetime)
+                if $file_date < $cutoff { rm $f }
+            } catch { }
+        }
+    }
+
+    # Wire command-level hooks. Append to any user-configured hooks.
+    # pre_execution captures the commandline + start time at command dispatch.
+    # pre_prompt finalizes the previous command (record span + emit session.end).
+    $env.config.hooks.pre_execution = (
+        ($env.config.hooks.pre_execution? | default [])
+        | append {||
+            if ($env.GENQ_TELEMETRY_SESSION? | default null) == null { return }
+            let cmdline = (try { commandline } catch { "" })
+            if ($cmdline | str trim | is-empty) { return }
+            $env.GENQ_TELEMETRY_PENDING = { commandline: $cmdline, start_time: (date now) }
+        }
+    )
+
+    $env.config.hooks.pre_prompt = (
+        ($env.config.hooks.pre_prompt? | default [])
+        | append {||
+            let pending = ($env.GENQ_TELEMETRY_PENDING? | default null)
+            if $pending == null { return }
+            $env.GENQ_TELEMETRY_PENDING = null
+            try { genq telemetry record-from-hook $pending.start_time (date now) $pending.commandline } catch { }
+        }
+    )
 }
 
 let FedCensus = [1790 1800 1810 1820 1830 1840 1850 1860 1870 1880 1900 1910 1920 1930 1940 1950]
 $env.SurnameGroup = [Iams, Iames, Iiams, Iiames, Ijams, Ijames, Imes, Eimes]
-
-def genq-actions [] { ["list", "tabulate", "config", "version", "help"] }
 
 # Report the current GenQuery version.
 @category "genq-common"
@@ -182,7 +230,7 @@ export def "genq version" [] {
 # GenQuery generates tabular reports from the RootsMagic database.
 @category "genq-common"
 export def genq [
-    action?: string@genq-actions,  # action command
+    action?: string,  # action command
     ...objects: string  # additional directives, options vary based on action command
     ] {
 
@@ -227,24 +275,12 @@ let $action = if ($action | is-empty) {
     'config' => {
         let subcommand = if ($objects | length) > 0 { $objects.0 } else { "" }
         if $subcommand == "list" {
-            genq config list  
+            genq config list
         } else {
             genq config
         }
     },
-    'help' => {
-       print $"(ansi green_bold)GenQuery - Genealogy Database Reporting(ansi reset)\n"
-       let printstr = "GenQuery is an open-source, third-party RootsMagic reporting engine for use in the terminal. GenQuery is designed to let you quickly and easily pull data from your RootsMagic database. GenQuery is built on top of Nushell, a new kind of shell for OS X, Linux, and Windows. Unlike traditional shells such as bash, zsh or Powershell, Nushell uses structured data allowing for powerful but simple pipelines. It enables users to easily analyze and process data using easier more readable commands.\n"
-       wrap-text $printstr (term size).columns
-       print ""
-       print $"(ansi cyan_bold)Quick Start:(ansi reset)"
-       print "• Run 'genq config' to set up your database and preferences"
-       print "• Try 'genq list people | first 10' to see some family records"
-       print "• Use 'genq help' to see all available commands"
-       print ""
-       let printstr = "At its core, GenQuery uses SQL (Structured Queried Language) to query RootsMagics SQLite database. In most cases, GenQuery removes the need to deal with SQL complexity.  GenQuery leverages its library of internal and third-party SQL queries to extract data. From there, you are able to access a rich set of Nushell commands to personalize your data analysis and reports to your individual needs." 
-       wrap-text $printstr (term size).columns
-    },
+    'help' => { genq help },
     _ => {
         print "OVERVIEW" 
         let printstr = "GenQuery is an open-source, third-party RootsMagic reporting engine for use in the terminal. GenQuery is designed to let you quickly and easily pull data from your RootsMagic database. GenQuery is built on top of Nushell, a new kind of shell for OS X, Linux, and Windows. Unlike traditional shells such as bash, zsh or Powershell, Nushell uses structured data allowing for powerful but simple pipelines. It enables users to easily analyze and process data using easier more readable commands.\n"
@@ -259,6 +295,22 @@ let $action = if ($action | is-empty) {
 @category "genq-common"
 def "genq list" [] {
     print "List a variety of RootsMagic record types."
+}
+
+# Show GenQuery help and quick-start tips.
+@category "genq-common"
+def "genq help" [] {
+    print $"(ansi green_bold)GenQuery - Genealogy Database Reporting(ansi reset)\n"
+    let printstr = "GenQuery is an open-source, third-party RootsMagic reporting engine for use in the terminal. GenQuery is designed to let you quickly and easily pull data from your RootsMagic database. GenQuery is built on top of Nushell, a new kind of shell for OS X, Linux, and Windows. Unlike traditional shells such as bash, zsh or Powershell, Nushell uses structured data allowing for powerful but simple pipelines. It enables users to easily analyze and process data using easier more readable commands.\n"
+    wrap-text $printstr (term size).columns
+    print ""
+    print $"(ansi cyan_bold)Quick Start:(ansi reset)"
+    print "• Run 'genq config' to set up your database and preferences"
+    print "• Try 'genq list people | first 10' to see some family records"
+    print "• Use 'genq help' to see all available commands"
+    print ""
+    let printstr = "At its core, GenQuery uses SQL (Structured Queried Language) to query RootsMagics SQLite database. In most cases, GenQuery removes the need to deal with SQL complexity.  GenQuery leverages its library of internal and third-party SQL queries to extract data. From there, you are able to access a rich set of Nushell commands to personalize your data analysis and reports to your individual needs."
+    wrap-text $printstr (term size).columns
 }
 
 # Generate tabulated reports summarizing data. 
@@ -330,7 +382,6 @@ def "genq list census" [
     open $env.rmdb | query db $sqlquery
     | insert $field_name {|row| source-field $row.Fields $field_name}
     | reject Fields
-    | startat1
 }
 
 # Colorize RTF strings found in RM note files.

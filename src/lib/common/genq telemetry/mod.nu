@@ -6,13 +6,13 @@
 #   3. Which commands are slow enough to optimize?
 #   4. After a release, did error rates or latency change?
 #
-# Privacy: opt-in only, no PII, no cross-session identity.
-# See docs/telemetry-design.md for full specification.
+# Privacy: no PII, no cross-session identity, daily file rotation, 30-day retention.
+# Telemetry is mandatory and always-on — see docs/telemetry-design.md.
 
-use consent.nu [is-enabled, set-enabled, first-run-check]
-use collector.nu [new-session, record-session-start, record-command, build-resource]
+use collector.nu [new-session, record-session-start, record-command, record-session-end, build-resource]
 use buffer.nu [read-buffer, clear-buffer, rotate-buffer, buffer-stats, append-span]
-use transport.nu [send-otlp, send-turso]
+use transport.nu [send-otlp]
+use history.nu [read-history, rotate-history, history-dir]
 
 # Telemetry management for GenQuery.
 @category "genq-common"
@@ -21,28 +21,24 @@ export def main [] {
     print ""
     print "Commands:"
     print "  genq telemetry status   — Show current telemetry state"
-    print "  genq telemetry enable   — Opt in to telemetry"
-    print "  genq telemetry disable  — Opt out and delete buffered data"
     print "  genq telemetry send     — Upload buffered data to backend"
     print "  genq telemetry clear    — Delete local buffer without uploading"
     print "  genq telemetry view     — Print buffered events"
+    print "  genq telemetry history  — Show upload transmission log"
     print ""
+    print "Telemetry is anonymous and mandatory. No PII is collected."
     print "See docs/telemetry-design.md for privacy details."
 }
 
-# Show current telemetry opt-in state and buffer statistics.
+# Show telemetry endpoint configuration and buffer statistics.
 @category "genq-common"
 export def status [] {
-    let enabled = (is-enabled)
     let stats = (buffer-stats)
-    let mode = ($env.GENQ_CONFIG?.telemetry?.endpoint_mode? | default "otlp")
     let endpoint = ($env.GENQ_CONFIG?.telemetry?.endpoint_url? | default "(not set)")
     let retention = ($env.GENQ_CONFIG?.telemetry?.retention_days? | default 30)
 
     print $"(ansi cyan_bold)Telemetry Status(ansi reset)"
     print ""
-    print $"  Enabled:        (if $enabled { $'(ansi green)yes(ansi reset)' } else { $'(ansi yellow)no(ansi reset)' })"
-    print $"  Endpoint mode:  ($mode)"
     print $"  Endpoint URL:   ($endpoint)"
     print $"  Retention:      ($retention) days"
     print ""
@@ -56,51 +52,16 @@ export def status [] {
     }
 }
 
-# Enable telemetry data collection.
-@category "genq-common"
-export def enable [] {
-    set-enabled true
-    print $"(ansi green)Telemetry enabled.(ansi reset)"
-    print "Anonymous diagnostic data will be collected locally."
-    print "Use 'genq telemetry send' to upload, or 'genq telemetry status' to review."
-}
-
-# Disable telemetry and delete all buffered data.
-@category "genq-common"
-export def disable [] {
-    set-enabled false
-    clear-buffer
-    print $"Telemetry disabled. All buffered data has been deleted."
-}
-
-# Upload buffered telemetry data to the configured backend.
+# Upload buffered telemetry data to the configured OTLP endpoint.
 @category "genq-common"
 export def send [] {
-    if not (is-enabled) {
-        print $"(ansi yellow)Notice:(ansi reset) Telemetry is disabled. Enable it first with: genq telemetry enable"
+    let endpoint = ($env.GENQ_CONFIG?.telemetry?.endpoint_url? | default "")
+    if ($endpoint | is-empty) {
+        print $"(ansi red)Error:(ansi reset) No endpoint URL configured."
+        print "Set telemetry.endpoint_url in config/default.toml"
         return
     }
-
-    let mode = ($env.GENQ_CONFIG?.telemetry?.endpoint_mode? | default "otlp")
-
-    match $mode {
-        "otlp" => {
-            let endpoint = ($env.GENQ_CONFIG?.telemetry?.endpoint_url? | default "")
-            if ($endpoint | is-empty) {
-                print $"(ansi red)Error:(ansi reset) No endpoint URL configured."
-                print "Set telemetry.endpoint_url in config/default.toml"
-                return
-            }
-            send-otlp $endpoint
-        }
-        "turso" => {
-            send-turso
-        }
-        _ => {
-            print $"(ansi red)Error:(ansi reset) Unknown endpoint_mode: ($mode)"
-            print "Valid modes: otlp, turso"
-        }
-    }
+    send-otlp $endpoint
 }
 
 # Delete all local telemetry buffer files without uploading.
@@ -121,18 +82,35 @@ export def view [] {
     }
 
     let sessions = ($spans | where name == "genq.session")
-    let commands = ($spans | where name != "genq.session")
+    let session_ends = ($spans | where name == "genq.session.end")
+    let commands = ($spans | where name != "genq.session" and name != "genq.session.end")
 
     print $"(ansi cyan_bold)Buffered Telemetry — ($sessions | length) session\(s), ($commands | length) command\(s)(ansi reset)"
     print ""
 
     for session in $sessions {
         let attrs = ($session.attributes | reduce --fold {} {|a, acc| $acc | insert $a.key $a.value })
+
+        # Find the latest session-end span for this trace, if any
+        let latest_end = ($session_ends | where traceId == $session.traceId | last)
+        let end_attrs = if ($latest_end | is-empty) {
+            {}
+        } else {
+            $latest_end.attributes | reduce --fold {} {|a, acc| $acc | insert $a.key $a.value }
+        }
+
+        let commands_run = ($end_attrs | get --optional 'genq.session.commands_run' | get --optional intValue
+            | default ($attrs | get --optional 'genq.session.commands_run' | get --optional intValue | default '0'))
+        let error_count = ($end_attrs | get --optional 'genq.session.error_count' | get --optional intValue
+            | default ($attrs | get --optional 'genq.session.error_count' | get --optional intValue | default '0'))
+        let duration = ($end_attrs | get --optional 'genq.session.duration_ms' | get --optional intValue | default '—')
+
         print $"  Session: ($session.traceId | str substring 0..8)..."
-        print $"    DB:         ($attrs | get --optional 'genq.db.name' | get --optional stringValue | default '?')"
-        print $"    Cold start: ($attrs | get --optional 'genq.session.cold_start_ms' | get --optional intValue | default '?') ms"
-        print $"    Commands:   ($attrs | get --optional 'genq.session.commands_run' | get --optional intValue | default '?')"
-        print $"    Errors:     ($attrs | get --optional 'genq.session.error_count' | get --optional intValue | default '?')"
+        print $"    DB:           ($attrs | get --optional 'genq.db.name' | get --optional stringValue | default '?')"
+        print $"    Cold start:   ($attrs | get --optional 'genq.session.cold_start_ms' | get --optional intValue | default '?') ms"
+        print $"    Duration:     ($duration) ms"
+        print $"    Commands:     ($commands_run)"
+        print $"    Errors:       ($error_count)"
         print ""
     }
 
@@ -142,7 +120,92 @@ export def view [] {
             let attrs = ($cmd.attributes | reduce --fold {} {|a, acc| $acc | insert $a.key $a.value })
             let duration = ($attrs | get --optional 'genq.duration_ms' | get --optional intValue | default '?')
             let status_icon = if ($cmd.status.code == 1) { $"(ansi green)ok(ansi reset)" } else { $"(ansi red)err(ansi reset)" }
-            print $"    ($cmd.name) — ($duration) ms [$status_icon]"
+            print $"    ($cmd.name) — ($duration) ms [($status_icon)]"
         }
+    }
+}
+
+# Show the upload transmission log: when, mode, KB, span count, status.
+@category "genq-common"
+export def history [] {
+    let entries = (read-history)
+
+    if ($entries | is-empty) {
+        print "No upload history yet."
+        return
+    }
+
+    $entries
+    | sort-by timestamp --reverse
+    | each {|e|
+        let kb = (($e.bytes | default 0) / 1024 | math round --precision 1)
+        {
+            When: $e.timestamp
+            KB: $kb
+            Spans: $e.span_count
+            Status: $e.status
+        }
+    }
+}
+
+# Hook handler — called from pre_prompt to record a single completed command.
+# 
+# Parses the commandline, records a command span (if it's a genq command),
+# updates session counters, and emits a fresh session.end summary.
+# Silent on any error; telemetry must never break genq.
+export def --env "record-from-hook" [start_time: datetime, end_time: datetime, cmdline: string] {
+    try {
+        let session = ($env.GENQ_TELEMETRY_SESSION? | default null)
+        if $session == null { return }
+
+        let parsed = (parse-genq-subcommand $cmdline)
+        if $parsed == null { return }
+
+        record-command $session $parsed.command $parsed.subcommand $start_time $end_time
+
+        # Increment session counters and re-emit session.end
+        let updated = ($session
+            | upsert commands_run (($session | get --optional commands_run | default 0) + 1))
+        $env.GENQ_TELEMETRY_SESSION = $updated
+        record-session-end $updated
+    } catch { }
+}
+
+# Extract a privacy-safe { command, subcommand } from a commandline.
+# 
+# Rules:
+#   - Must start with "genq"
+#   - Only alphabetic, lowercase tokens after "genq" are kept (max 3)
+#   - Stops at first non-alphabetic token (flags, args, RINs, paths, pipes)
+#   - Returns null for non-genq commands
+export def parse-genq-subcommand [cmdline: string] {
+    let head = ($cmdline | str trim)
+    let head_part = if ($head | str contains '|') {
+        $head | split row '|' | first | str trim
+    } else {
+        $head
+    }
+
+    let raw_parts = ($head_part
+        | split row ' '
+        | each {|p| $p | str trim }
+        | where {|p| ($p | str length) > 0 })
+
+    if ($raw_parts | is-empty) { return null }
+    if ($raw_parts | first) != "genq" { return null }
+
+    mut command_parts = []
+    for p in ($raw_parts | skip 1) {
+        if (($command_parts | length) >= 3) { break }
+        let lower = ($p | str downcase)
+        if not ($lower =~ '^[a-z][a-z-]*$') { break }
+        $command_parts = ($command_parts | append $lower)
+    }
+
+    if ($command_parts | is-empty) { return null }
+
+    {
+        command: ($command_parts | first)
+        subcommand: ($command_parts | str join ' ')
     }
 }

@@ -101,6 +101,37 @@ export def record-session-start [session: record] {
     append-span $span
 }
 
+# Build and buffer a session-end summary span.
+# Called after each command (per-prompt) so the latest emit reflects current
+# cumulative session counters. Backend logic treats the latest session-end
+# span per traceId as authoritative.
+export def record-session-end [session: record] {
+    let now = (date now)
+    let now_nano = ($now | into int | into string)
+    let duration_ms = (($now - $session.start_time) / 1ms | into int)
+    let commands_run = ($session | get --optional commands_run | default 0)
+    let error_count = ($session | get --optional error_count | default 0)
+    let end_span_id = (random uuid | str replace -a '-' '' | str substring 0..16)
+
+    let span = {
+        traceId: $session.trace_id
+        spanId: $end_span_id
+        parentSpanId: $session.span_id
+        name: "genq.session.end"
+        kind: 1
+        startTimeUnixNano: $session.start_time_unix_nano
+        endTimeUnixNano: $now_nano
+        attributes: [
+            { key: "genq.session.duration_ms",   value: { intValue: ($duration_ms | into string) } }
+            { key: "genq.session.commands_run",  value: { intValue: ($commands_run | into string) } }
+            { key: "genq.session.error_count",   value: { intValue: ($error_count | into string) } }
+        ]
+        status: { code: 1 }
+    }
+
+    append-span $span
+}
+
 # Build and buffer a command span (child of the session).
 export def record-command [
     session: record
