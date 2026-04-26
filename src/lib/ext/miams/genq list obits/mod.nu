@@ -22,7 +22,6 @@ export def "main" [] {
         }
         | sort-by LastUpdate
         | reject Obituary Newspaper EventID LastUpdate
-        | startat1
 
     $my_dataframe
 }

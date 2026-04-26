@@ -105,6 +105,94 @@ def "db-pres2025 list people pres2025 - RIN values are positive" [] {
     assert equal ($result | where RIN <= 0 | length) 0
 }
 
+@test
+def "db-pres2025 list people pres2025 - --with adds nested fact column" [] {
+    let ctx = $in
+    let result = (with-env (e $ctx) { genq list people --with [occupation] })
+    let cols = ($result | columns)
+    assert ($cols | any { |c| $c == "Occupation" })
+    let with_jobs = ($result | where ($it.Occupation | length) > 0)
+    assert (($with_jobs | length) > 0)
+}
+
+@test
+def "db-pres2025 list people pres2025 - --with nested cells are list<record> with expected fields" [] {
+    let ctx = $in
+    let result = (with-env (e $ctx) { genq list people --with [occupation] | where ($it.Occupation | length) > 0 | first })
+    let first_fact = ($result.Occupation | first)
+    for f in [Date Description Place SortDate] {
+        assert (($first_fact | columns) | any { |c| $c == $f })
+    }
+}
+
+@test
+def "db-pres2025 list people pres2025 - --with drops people with no matching facts" [] {
+    let ctx = $in
+    let result = (with-env (e $ctx) { genq list people --with [occupation] })
+    let empty_rows = ($result | where ($it.Occupation | length) == 0)
+    assert equal ($empty_rows | length) 0
+}
+
+@test
+def "db-pres2025 list people pres2025 - --with multiple types keeps rows with at least one match" [] {
+    let ctx = $in
+    let result = (with-env (e $ctx) { genq list people --with [occupation residence] })
+    # Every row must have at least one non-empty fact column.
+    let bad = ($result | where { |r| ($r.Occupation | length) == 0 and ($r.Residence | length) == 0 })
+    assert equal ($bad | length) 0
+    # And we expect rows where only one of the two is populated (the union, not intersection).
+    let only_one = ($result | where { |r| (($r.Occupation | length) == 0 and ($r.Residence | length) > 0) or (($r.Occupation | length) > 0 and ($r.Residence | length) == 0) })
+    assert (($only_one | length) > 0)
+}
+
+@test
+def "db-pres2025 list people pres2025 - --with multiple types adds a column per type" [] {
+    let ctx = $in
+    let cols = (with-env (e $ctx) { genq list people --with [occupation residence] } | columns)
+    assert ($cols | any { |c| $c == "Occupation" })
+    assert ($cols | any { |c| $c == "Residence" })
+}
+
+@test
+def "db-pres2025 list people pres2025 - --with is case insensitive" [] {
+    let ctx = $in
+    let cols = (with-env (e $ctx) { genq list people --with [OcCuPaTiOn] } | columns)
+    assert ($cols | any { |c| $c == "Occupation" })
+}
+
+@test
+def "db-pres2025 list people pres2025 - --with rejects unknown fact type" [] {
+    let ctx = $in
+    let failed = try {
+        with-env (e $ctx) { genq list people --with [definitely-not-a-fact] }
+        false
+    } catch { true }
+    assert $failed
+}
+
+@test
+def "db-pres2025 list people pres2025 - --with rejects family-level fact type" [] {
+    let ctx = $in
+    let failed = try {
+        with-env (e $ctx) { genq list people --with [marriage] }
+        false
+    } catch { true }
+    assert $failed
+}
+
+@test
+def "db-pres2025 list people pres2025 - --with chronologically sorts nested facts" [] {
+    let ctx = $in
+    let multi = (with-env (e $ctx) {
+        genq list people --with [occupation]
+        | where ($it.Occupation | length) > 1
+    })
+    if ($multi | is-empty) { return }
+    let row = ($multi | first)
+    let sortdates = ($row.Occupation | get SortDate)
+    assert equal $sortdates ($sortdates | sort)
+}
+
 # =============================================================================
 # genq list events
 # =============================================================================

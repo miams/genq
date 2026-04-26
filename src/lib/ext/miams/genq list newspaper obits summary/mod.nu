@@ -14,7 +14,6 @@ export def "main" [] {
   let my_dataframe = open $env.rmdb | query db $sqlquery 
       | sort-by LastUpdate
       | reject Obituary
-      | startat1
 
   $my_dataframe
 

@@ -29,7 +29,7 @@ export def "main" [
         | insert ShortFootnote {|row| $row.Fields | from xml | get content.0.content.1.content.1.content.content} | flatten
         | insert Bibliography  {|row| $row.Fields | from xml | get content.0.content.2.content.1.content.content} | flatten
         | insert LastUpdate {|row| if ($row.LastUpdateUTC | is-empty) { "" } else { $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S" } }
-        | reject SourceName Fields LastUpdateUTC | startat1
+        | reject SourceName Fields LastUpdateUTC
     } else {
         print "List of all sources (free-form and template-based)."
         let sqlquery = "SELECT
@@ -70,7 +70,6 @@ export def "main" [
           }
         | insert LastUpdate {|row| if ($row.LastUpdateUTC | is-empty) { "" } else { $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S" } }
         | reject SourceName Fields TmplFootnote TmplShortFootnote TmplBibliography LastUpdateUTC
-        | startat1
     }
 }
 

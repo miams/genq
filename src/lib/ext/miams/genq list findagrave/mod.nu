@@ -22,5 +22,5 @@ export def "main" [] {
     
     let sqlquery = "select OwnerID as RIN, Name, URL, Note AS Retrieved, STRFTIME(DATETIME(UTCModDate + 2415018.5)) AS LastUpdate from URLTable where OwnerType=0"
     print $sqlquery
-    open $env.rmdb | query db $sqlquery | startat1
+    open $env.rmdb | query db $sqlquery
 }

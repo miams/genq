@@ -159,5 +159,5 @@ export def "main" [
 
     try { rm -f $tmp_db }
 
-    $result | startat1
+    $result
 }

@@ -97,5 +97,5 @@ export def "main" [
         | if $private  { append IsPrivate } else { $in }
         | if $note     { append Note }      else { $in }
         | if $mod_date { append LastUpdate } else { $in })
-    $result | select ...$cols | startat1
+    $result | select ...$cols
 }

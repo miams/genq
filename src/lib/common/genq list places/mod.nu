@@ -42,5 +42,5 @@ export def "main" [
     let result = open $env.rmdb | query db $sqlquery
         | insert LastUpdate {|row| if ($row.LastUpdateUTC | is-empty) { "" } else { $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S" } }
         | reject LastUpdateUTC
-    if $mod_date { $result | startat1 } else { $result | reject LastUpdate | startat1 }
+    if $mod_date { $result } else { $result | reject LastUpdate }
 }

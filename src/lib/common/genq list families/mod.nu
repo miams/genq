@@ -37,5 +37,5 @@ export def "main" [
     let with_proof = if $proof { $result } else { $result | reject Proof }
     let with_labels = if $labels { $with_proof } else { $with_proof | reject FatherRole MotherRole }
     let final = if $note { $with_labels } else { $with_labels | reject Note }
-    $final | startat1
+    $final
 }

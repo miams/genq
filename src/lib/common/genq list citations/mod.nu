@@ -142,5 +142,5 @@ export def "main" [
         $final
     }
 
-    if $mod_date { $with_footnotes | startat1 } else { $with_footnotes | reject LastUpdate | startat1 }
+    if $mod_date { $with_footnotes } else { $with_footnotes | reject LastUpdate }
 }

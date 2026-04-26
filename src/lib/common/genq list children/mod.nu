@@ -75,5 +75,5 @@ export def "main" [
     let cols = ([RIN Given Surname Sex MRIN FatherRIN FatherGiven FatherSurname MotherRIN MotherGiven MotherSurname RelToFather RelToMother ChildOrder]
         | if $proof    { append [ProofFather ProofMother] } else { $in }
         | if $mod_date { append LastUpdate } else { $in })
-    $result | select ...$cols | startat1
+    $result | select ...$cols
 }

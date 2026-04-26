@@ -52,5 +52,5 @@ export def "main" [
         $result | where {|r| ($r.AssocType | str downcase) | str contains $t}
     } else { $result }
 
-    if $mod_date { $result | startat1 } else { $result | reject LastUpdate | startat1 }
+    if $mod_date { $result } else { $result | reject LastUpdate }
 }

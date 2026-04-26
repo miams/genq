@@ -29,7 +29,6 @@ export def "main" [] {
     | insert NameTruncated {|row| $row.Name | str substring 0..30}
     | reject Name source_tag_pos
     | move SourceTag --after SourceID
-    | move NameTruncated --after SourceTag 
-    | startat1
+    | move NameTruncated --after SourceTag
     | histogram SourceTag
 }

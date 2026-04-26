@@ -50,13 +50,13 @@ if ($config_filename | path exists) {
     | insert LastUpdate {|row| if ($row.LastUpdateUTC | is-empty) { "" } else { $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S" } }
     | reject MediaPath LastUpdateUTC
     | move fullpath --after MediaType
-    if $mod_date { $result | startat1 } else { $result | reject LastUpdate | startat1 }
+    if $mod_date { $result } else { $result | reject LastUpdate }
 } else {
     # Configuration file not found — return paths without fullpath resolution
     let result = open $env.rmdb | query db $sqlquery
     | insert LastUpdate {|row| if ($row.LastUpdateUTC | is-empty) { "" } else { $row.LastUpdateUTC | date to-timezone local | format date "%Y-%m-%d %H:%M:%S" } }
     | reject LastUpdateUTC
-    if $mod_date { $result | startat1 } else { $result | reject LastUpdate | startat1 }
+    if $mod_date { $result } else { $result | reject LastUpdate }
 }
 
 }

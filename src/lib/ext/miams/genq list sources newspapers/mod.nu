@@ -11,5 +11,5 @@ export def "main" [] {
     | insert Footnote      {|row| $row.Fields | from xml | get content.0.content.0.content.1.content.content} | flatten 
     | insert ShortFootnote {|row| $row.Fields | from xml | get content.0.content.1.content.1.content.content} | flatten
     | insert Bibliography  {|row| $row.Fields | from xml | get content.0.content.2.content.1.content.content} | flatten 
-    | reject SourceName Fields | startat1
+    | reject SourceName Fields
 }
