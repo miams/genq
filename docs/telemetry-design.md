@@ -275,15 +275,13 @@ File rotation: one file per calendar day. Files older than 30 days are deleted a
 
 ### On Compression
 
-**Recommendation: no compression in v1.**
+The two signal streams take different stances:
 
-A typical genq session generates 3–15 spans totaling 2–8 KB of NDJSON. At this volume:
-- gzip reduces payload to ~600 bytes–2 KB — saving ~75%, but on tiny absolute sizes
-- Nushell's `http post` does not natively support `Content-Encoding: gzip`
-- Adding a `gzip` shell-out introduces platform-specific complexity and a dependency
-- The HTTPS transport already compresses at the TLS layer for text content
+**Traces — uncompressed.** A typical genq session generates 3–15 spans totaling 2–8 KB of NDJSON. At this volume gzip would save ~75% of a tiny absolute size, and the HTTPS transport already compresses at the TLS layer for text content. The wire payload is plain JSON; the Lambda re-compresses to gzip when archiving to S3 (`handler.py:103`). Revisit if per-session span volume grows substantially.
 
-Revisit compression if telemetry volume grows significantly (many users, high-frequency use). At that point, batch gzip before the upload HTTP call is straightforward to add.
+**Profiles — gzipped client-side.** A profile is 130+ scalars plus multi-row histograms — 4–8 KB gzipped per snapshot, several × that uncompressed. Profiles are gzipped on disk via a `^gzip -9c` shell-out in `profile.nu`, then `transport.nu` POSTs the original gzip bytes with `Content-Type: application/octet-stream` and `Content-Encoding: gzip`. The Lambda preserves the bytes as-received in S3 (`handler.py:159–163`) — no re-compression round-trip, and the wire payload is byte-for-byte audit-equivalent to what the client wrote.
+
+Note: Nushell's `http post` accepts arbitrary headers via `--headers { … }`, so the historical "Nushell can't set Content-Encoding" concern was unfounded — the client wires the header directly.
 
 ---
 
@@ -485,7 +483,7 @@ traversal; out-of-range values are stored under `profiles/unknown/`.
 ```toml
 [telemetry]
 auto_send = false        # if true, upload on session end; if false, manual only
-endpoint_url = "..."     # OTLP/HTTP receiver (POST /v1/traces)
+endpoint_url = "..."     # OTLP/HTTP receiver root — serves both /v1/traces and /v1/profiles
 retention_days = 30      # local NDJSON buffer + upload-history files older than this are deleted
 ```
 
@@ -640,4 +638,79 @@ A privacy manifest must be added to `genq-terminal/macos/Sources/Resources/Priva
 | Should `genq.db.person_count` be queried at session start? | **Resolved**: removed entirely from the trace path — captured by the DB shape profile signal (`/v1/profiles`) instead |
 | Should flag *presence* (not value) be recorded? (e.g., `--reverse`, `--short-footnote`) | TBD — high value for Q1; review each flag for PII risk before including |
 | Auto-send on session end vs. manual `genq telemetry send` only? | Default: manual (auto_send = false). Less surprising; user controls network calls. |
-| Should the pres2025 demo DB be excluded from telemetry (it's not the user's data)? | Recommend: include — DB name "demo" is safe; person count context is useful |
+| Should the pres2025 demo DB be excluded from telemetry (it's not the user's data)? | **Resolved**: include. DB name "demo" is safe and shape data on the demo DB is useful as a known-baseline reference point. No exclusion logic in the client. |
+
+---
+
+## End-to-End Smoke Test
+
+Run after a backend deployment (`terraform apply`) or non-trivial client change.
+Confirms both signal streams reach S3 and (for traces) Grafana Cloud Tempo.
+
+```bash
+# 1. Cold-start a fresh session — `profile-init` spawns in the background.
+nu --env-config ~/.config/nushell/env.nu src/main.nu
+
+# 2. Inside the genq REPL, run a couple of commands so traces have content,
+#    then give the background profile job ~1s to finish capturing.
+genq list people | first 3
+genq config list
+
+# 3. Manually flush both buffers. `auto_send` is false by default; this is
+#    the only path that pushes data off the host.
+genq telemetry send
+
+# 4. Inspect the upload log.
+genq telemetry history    # latest two rows: one /v1/traces, one /v1/profiles
+                          # status should be `success` for both
+```
+
+Then verify backend state from another shell:
+
+```bash
+# Traces — partitioned by capture date.
+aws s3 ls s3://<bucket>/traces/ --recursive | tail -5
+
+# Profiles — partitioned by rm_unique_id (one prefix per database).
+aws s3 ls s3://<bucket>/profiles/ --recursive | tail -5
+
+# Lambda logs (via CloudWatch). Look for "Grafana response: 200" or any
+# warnings about `Grafana forward failed` (common when *_var values weren't
+# passed at apply time — S3 archival still works in that case).
+aws logs tail /aws/lambda/genq-telemetry-collector --since 5m
+```
+
+A trace forwarded to Grafana Cloud Tempo is queryable within ~1 minute via
+TraceQL: `{ resource.service.name = "genq" }`.
+
+---
+
+## Profile Sanity Check
+
+Lambda rejects a profile with `400 missing schemaVersion or fingerprint`
+(`handler.py:143`). Before the first send after schema-touching changes,
+spot-check a captured profile:
+
+```bash
+# Find the most recent pending profile (macOS path; Linux/Windows differ —
+# see "On-disk format" above).
+ls -1t "$HOME/Library/Application Support/genq/telemetry/profiles/"*.json.gz \
+  | head -1
+
+# Decompress and pretty-print top-level keys.
+gzip -dc "<that path>" | jq 'keys'
+# Expected: ["capturedAtUnixNano", "fingerprint", "multiRows", "scalars",
+#            "schemaVersion", "timing"]
+
+# Verify the fingerprint has both required subkeys.
+gzip -dc "<that path>" | jq '.fingerprint'
+# Expected: { "rm_unique_id": "<hex>", "latest_utcmoddate_julian": "<num>" }
+
+# Verify schemaVersion matches what the Lambda accepts ("1" today).
+gzip -dc "<that path>" | jq '.schemaVersion'
+```
+
+If `rm_unique_id` is empty, the Lambda will still accept the upload but
+classify it under `s3://<bucket>/profiles/unknown/` (handler.py:150–151).
+Investigate `ConfigTable.DataRec` parsing in `profile-catalog.nu`'s
+`rm_unique_id` query if you see uploads landing under `unknown/`.
