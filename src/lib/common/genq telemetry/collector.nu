@@ -34,7 +34,7 @@ export def build-resource [] {
 # Start a new telemetry session. Returns a session record to store in $env.
 export def new-session [] {
     let trace_id = (random uuid | str replace -a '-' '')
-    let span_id = (random uuid | str replace -a '-' '' | str substring 0..16)
+    let span_id = (random uuid | str replace -a '-' '' | str substring 0..<16)
     let start = (date now)
 
     {
@@ -111,7 +111,7 @@ export def record-session-end [session: record] {
     let duration_ms = (($now - $session.start_time) / 1ms | into int)
     let commands_run = ($session | get --optional commands_run | default 0)
     let error_count = ($session | get --optional error_count | default 0)
-    let end_span_id = (random uuid | str replace -a '-' '' | str substring 0..16)
+    let end_span_id = (random uuid | str replace -a '-' '' | str substring 0..<16)
 
     let span = {
         traceId: $session.trace_id
@@ -143,7 +143,7 @@ export def record-command [
     status: string = "ok"
     error_class?: string
 ] {
-    let span_id = (random uuid | str replace -a '-' '' | str substring 0..16)
+    let span_id = (random uuid | str replace -a '-' '' | str substring 0..<16)
     let duration_ms = (($end_time - $start_time) / 1ms | into int)
 
     let attrs = [

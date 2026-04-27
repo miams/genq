@@ -65,7 +65,7 @@ def --env telemetry-init [] {
     let ver = (version)
     let host = (sys host)
     let trace_id = (random uuid | str replace -a '-' '')
-    let span_id = (random uuid | str replace -a '-' '' | str substring 0..16)
+    let span_id = (random uuid | str replace -a '-' '' | str substring 0..<16)
     let start = (date now)
     let start_nano = ($start | into int | into string)
 
