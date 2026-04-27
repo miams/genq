@@ -57,12 +57,22 @@ run()  {
     fi
 }
 
-require_clean() {
+report_dirty() {
+    # Report uncommitted state for one repo. Echoes the porcelain output if dirty.
     local dir="$1"
     [[ -d "$dir/.git" ]] || die "$dir is not a git repo"
-    if [[ -n "$(git -C "$dir" status --porcelain)" ]]; then
-        die "$dir has uncommitted changes — clean it first"
-    fi
+    git -C "$dir" status --porcelain
+}
+
+confirm_or_exit() {
+    # confirm_or_exit "<prompt>" — default is yes (Enter / y / Y); n exits.
+    local prompt="$1"
+    local reply
+    read -r -p "$prompt [Y/n] " reply
+    case "$reply" in
+        ""|y|Y|yes|YES) return 0 ;;
+        *) log "aborted by user"; exit 0 ;;
+    esac
 }
 
 latest_tag() {
@@ -90,10 +100,27 @@ build_number() {
     git -C "$1" rev-list HEAD --count
 }
 
-# ---------- discover the next version ----------
-require_clean "$GENQ_DIR"
-require_clean "$TERMINAL_MAC_DIR"
-require_clean "$TERMINAL_WIN_DIR"
+# ---------- survey uncommitted state across all three repos ----------
+DIRTY_REPORT=""
+for entry in "genq:$GENQ_DIR" "genq-terminal:$TERMINAL_MAC_DIR" "genq-terminal-windows:$TERMINAL_WIN_DIR"; do
+    label="${entry%%:*}"
+    dir="${entry#*:}"
+    porcelain="$(report_dirty "$dir")"
+    if [[ -n "$porcelain" ]]; then
+        DIRTY_REPORT+=$'\n'"  ── $label ($dir) ──"$'\n'
+        DIRTY_REPORT+="$(echo "$porcelain" | sed 's/^/    /')"$'\n'
+    fi
+done
+
+if [[ -n "$DIRTY_REPORT" ]]; then
+    warn "uncommitted changes detected:"
+    printf '%s\n' "$DIRTY_REPORT"
+    echo "These files will NOT be included in the version-bump commit."
+    echo "Tagging will still apply to the bump commit only."
+    if [[ "$DRY_RUN" != "1" ]]; then
+        confirm_or_exit "Proceed anyway?"
+    fi
+fi
 
 CURRENT_TAG="$(latest_tag "$GENQ_DIR")"
 [[ -z "$CURRENT_TAG" ]] && CURRENT_TAG="v0.0.0"
@@ -181,28 +208,48 @@ else
 fi
 
 # ---------- commit + tag in each repo ----------
+# Each call stages ONLY the listed paths (relative to the repo root) so any other
+# uncommitted changes in the working tree are left alone.
 commit_and_tag() {
     local dir="$1"
     local label="$2"
+    shift 2
+    local paths=("$@")
     log "committing + tagging $label"
     if [[ "$DRY_RUN" == "1" ]]; then
-        printf '   [dry-run] (cd %s && git add -A && git commit -m "chore: bump to %s" && git tag -a %s -m "Release %s")\n' \
-            "$dir" "$NEW_TAG" "$NEW_TAG" "$NEW_TAG"
+        printf '   [dry-run] (cd %s && git add %s && git commit -m "chore: bump to %s" && git tag -a %s -m "Release %s")\n' \
+            "$dir" "${paths[*]}" "$NEW_TAG" "$NEW_TAG" "$NEW_TAG"
         return
     fi
 
-    if [[ -z "$(git -C "$dir" status --porcelain)" ]]; then
-        warn "$label has no diff to commit (already at $NEW_VERSION?)"
+    # Stage only the version-bumped paths (skip ones that don't exist, e.g. VERSION on first run is fine since we just wrote it).
+    local existing=()
+    for p in "${paths[@]}"; do
+        [[ -e "$dir/$p" ]] && existing+=("$p")
+    done
+
+    if [[ ${#existing[@]} -eq 0 ]]; then
+        warn "$label: no version-bump paths to stage"
     else
-        git -C "$dir" add -A
+        git -C "$dir" add -- "${existing[@]}"
+    fi
+
+    if git -C "$dir" diff --cached --quiet; then
+        warn "$label has no staged diff (already at $NEW_VERSION?)"
+    else
         git -C "$dir" commit -m "chore: bump to $NEW_TAG"
     fi
     git -C "$dir" tag -a "$NEW_TAG" -m "Release $NEW_TAG"
 }
 
-commit_and_tag "$GENQ_DIR"          "genq"
-commit_and_tag "$TERMINAL_MAC_DIR"  "genq-terminal"
-commit_and_tag "$TERMINAL_WIN_DIR"  "genq-terminal-windows"
+commit_and_tag "$GENQ_DIR" "genq" \
+    VERSION config/default.toml
+
+commit_and_tag "$TERMINAL_MAC_DIR" "genq-terminal" \
+    macos/Ghostty.xcodeproj/project.pbxproj
+
+commit_and_tag "$TERMINAL_WIN_DIR" "genq-terminal-windows" \
+    custom.props src/cascadia/CascadiaPackage/Package.appxmanifest
 
 # ---------- summary ----------
 cat <<EOF
