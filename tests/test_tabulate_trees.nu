@@ -47,7 +47,7 @@ def "db-iiams tabulate trees - returns records" [] {
 def "db-iiams tabulate trees - has correct columns" [] {
     if (no-db) { return }
     let cols = (with-env (ie) { genq tabulate trees } | columns)
-    for col in [index RIN Given Surname Count] {
+    for col in [RIN Given Surname Count] {
         assert ($cols | any { |c| $c == $col })
     }
 }
@@ -121,7 +121,7 @@ def "db-iiams tabulate trees --rin 2471 - returns 54 rows" [] {
 def "db-iiams tabulate trees --rin - has correct columns" [] {
     if (no-db) { return }
     let cols = (with-env (ie) { genq tabulate trees --rin 1 } | columns)
-    for col in [index RIN Given Surname Sex BirthYear DeathYear Ga Gb Degree] {
+    for col in [RIN Given Surname Sex BirthYear DeathYear Ga Gb Degree] {
         assert ($cols | any { |c| $c == $col })
     }
 }

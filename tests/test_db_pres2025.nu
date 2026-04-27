@@ -44,7 +44,7 @@ def e [ctx: record] {
 def "db-pres2025 list people pres2025 - has expected columns" [] {
     let ctx = $in
     let cols = (with-env (e $ctx) { genq list people } | columns)
-    for col in [index RIN Given Surname Sex BirthDate DeathDate] {
+    for col in [RIN Given Surname Sex BirthDate DeathDate] {
         assert ($cols | any { |c| $c == $col })
     }
 }
@@ -89,13 +89,6 @@ def "db-pres2025 list people pres2025 - Sex values are M or F only" [] {
     let result = (with-env (e $ctx) { genq list people })
     let invalid = ($result | where { |r| $r.Sex != "M" and $r.Sex != "F" })
     assert equal ($invalid | length) 0
-}
-
-@test
-def "db-pres2025 list people pres2025 - index starts at 1" [] {
-    let ctx = $in
-    let result = (with-env (e $ctx) { genq list people })
-    assert equal ($result | first | get index) 1
 }
 
 @test
@@ -201,7 +194,7 @@ def "db-pres2025 list people pres2025 - --with chronologically sorts nested fact
 def "db-pres2025 list events pres2025 - has expected columns" [] {
     let ctx = $in
     let cols = (with-env (e $ctx) { genq list events } | columns)
-    for col in [index EventID RIN Given Surname Event Description EventDate SortDate LastUpdate] {
+    for col in [EventID RIN Given Surname Event Description EventDate SortDate LastUpdate] {
         assert ($cols | any { |c| $c == $col })
     }
 }
@@ -238,13 +231,6 @@ def "db-pres2025 list events pres2025 - sort-date-by orders SortDate ascending" 
     assert equal $sorted ($sorted | sort)
 }
 
-@test
-def "db-pres2025 list events pres2025 - index starts at 1" [] {
-    let ctx = $in
-    let result = (with-env (e $ctx) { genq list events })
-    assert equal ($result | first | get index) 1
-}
-
 # =============================================================================
 # genq list families
 # =============================================================================
@@ -253,7 +239,7 @@ def "db-pres2025 list events pres2025 - index starts at 1" [] {
 def "db-pres2025 list families pres2025 - has expected columns" [] {
     let ctx = $in
     let cols = (with-env (e $ctx) { genq list families } | columns)
-    for col in [index FamilyID FatherID FatherGiven FatherSurname MotherID MotherGiven MotherSurname HusbOrder WifeOrder] {
+    for col in [FamilyID FatherID FatherGiven FatherSurname MotherID MotherGiven MotherSurname HusbOrder WifeOrder] {
         assert ($cols | any { |c| $c == $col })
     }
 }
@@ -303,7 +289,7 @@ def "db-pres2025 list media pres2025 - runs without error" [] {
 def "db-pres2025 list presidents pres2025 - has expected columns" [] {
     let ctx = $in
     let cols = (with-env (e $ctx) { genq list presidents } | columns)
-    for col in [index RIN Given Surname Event Description EventDate] {
+    for col in [RIN Given Surname Event Description EventDate] {
         assert ($cols | any { |c| $c == $col })
     }
 }

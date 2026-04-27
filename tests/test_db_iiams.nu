@@ -58,7 +58,7 @@ def "db-iiams list people iiams - substantially larger than pres2025" [] {
 def "db-iiams list people iiams - has expected columns" [] {
     if (no-db) { return }
     let cols = (with-env (ie) { genq list people } | columns)
-    for col in [index RIN Given Surname Sex BirthDate DeathDate] {
+    for col in [RIN Given Surname Sex BirthDate DeathDate] {
         assert ($cols | any { |c| $c == $col })
     }
 }
@@ -94,7 +94,7 @@ def "db-iiams list events iiams - returns records" [] {
 def "db-iiams list events iiams - has expected columns" [] {
     if (no-db) { return }
     let cols = (with-env (ie) { genq list events } | columns)
-    for col in [index EventID RIN Given Surname Event Description EventDate SortDate LastUpdate] {
+    for col in [EventID RIN Given Surname Event Description EventDate SortDate LastUpdate] {
         assert ($cols | any { |c| $c == $col })
     }
 }
@@ -162,7 +162,7 @@ def "db-iiams list sources iiams - has expected columns" [] {
     let result = (with-env (ie) { genq list sources })
     if ($result | length) == 0 { return }
     let cols = ($result | columns)
-    for col in [index SrcID TempID AbbrevSourceName Footnote ShortFootnote Bibliography] {
+    for col in [SrcID TempID AbbrevSourceName Footnote ShortFootnote Bibliography] {
         assert ($cols | any { |c| $c == $col })
     }
 }
@@ -192,7 +192,7 @@ def "db-iiams list citations iiams - has expected columns" [] {
     let result = (with-env (ie) { genq list citations })
     if ($result | length) == 0 { return }
     let cols = ($result | columns)
-    for col in [index RIN Surname Givens Source] {
+    for col in [RIN Surname Givens Source] {
         assert ($cols | any { |c| $c == $col })
     }
 }
@@ -221,7 +221,7 @@ def "db-iiams list findagrave iiams - has expected columns" [] {
     let result = (with-env (ie) { genq list findagrave })
     if ($result | length) == 0 { return }
     let cols = ($result | columns)
-    for col in [index RIN Name URL] {
+    for col in [RIN Name URL] {
         assert ($cols | any { |c| $c == $col })
     }
 }
@@ -251,7 +251,7 @@ def "db-iiams list obits iiams - has expected columns" [] {
     let result = (with-env (ie) { genq list obits })
     if ($result | length) == 0 { return }
     let cols = ($result | columns)
-    for col in [index RIN NewObit] {
+    for col in [RIN NewObit] {
         assert ($cols | any { |c| $c == $col })
     }
 }
@@ -266,7 +266,7 @@ def "db-iiams list newspaper obits summary iiams - has expected columns" [] {
     let result = (with-env (ie) { genq list newspaper obits summary })
     if ($result | length) == 0 { return }
     let cols = ($result | columns)
-    for col in [index RIN Newspaper EventID] {
+    for col in [RIN Newspaper EventID] {
         assert ($cols | any { |c| $c == $col })
     }
 }
@@ -365,7 +365,7 @@ def "db-iiams list names iiams - returns records" [] {
 def "db-iiams list names iiams - has expected columns" [] {
     if (no-db) { return }
     let cols = (with-env (ie) { genq list names } | columns)
-    for col in [index NameID RIN Surname Given NameType IsPrimary BirthYear DeathYear] {
+    for col in [NameID RIN Surname Given NameType IsPrimary BirthYear DeathYear] {
         assert ($cols | any { |c| $c == $col })
     }
 }
@@ -402,7 +402,7 @@ def "db-iiams list places iiams - returns records" [] {
 def "db-iiams list places iiams - has expected columns" [] {
     if (no-db) { return }
     let cols = (with-env (ie) { genq list places } | columns)
-    for col in [index PlaceID Name Normalized PlaceType] {
+    for col in [PlaceID Name Normalized PlaceType] {
         assert ($cols | any { |c| $c == $col })
     }
 }
@@ -441,7 +441,7 @@ def "db-iiams list children iiams - returns records" [] {
 def "db-iiams list children iiams - has expected columns" [] {
     if (no-db) { return }
     let cols = (with-env (ie) { genq list children } | columns)
-    for col in [index RIN Given Surname Sex MRIN FatherRIN MotherRIN RelToFather RelToMother] {
+    for col in [RIN Given Surname Sex MRIN FatherRIN MotherRIN RelToFather RelToMother] {
         assert ($cols | any { |c| $c == $col })
     }
 }
@@ -471,7 +471,7 @@ def "db-iiams list associations iiams - has expected columns when records exist"
     let result = (with-env (ie) { genq list associations })
     if ($result | length) == 0 { return }
     let cols = ($result | columns)
-    for col in [index FanID RIN1 Given1 Surname1 RIN2 Given2 Surname2 AssocType] {
+    for col in [FanID RIN1 Given1 Surname1 RIN2 Given2 Surname2 AssocType] {
         assert ($cols | any { |c| $c == $col })
     }
 }
@@ -491,7 +491,7 @@ def "db-iiams list witnesses iiams - returns records" [] {
 def "db-iiams list witnesses iiams - has expected columns" [] {
     if (no-db) { return }
     let cols = (with-env (ie) { genq list witnesses } | columns)
-    for col in [index WitnessID EventID EventType EventOwnerRIN WitnessRIN Role] {
+    for col in [WitnessID EventID EventType EventOwnerRIN WitnessRIN Role] {
         assert ($cols | any { |c| $c == $col })
     }
 }
@@ -520,7 +520,7 @@ def "db-iiams list sources all iiams - returns records" [] {
 def "db-iiams list sources all iiams - has expected columns" [] {
     if (no-db) { return }
     let cols = (with-env (ie) { genq list sources --all } | columns)
-    for col in [index SrcID TempID TemplateName AbbrevSourceName] {
+    for col in [SrcID TempID TemplateName AbbrevSourceName] {
         assert ($cols | any { |c| $c == $col })
     }
 }
