@@ -34,6 +34,7 @@ It is built for casual researchers who want to *explore* their data — ask ques
 - **Not a traditional reporting engine.** No layouts, print formatting, or PDF templates — those are downstream concerns.
 - **Not a write tool.** Even when writes would be convenient, they are out of scope.
 - **Not a general-purpose database tool.** GenQuery knows about *genealogy*. That domain knowledge is the value.
+- **Not bit-for-bit identical to RootsMagic's UI for name comparisons.** GenQuery uses SQLite's `NOCASE` collation (ASCII-only case folding) in lieu of RootsMagic's proprietary `RMNOCASE`, which folds diacritics as well. Sorts and distinct-counts on names containing diacritics can differ slightly from RootsMagic. See the README's *Known Limitations* section.
 
 ### Implementation Approach
 

@@ -66,3 +66,25 @@ Here is a full description of [genq](https://github.com/miams/genq/blob/main/doc
 <h2 align="left">Updating Nushell and GenQuery:</h2>
 
 Documentation for updating Nushell and GenQuery going forward is pending.
+
+<h2 align="left">Known Limitations:</h2>
+
+> [!NOTE]
+> **String collation.** RootsMagic ships a proprietary SQLite collation called
+> `RMNOCASE` that folds both case *and* diacritics — so "Müller" matches
+> "Mueller" and "café" matches "cafe" — for name, place, and source columns.
+> Because GenQuery is multi-platform and Nushell's bundled SQLite layer cannot
+> register custom collations from script, GenQuery uses SQLite's built-in
+> `NOCASE` (ASCII-only case folding) as a workaround everywhere a comparison or
+> sort against those columns is needed. Practical effects:
+>
+> - Surnames, places, or sources containing diacritics may sort differently
+>   than they do in the RootsMagic UI.
+> - Distinct-count metrics (e.g., distinct surnames) can be marginally higher
+>   than RootsMagic reports, because diacritic variants don't merge.
+> - String-equality filters do not fold diacritics — `where Surname == 'Muller'`
+>   will not match a row stored as "Müller".
+>
+> Numeric joins — which power the vast majority of GenQuery queries — are
+> unaffected. RMNOCASE-aware behavior may be revisited if a Nushell SQLite
+> plugin (or upstream extension-loading hook) becomes available.
