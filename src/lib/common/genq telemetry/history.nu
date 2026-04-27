@@ -1,27 +1,21 @@
 # Telemetry upload history — local NDJSON log of every send attempt
 #
 # Each upload (success or failure) appends one record under
-# ~/.local/share/genq/telemetry/uploads/YYYY-MM-DD.ndjson. Schema:
+# <telemetry-data-dir>/uploads/YYYY-MM-DD.ndjson. Schema:
 #   { timestamp, endpoint_url, span_count, bytes, status, error_msg }
 # status is one of: "success" | "deferred" | "failed"
 #   deferred → host appears offline (network unreachable / DNS failure / timeout)
 #   failed   → endpoint reachable but rejected the payload (HTTP error, malformed)
+#
+# Lives in the data dir (not cache) because the audit trail is the user-
+# facing point of `genq telemetry history` — purging it would erase that.
+
+use paths.nu [telemetry-data-dir]
 
 # Return the upload-history directory path, creating it if missing.
 export def history-dir [] {
-    let base = if ($env.APPDATA? | default "" | is-not-empty) {
-        # Windows
-        $env.APPDATA | path join "genq" "telemetry" "uploads"
-    } else {
-        # macOS / Linux (XDG)
-        let data_home = ($env.XDG_DATA_HOME? | default ($env.HOME | path join ".local" "share"))
-        $data_home | path join "genq" "telemetry" "uploads"
-    }
-
-    if not ($base | path exists) {
-        mkdir $base
-    }
-
+    let base = (telemetry-data-dir | path join "uploads")
+    if not ($base | path exists) { mkdir $base }
     $base
 }
 

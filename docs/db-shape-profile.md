@@ -1,8 +1,25 @@
 # GenQuery — Database Shape Profile: Metric Catalog
 
 **Date:** 2026-04-25
-**Companion to:** `sql/db-shape-profile.sql`
-**Goal:** Catalog every candidate metric for a standard RootsMagic database "shape" report. Each row captures the specific query, whether it is currently in the first-draft SQL, whether Claude Code recommends keeping/adding it, and the reasoning.
+**Source of truth:** `src/lib/common/genq telemetry/profile-catalog.nu`
+**Runner:** `src/lib/common/genq telemetry/profile.nu`
+**Transport:** `POST /v1/profiles` (gzipped JSON) — see `docs/telemetry-design.md`
+**Goal:** Catalog every candidate metric for a standard RootsMagic database "shape" report. Each row captures the specific query, whether it is currently in the live catalog, whether Claude Code recommends keeping/adding it, and the reasoning.
+
+> **Note:** This document was originally drafted alongside a JS prototype
+> (`scripts/db-shape-profile-metrics.js`) and a draft `sql/db-shape-profile.sql`.
+> Both have been retired. The metric catalog now lives in Nushell at
+> `profile-catalog.nu` and runs as a single mega-query at GenQuery startup.
+
+> **Collation note.** Every metric below that performs DISTINCT, GROUP BY,
+> ORDER BY, or string-equality on a RootsMagic name/place/source column uses
+> `COLLATE NOCASE` to override the column's declared `RMNOCASE` collation —
+> Nushell's SQLite layer cannot load the RootsMagic `RMNOCASE` extension, and
+> any unqualified comparison against an `RMNOCASE` column would otherwise
+> error with `no such collation sequence: RMNOCASE`. The trade-off is that
+> `NOCASE` folds case but not diacritics, so distinct counts on diacritic-rich
+> data (surnames, place names) can be marginally higher than RootsMagic's
+> own UI reports. See the project README's *Known Limitations* section.
 
 ---
 
@@ -11,8 +28,8 @@
 | Column | Meaning |
 |---|---|
 | **Metric** | Output column or row of interest |
-| **Specific Query** | SQL fragment that produces the metric (full statements live in `sql/db-shape-profile.sql`) |
-| **Impl** | Y if the metric is in the current first-draft SQL; N if it is a candidate not yet included |
+| **Specific Query** | SQL fragment that produces the metric (full queries live in `profile-catalog.nu`) |
+| **Impl** | Y if the metric is in the live `profile-catalog.nu`; N if it is a candidate not yet included |
 | **Rec** | Claude Code's recommendation for the final query — Y = keep/add, N = drop/skip |
 | **Reasoning** | Why it earns (or fails) the recommendation |
 
@@ -221,7 +238,7 @@ Single-row record identifying RM version, DB identity, and SQLite physical layou
 | `total` | `COUNT(*) FROM FANTable` | Y | Y | FAN-club / association count. |
 | `missing_person` | `SUM(CASE WHEN ID1 = 0 OR ID2 = 0 …)` | Y | Y | Data-quality flag for orphan associations. |
 | `association_types.total` | `COUNT(FANTypeID) FROM FANTypeTable` | Y | Y | RMNOCASE-safe count of declared association types. |
-| `association_type_usage` | `SELECT FANType, COUNT(*) FROM FANTable GROUP BY FANType` | N | N | Custom name extraction collides with RMNOCASE; defer until needed. |
+| `association_type_usage` | `SELECT t.FANTypeID, t.Name, (SELECT COUNT(*) FROM FANTable f WHERE f.FanTypeID = t.FANTypeID) FROM FANTypeTable t` | Y | Y | Per-type usage table; integer FK join (same shape as `fact_type_usage`). |
 
 ---
 

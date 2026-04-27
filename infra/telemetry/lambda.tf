@@ -64,7 +64,10 @@ resource "aws_iam_role_policy" "s3_write" {
         Action = [
           "s3:PutObject"
         ]
-        Resource = "${aws_s3_bucket.telemetry.arn}/traces/*"
+        Resource = [
+          "${aws_s3_bucket.telemetry.arn}/traces/*",
+          "${aws_s3_bucket.telemetry.arn}/profiles/*",
+        ]
       }
     ]
   })

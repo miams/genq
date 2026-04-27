@@ -50,30 +50,18 @@ export def new-session [] {
 
 # Build the initial session-start span and append it to the buffer.
 # This is called once at genq load time to record the session beginning.
+#
+# DB shape (person_count, size_kb, schema details) is intentionally NOT
+# captured here — that role is served by the dedicated DB shape profile,
+# which uploads to /v1/profiles. Keeping session.start light prevents an
+# extra DB round-trip on every cold-start.
 export def record-session-start [session: record] {
     let cold_start_ms = ((date now) - $session.start_time) / 1ms | into int
 
-    # Gather DB metadata (read-only PRAGMAs — safe and fast)
-    let db_meta = (try {
-        if ($env.rmdb? | default "" | path exists) {
-            let person_count = (open $env.rmdb | query db "SELECT COUNT(*) as c FROM PersonTable" | get 0.c)
-            let page_info = (open $env.rmdb | query db "PRAGMA page_count" | get 0.page_count)
-            let page_size = (open $env.rmdb | query db "PRAGMA page_size" | get 0.page_size)
-            let size_kb = (($page_info * $page_size) / 1024 | into int)
-            let filename = ($env.rmdb | path basename)
-            let db_name = ($env.GENQ_CONFIG?.database?.active? | default "unknown")
-            {
-                person_count: $person_count
-                size_kb: $size_kb
-                filename: $filename
-                db_name: $db_name
-            }
-        } else {
-            { person_count: 0, size_kb: 0, filename: "", db_name: "none" }
-        }
-    } catch {
-        { person_count: 0, size_kb: 0, filename: "", db_name: "error" }
-    })
+    let db_name = ($env.GENQ_CONFIG?.database?.active? | default "unknown")
+    let db_filename = (if (($env.rmdb? | default "") | path exists) {
+        $env.rmdb | path basename
+    } else { "" })
 
     let span = {
         traceId: $session.trace_id
@@ -85,10 +73,8 @@ export def record-session-start [session: record] {
         endTimeUnixNano: $session.start_time_unix_nano
         attributes: [
             { key: "genq.session.cold_start_ms",  value: { intValue: ($cold_start_ms | into string) } }
-            { key: "genq.db.name",                value: { stringValue: $db_meta.db_name } }
-            { key: "genq.db.filename",            value: { stringValue: $db_meta.filename } }
-            { key: "genq.db.person_count",        value: { intValue: ($db_meta.person_count | into string) } }
-            { key: "genq.db.size_kb",             value: { intValue: ($db_meta.size_kb | into string) } }
+            { key: "genq.db.name",                value: { stringValue: $db_name } }
+            { key: "genq.db.filename",            value: { stringValue: $db_filename } }
             { key: "genq.config.table_mode",      value: { stringValue: ($env.GENQ_CONFIG?.display?.table_mode? | default "rounded") } }
             { key: "genq.config.date_format",     value: { intValue: ($env.GENQ_CONFIG?.display?.date_format? | default 1 | into string) } }
             { key: "genq.session.commands_run",   value: { intValue: "0" } }

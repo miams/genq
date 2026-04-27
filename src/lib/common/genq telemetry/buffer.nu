@@ -1,24 +1,16 @@
 # Telemetry NDJSON buffer — local file I/O
 #
-# Spans are appended to daily NDJSON files under ~/.local/share/genq/telemetry/.
+# Spans are appended to daily NDJSON files under the telemetry data dir
+# (see paths.nu — Application Support on macOS, XDG_DATA_HOME on Linux,
+# APPDATA on Windows). Pre-upload buffer is "data, not cache": purging
+# loses real spans, so it lives where the OS won't reclaim it.
 # No network I/O happens here; transmission is handled by transport.nu.
+
+use paths.nu [telemetry-data-dir]
 
 # Return the buffer directory path, creating it if it does not exist.
 export def buffer-dir [] {
-    let dir = if ($env.APPDATA? | default "" | is-not-empty) {
-        # Windows
-        $env.APPDATA | path join "genq" "telemetry"
-    } else {
-        # macOS / Linux (XDG)
-        let data_home = ($env.XDG_DATA_HOME? | default ($env.HOME | path join ".local" "share"))
-        $data_home | path join "genq" "telemetry"
-    }
-
-    if not ($dir | path exists) {
-        mkdir $dir
-    }
-
-    $dir
+    telemetry-data-dir
 }
 
 # Append a single span record as one JSON line to today's buffer file.

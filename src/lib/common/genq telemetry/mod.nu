@@ -11,8 +11,10 @@
 
 use collector.nu [new-session, record-session-start, record-command, record-session-end, build-resource]
 use buffer.nu [read-buffer, clear-buffer, rotate-buffer, buffer-stats, append-span]
-use transport.nu [send-otlp]
+use transport.nu [send-otlp, send-profiles]
 use history.nu [read-history, rotate-history, history-dir]
+use profile.nu [list-profiles, read-profile, should-profile, compute-fingerprint]
+export use profile.nu profile-init
 
 # Telemetry management for GenQuery.
 @category "genq-common"
@@ -25,6 +27,7 @@ export def main [] {
     print "  genq telemetry clear    — Delete local buffer without uploading"
     print "  genq telemetry view     — Print buffered events"
     print "  genq telemetry history  — Show upload transmission log"
+    print "  genq telemetry profile  — Show DB shape profile status"
     print ""
     print "Telemetry is anonymous and mandatory. No PII is collected."
     print "See docs/telemetry-design.md for privacy details."
@@ -53,6 +56,7 @@ export def status [] {
 }
 
 # Upload buffered telemetry data to the configured OTLP endpoint.
+# Sends two streams: traces (/v1/traces) and DB shape profiles (/v1/profiles).
 @category "genq-common"
 export def send [] {
     let endpoint = ($env.GENQ_CONFIG?.telemetry?.endpoint_url? | default "")
@@ -62,6 +66,7 @@ export def send [] {
         return
     }
     send-otlp $endpoint
+    send-profiles $endpoint
 }
 
 # Delete all local telemetry buffer files without uploading.
@@ -144,6 +149,43 @@ export def history [] {
             KB: $kb
             Spans: $e.span_count
             Status: $e.status
+        }
+    }
+}
+
+# Show pending DB shape profile snapshots and the cache state.
+@category "genq-common"
+export def profile [] {
+    let profiles = (list-profiles)
+    let db_path = ($env.rmdb? | default "")
+
+    print $"(ansi cyan_bold)DB Shape Profile(ansi reset)"
+    print ""
+
+    if ($db_path | is-empty) or (not ($db_path | path exists)) {
+        print "  Active DB:      (none)"
+    } else {
+        print $"  Active DB:      ($db_path)"
+        try {
+            let fp = (compute-fingerprint $db_path)
+            print $"  Fingerprint:    ($fp.rm_unique_id) @ ($fp.latest_utcmoddate)"
+        } catch { }
+        let pending = (try { should-profile $db_path } catch { true })
+        let label = if $pending { $"(ansi yellow)pending(ansi reset)" } else { $"(ansi green)current(ansi reset)" }
+        print $"  Status:         ($label)"
+    }
+
+    print ""
+    print $"(ansi cyan_bold)Local snapshots(ansi reset)"
+    if ($profiles | is-empty) {
+        print "  (none)"
+        return
+    }
+    $profiles | each {|p|
+        {
+            file: $p.file
+            size_bytes: $p.size_bytes
+            modified: $p.modified
         }
     }
 }

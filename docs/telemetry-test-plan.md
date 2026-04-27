@@ -10,12 +10,20 @@ Telemetry is mandatory and always-on; there is no consent module and no enable/d
 
 ### 2.1 `buffer-dir` — directory resolution
 
+`buffer-dir` delegates to `telemetry-data-dir` (`paths.nu`), which resolves
+per-platform: `~/Library/Application Support/genq/telemetry` on macOS,
+`$XDG_DATA_HOME/genq/telemetry` (default `~/.local/share/...`) on Linux, and
+`%APPDATA%\genq\telemetry` on Windows. Tests below cover each branch; only
+the matching platform's row should run on a given host.
+
 | # | Test | Steps | Expected Result |
 |---|------|-------|-----------------|
-| 2.1.1 | Creates directory if missing | Set `$env.XDG_DATA_HOME` to a temp path with no `genq/telemetry` subdir. Call `buffer-dir`. | Returns path; directory exists on disk |
+| 2.1.1 | Creates directory if missing | Remove the resolved buffer dir. Call `buffer-dir`. | Returns path; directory exists on disk |
 | 2.1.2 | Returns existing directory | Call `buffer-dir` twice. | Same path both times; no error |
-| 2.1.3 | Respects XDG_DATA_HOME | Set `$env.XDG_DATA_HOME = "/tmp/test-xdg"`. Call `buffer-dir`. | Returns `/tmp/test-xdg/genq/telemetry` |
-| 2.1.4 | Falls back to ~/.local/share | Unset `$env.XDG_DATA_HOME`. Call `buffer-dir`. | Returns `~/.local/share/genq/telemetry` (expanded) |
+| 2.1.3 | macOS path | On macOS, call `buffer-dir`. | Returns `~/Library/Application Support/genq/telemetry` (expanded) |
+| 2.1.4 | Linux respects XDG_DATA_HOME | On Linux, set `$env.XDG_DATA_HOME = "/tmp/test-xdg"`. Call `buffer-dir`. | Returns `/tmp/test-xdg/genq/telemetry` |
+| 2.1.5 | Linux falls back to ~/.local/share | On Linux, unset `$env.XDG_DATA_HOME`. Call `buffer-dir`. | Returns `~/.local/share/genq/telemetry` (expanded) |
+| 2.1.6 | Windows path | On Windows, with `%APPDATA%` set, call `buffer-dir`. | Returns `%APPDATA%\genq\telemetry` (expanded) |
 
 ### 2.2 `append-span` — writing spans
 
@@ -92,18 +100,20 @@ Telemetry is mandatory and always-on; there is no consent module and no enable/d
 | 3.2.8 | start_time_unix_nano is string | Call `new-session`. | `start_time_unix_nano` is a string of digits |
 | 3.2.9 | resource contains attributes | Call `new-session`. | `resource.attributes` is a non-empty list |
 
-### 3.3 `record-session-start` — initial session span (DB-dependent)
+### 3.3 `record-session-start` — initial session span (lightweight; no DB I/O)
 
 | # | Test | Steps | Expected Result |
 |---|------|-------|-----------------|
 | 3.3.1 | Writes session span to buffer | Create session via `new-session`. Call `record-session-start`. Read buffer. | Buffer has 1 span with `name == "genq.session"` |
 | 3.3.2 | Span has correct traceId | Create session. Record start. Read span. | `span.traceId == session.trace_id` |
 | 3.3.3 | cold_start_ms is non-negative | Record start. Read span attributes. | `genq.session.cold_start_ms` intValue >= 0 |
-| 3.3.4 | DB metadata populated with real DB | Set `$env.rmdb` to pres2025. Record start. Read span. | `genq.db.person_count > 0`, `genq.db.size_kb > 0`, `genq.db.filename == "pres2025.rmtree"` |
-| 3.3.5 | DB metadata graceful on missing DB | Set `$env.rmdb` to nonexistent path. Record start. Read span. | `genq.db.person_count == "0"`, `genq.db.db_name == "none"`; no error |
-| 3.3.6 | Span has _resource field | Record start. Read span. | Span contains `_resource` key with `attributes` list |
-| 3.3.7 | parentSpanId is null | Record start. Read span. | `parentSpanId == null` (root span) |
-| 3.3.8 | status code is 1 (OK) | Record start. Read span. | `status.code == 1` |
+| 3.3.4 | Filename label populated when rmdb set | Set `$env.rmdb` to pres2025. Record start. Read span. | `genq.db.filename == "pres2025.rmtree"`; `genq.db.name` equals active config DB |
+| 3.3.5 | No DB metadata attributes | Record start. Read attribute keys. | Span attributes do **not** include `genq.db.person_count`, `genq.db.size_kb`, or `genq.db.last_modified_epoch` (moved to `/v1/profiles`) |
+| 3.3.6 | Graceful on missing DB | Set `$env.rmdb` to nonexistent path. Record start. Read span. | Span emitted; `genq.db.filename == ""`; no error |
+| 3.3.7 | Span has _resource field | Record start. Read span. | Span contains `_resource` key with `attributes` list |
+| 3.3.8 | parentSpanId is null | Record start. Read span. | `parentSpanId == null` (root span) |
+| 3.3.9 | status code is 1 (OK) | Record start. Read span. | `status.code == 1` |
+| 3.3.10 | No DB round-trip on start | Patch `query db` to fail. Record start. | No error; span still emitted (DB is not queried during session start) |
 
 ### 3.4 `record-command` — command span
 
@@ -232,7 +242,9 @@ Telemetry is mandatory and always-on; there is no consent module and no enable/d
 | 6.1.2 | Sets GENQ_TELEMETRY_SESSION env | Load main.nu. | `$env.GENQ_TELEMETRY_SESSION` contains `trace_id`, `span_id`, `start_time`, `start_time_unix_nano`, `commands_run`, `error_count`, `resource` |
 | 6.1.3 | Initializes counters at 0 | Load main.nu. | `$env.GENQ_TELEMETRY_SESSION.commands_run == 0` and `error_count == 0` |
 | 6.1.4 | cold_start_ms is reasonable | Load main.nu. Read session span. | `genq.session.cold_start_ms` is between 0 and 5000 |
-| 6.1.5 | DB metadata populated | Load main.nu with valid `$env.rmdb`. Read span. | `genq.db.person_count > 0` |
+| 6.1.5 | Filename label populated | Load main.nu with valid `$env.rmdb`. Read span. | `genq.db.filename` matches `path basename $env.rmdb` |
+| 6.1.5b | Background profile job spawns | Load main.nu with valid `$env.rmdb`, no cached profile. | Within ~2s, a `<rm_unique_id>-*.json.gz` file appears in `profiles-dir` (`<data-root>/profiles/`); user prompt appears immediately (no blocking) |
+| 6.1.5c | Profile failure does not break startup | Stub profile-init to throw. Load main.nu. | genq loads successfully; no error reaches the user |
 | 6.1.6 | Rotates old buffer files | Create a file dated 60 days ago. Load main.nu with retention_days=30. | Old file deleted; today's file exists |
 | 6.1.7 | Rotates old upload-history files | Create `uploads/` file dated 60 days ago. Load main.nu. | Old upload-history file deleted; today's preserved |
 
@@ -249,7 +261,7 @@ Telemetry is mandatory and always-on; there is no consent module and no enable/d
 | # | Test | Steps | Expected Result |
 |---|------|-------|-----------------|
 | 6.3.1 | Telemetry failure never breaks genq | Corrupt the buffer directory (e.g., set to a file instead of dir). Load main.nu. | genq loads successfully; try/catch absorbs error |
-| 6.3.2 | DB unavailable doesn't block init | Set `$env.rmdb` to nonexistent file. Load main.nu. | Session span written with `person_count: 0`, `db_name: "none"` |
+| 6.3.2 | DB unavailable doesn't block init | Set `$env.rmdb` to nonexistent file. Load main.nu. | Session span written with empty `genq.db.filename`; profile job spawns and silently exits without writing a snapshot |
 
 ---
 
@@ -303,7 +315,15 @@ Telemetry is mandatory and always-on; there is no consent module and no enable/d
 
 ## 9. AWS Lambda Handler (`handler.py`)
 
-### 9.1 Input validation
+### 9.1 Routing
+
+| # | Test | Steps | Expected Result |
+|---|------|-------|-----------------|
+| 9.1.0a | Routes `/v1/traces` to trace handler | POST event with `rawPath: "/v1/traces"`. | `_handle_trace` invoked; trace-shape S3 key |
+| 9.1.0b | Routes `/v1/profiles` to profile handler | POST event with `rawPath: "/v1/profiles"`. | `_handle_profile` invoked; profile-shape S3 key |
+| 9.1.0c | Returns 404 for unknown route | POST event with `rawPath: "/v1/foo"`. | 404 response: `{"error": "unknown route"}` |
+
+### 9.1 Input validation (traces)
 
 | # | Test | Steps | Expected Result |
 |---|------|-------|-----------------|
@@ -312,7 +332,7 @@ Telemetry is mandatory and always-on; there is no consent module and no enable/d
 | 9.1.3 | Rejects missing resourceSpans | POST with `{"foo": "bar"}`. | 400 response: `{"error": "missing resourceSpans"}` |
 | 9.1.4 | Accepts valid OTLP payload | POST with `{"resourceSpans": []}`. | 200 response |
 
-### 9.2 S3 storage
+### 9.2 S3 storage (traces)
 
 | # | Test | Steps | Expected Result |
 |---|------|-------|-----------------|
@@ -335,6 +355,21 @@ Telemetry is mandatory and always-on; there is no consent module and no enable/d
 | # | Test | Steps | Expected Result |
 |---|------|-------|-----------------|
 | 9.4.1 | Handles base64-encoded body | Send event with `isBase64Encoded: true` and base64 body. | Payload decoded correctly; S3 content matches original |
+
+### 9.5 Profile route (`/v1/profiles`)
+
+| # | Test | Steps | Expected Result |
+|---|------|-------|-----------------|
+| 9.5.1 | Rejects missing schemaVersion | POST `{"fingerprint": {"rm_unique_id": "X"}}` to `/v1/profiles`. | 400 response: `{"error": "missing schemaVersion or fingerprint"}` |
+| 9.5.2 | Rejects missing fingerprint | POST `{"schemaVersion": "1"}` to `/v1/profiles`. | 400 response: `{"error": "missing schemaVersion or fingerprint"}` |
+| 9.5.3 | Accepts valid profile | POST `{"schemaVersion":"1","fingerprint":{"rm_unique_id":"ABC"},"capturedAtUnixNano":"1714000000000000000","scalars":{"people.total":11}}` to `/v1/profiles`. | 200 response |
+| 9.5.4 | Stores under `profiles/<rm_unique_id>/` | Send valid profile with `rm_unique_id == "ABC123"`. | S3 key matches `profiles/ABC123/<captured_at>-<request_id>.json.gz` |
+| 9.5.5 | Sanitizes invalid `rm_unique_id` | Send profile with `rm_unique_id == "../../etc/passwd"`. | Stored under `profiles/unknown/...` (regex-rejected) |
+| 9.5.6 | Falls back to `unknown` when missing | Send profile with no `rm_unique_id` in fingerprint. | S3 key starts with `profiles/unknown/` |
+| 9.5.7 | Preserves gzipped body | Send with `Content-Encoding: gzip` + base64 gzipped body. Download S3 object. Bytes match input exactly. | No re-compression; bytes identical |
+| 9.5.8 | Re-compresses unencoded body | Send without `Content-Encoding: gzip`. Download S3 object. | Object is gzip-decodable JSON of original payload |
+| 9.5.9 | ContentEncoding header is gzip | Send valid profile. Check S3 metadata. | `ContentEncoding == "gzip"` |
+| 9.5.10 | Profile route does NOT forward to Grafana | Send valid profile. Tail Lambda logs. | No "Grafana response:" line for the profile request |
 
 ---
 
@@ -385,6 +420,93 @@ Telemetry is mandatory and always-on; there is no consent module and no enable/d
 | 10.4 | Clear deletes local buffer | After 10.3, run `genq telemetry clear`. Check buffer dir. | NDJSON files removed; uploads/ history preserved |
 | 10.5 | Cold start telemetry overhead is minimal | Time genq cold start with main.nu. | telemetry-init adds < 500ms to startup |
 | 10.6 | Telemetry survives app bundle update | Install v0.2.0 DMG. Run a session. Install v0.3.0 DMG. Launch. | Buffer preserved; new session uses updated `service.version` |
+
+---
+
+## 12. DB Shape Profile (`profile-catalog.nu`, `profile.nu`)
+
+Profile storage splits across two roots: pending snapshots are *data*
+(`profiles-dir` → `<data-root>/profiles/`), while the fingerprint cache and
+already-uploaded archives are *cache* (`cache-file` → `<cache-root>/profiles/fingerprint-cache.json`,
+`sent-profiles-dir` → `<cache-root>/profiles/sent/`). The split prevents a
+purgeable cache wipe from losing a snapshot that hasn't shipped yet — see
+Section 2.1 and `paths.nu` for the per-platform roots.
+
+### 12.1 Catalog (`profile-catalog.nu`)
+
+| # | Test | Steps | Expected Result |
+|---|------|-------|-----------------|
+| 12.1.1 | `metric-catalog` returns non-empty list | Call `metric-catalog`. | List has at least 130 entries |
+| 12.1.2 | Every entry has required fields | Iterate entries; check keys. | Each has `qno`, `section`, `name`, `kind`, `query` |
+| 12.1.3 | `qno` is deterministic per section | Snapshot `qno`s across two calls. | Identical sequences (catalog is pure data) |
+| 12.1.4 | `qno` numbering is `SS.NN` zero-padded | Inspect any entry. | Matches regex `^\d{2}\.\d{2}$` |
+| 12.1.5 | Names are unique | Collect `name` values. | No duplicates |
+| 12.1.6 | All `kind` values are `scalar` or `multi_row` | Inspect each entry. | Set is exactly `{"scalar", "multi_row"}` |
+| 12.1.7 | Scalar queries reference `v` column | Inspect scalar query SQL. | Each query yields a column aliased `v` (validated by mega-query construction) |
+
+### 12.2 Mega-query construction (`build-mega-query`)
+
+| # | Test | Steps | Expected Result |
+|---|------|-------|-----------------|
+| 12.2.1 | Wraps each scalar in `(SELECT v FROM (...))` | Build mega-query against catalog of 3 scalars. | SQL contains 3 `(SELECT v FROM (...))` subqueries with positional aliases `m_0001`, `m_0002`, `m_0003` |
+| 12.2.2 | Includes terminal `FROM (SELECT 1)` | Inspect generated SQL. | Ends with `FROM (SELECT 1)` |
+| 12.2.3 | Skips `multi_row` metrics | Build with mixed catalog. | Generated SQL contains scalar metrics only; multi-rows handled separately |
+
+### 12.3 Runner (`run-profile`) — DB-dependent
+
+| # | Test | Steps | Expected Result |
+|---|------|-------|-----------------|
+| 12.3.1 | Returns scalars + multiRows + timing | Run against pres2025. | Result has `scalars`, `multiRows`, `timing` keys |
+| 12.3.2 | Scalars keyed by metric name | Run against pres2025. | `scalars."people.total"` is a positive integer |
+| 12.3.3 | Multi-row entries are list of records | Run against pres2025. | `multiRows.fact_type_usage` is a list of records, each with at least `Name` and a count column |
+| 12.3.4 | Mega-query timing recorded | Run against pres2025. | `timing.scalars_ms` is a positive number |
+| 12.3.5 | Total time covers both phases | Run against pres2025. | `timing.total_ms >= timing.scalars_ms + timing.multirows_ms` |
+| 12.3.6 | Falls back to per-metric on mega-query failure | Inject a syntactically broken metric. | `scalars` still populated for valid metrics |
+| 12.3.7 | Iiams DB completes under 4s | Run against Iiams. | `timing.total_ms < 4000` |
+
+### 12.4 Fingerprint (`compute-fingerprint`) — DB-dependent
+
+| # | Test | Steps | Expected Result |
+|---|------|-------|-----------------|
+| 12.4.1 | Returns rm_unique_id and latest_utcmoddate_julian | Compute against pres2025. | Record with both keys; both non-empty |
+| 12.4.2 | Same DB → same fingerprint | Compute twice on same DB without modification. | Identical fingerprints |
+| 12.4.3 | Missing `rm_unique_id` returns "unknown" | Drop ConfigTable row. | `rm_unique_id == "unknown"` (graceful) |
+
+### 12.5 Cache decision (`should-profile`)
+
+| # | Test | Steps | Expected Result |
+|---|------|-------|-----------------|
+| 12.5.1 | Profile when no snapshot exists | Clear `profiles/`. Compute fingerprint. Call `should-profile`. | Returns true |
+| 12.5.2 | Skip when fingerprint matches | Drop a snapshot file matching current fingerprint. Call `should-profile`. | Returns false |
+| 12.5.3 | Re-profile after 7 days | Drop a snapshot file dated 8 days ago, even with matching fingerprint. | Returns true (TTL expired) |
+| 12.5.4 | Profile when fingerprint differs | Drop a snapshot file with stale fingerprint. | Returns true |
+
+### 12.6 Persistence (`persist-profile`)
+
+| # | Test | Steps | Expected Result |
+|---|------|-------|-----------------|
+| 12.6.1 | Writes gzipped JSON | Persist a profile. Decompress with `gunzip -c`. | Result parses as valid JSON with required schema |
+| 12.6.2 | Filename includes fingerprint and timestamp | Persist a profile with `rm_unique_id == "ABC"` and `capturedAtUnixNano == "1234"`. | File at `profiles/ABC-1234.json.gz` |
+| 12.6.3 | Compression reduces size | Persist a profile with 130+ scalars. | Gzipped file < 8 KB |
+
+### 12.7 `send-profiles` (transport)
+
+| # | Test | Steps | Expected Result |
+|---|------|-------|-----------------|
+| 12.7.1 | No-op on empty pending dir | Clear `profiles/`. Call `send-profiles`. | Returns cleanly; no HTTP attempt |
+| 12.7.2 | Posts each pending file | Drop 2 `.json.gz` files in `profiles/`. Stub HTTP to record requests. | Two POSTs to `<endpoint>/v1/profiles` |
+| 12.7.3 | Sets `application/octet-stream` + `Content-Encoding: gzip` | Stub HTTP. | Captured request headers include both |
+| 12.7.4 | Moves uploaded file to cache `sent/` | Successful POST. | File now at `<cache-root>/profiles/sent/<name>` (i.e. `sent-profiles-dir`); no longer present in `<data-root>/profiles/` |
+| 12.7.5 | Leaves file in place on failure | Stub HTTP to throw. | File remains in `profiles/` (re-tried next send) |
+
+### 12.8 `genq telemetry profile` viewer
+
+| # | Test | Steps | Expected Result |
+|---|------|-------|-----------------|
+| 12.8.1 | Shows fingerprint when DB available | Run with valid `$env.rmdb`. | Output contains `rm_unique_id` and `latest_utcmoddate` |
+| 12.8.2 | Lists pending snapshots | Drop a profile in `profiles/`. Run command. | Output lists the file with its size and timestamp |
+| 12.8.3 | Status shows `current` when fingerprint matches latest pending | Drop matching snapshot. Run command. | Status line reads `current` |
+| 12.8.4 | Status shows `pending` when no current snapshot | Clear `profiles/`. Run command. | Status reads `pending` |
 
 ---
 

@@ -44,6 +44,15 @@ resource "aws_apigatewayv2_route" "traces" {
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+# DB shape profiles — gzipped JSON snapshots of the active RootsMagic
+# database, uploaded periodically (fingerprint-cached client-side; usually
+# at most once per data-changing session).
+resource "aws_apigatewayv2_route" "profiles" {
+  api_id    = aws_apigatewayv2_api.telemetry.id
+  route_key = "POST /v1/profiles"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 resource "aws_lambda_permission" "api_gateway" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
